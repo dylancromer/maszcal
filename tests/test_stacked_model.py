@@ -1,4 +1,4 @@
-from mazcal.model import StackedModel
+from maszcal.model import StackedModel
 import numpy as np
 
 def test_mu_sz():
