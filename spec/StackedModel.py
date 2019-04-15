@@ -5,8 +5,8 @@ def test_mu_sz():
     stacked_model = StackedModel()
 
     mus = np.linspace(1, 10)
-    stacked_model.bs = np.linspace(-5,5)
-    stacked_model.as_ = np.ones(50)
+    stacked_model.b_param = np.linspace(-5,5)
+    stacked_model.a_param = np.ones(50)
 
     mu_szs = stacked_model.mu_sz(mus)
 
@@ -31,12 +31,12 @@ def test_prob_musz_given_mu():
 
     mus = np.linspace(2, 3, num=5)
     mu_szs = np.linspace(2, 3, num=5)
-    stacked_model.bs = np.linspace(-5,5, num=5)
-    stacked_model.as_ = np.ones(5)
+    stacked_model.b_param = np.linspace(-5,5, num=5)
+    stacked_model.a_param = np.ones(5)
 
-    probs = stacked_model.prob_musz_given_mu(mu_szs, mus)
+    prob_param = stacked_model.prob_musz_given_mu(mu_szs, mus)
 
-    precomp_probs = np.array(
+    precomp_prob_param = np.array(
         [[7.43359757e-06, 1.76297841e-03, 8.76415025e-02, 9.13245427e-01, 1.99471140e+00],
          [6.57000909e-09, 7.43359757e-06, 1.76297841e-03, 8.76415025e-02, 9.13245427e-01],
          [1.21716027e-12, 6.57000909e-09, 7.43359757e-06, 1.76297841e-03, 8.76415025e-02],
@@ -44,17 +44,29 @@ def test_prob_musz_given_mu():
          [3.84729931e-22, 4.72655194e-17, 1.21716027e-12, 6.57000909e-09, 7.43359757e-06]]
     )
 
-    np.testing.assert_allclose(probs, precomp_probs)
+    np.testing.assert_allclose(prob_param, precomp_prob_param)
 
 
 def test_delta_sigma_of_r_dummy():
+    """
+    This test functions by setting delta_sigma_of_mass to be constant,
+    resulting in it being identical to the normalization. Thus this test should
+    always return 1s, rather than a true precomputed value
+    """
+
     stacked_model = StackedModel()
 
-    rs = np.logspace(0, 1, 40)
+    stacked_model.mu_szs = np.linspace(1, 10, 10)
+    stacked_model.mus = np.linspace(1, 10, 20)
+    stacked_model.zs = np.linspace(0, 2, 8)
+
+    stacked_model.delta_sigma_of_mass = lambda rs,mus: np.ones((rs.size, self.zs.size,  mus.size))
+
+    rs = np.logspace(-1, 1, 40)
     stacked_model.delta_sigma_of_mass = lambda rs,mus: np.ones((rs.size, stacked_model.zs.size,  stacked_model.mus.size))
 
     delta_sigmas = stacked_model.delta_sigma(rs)
 
-    precomp_delta_sigmas = np.array([])
+    precomp_delta_sigmas = np.ones(rs.shape)
 
     np.testing.assert_allclose(delta_sigmas, precomp_delta_sigmas)

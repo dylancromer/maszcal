@@ -4,16 +4,16 @@ import scipy.integrate as integrate
 class StackedModel():
     def __init__(self):
         self.sigma_muszmu = 0.2
-        self.as_ = np.ones(10)
-        self.bs = np.ones(10)
+        self.a_param = 0
+        self.b_param = 1
 
-        self.mu_szs = np.ones(10)
-        self.mus = np.ones(10)
-        self.zs = np.ones(10)
+        self.mu_szs = np.linspace(1, 10, 10)
+        self.mus = np.linspace(1, 10, 20)
+        self.zs = 0.1 * np.linspace(0, 2, 8)
 
 
     def mu_sz(self, mus):
-        return self.bs*mus + self.as_
+        return self.b_param*mus + self.a_param
 
 
     def prob_musz_given_mu(self, mu_szs, mus):
@@ -22,7 +22,7 @@ class StackedModel():
 
         pref = 1/(np.sqrt(2*np.pi) * self.sigma_muszmu)
 
-        exps = np.exp(-(mu_szs - mus - self.as_)**2 / (2*(self.sigma_muszmu)**2))
+        exps = np.exp(-(mu_szs - mus - self.a_param)**2 / (2*(self.sigma_muszmu)**2))
 
         return pref*exps
 
@@ -61,11 +61,11 @@ class StackedModel():
                            * self.prob_musz_given_mu(self.mu_szs, self.mus)[np.newaxis, np.newaxis, :, :])
         mu_sz_integral = integrate.simps(mu_sz_integrand, x=self.mu_szs, axis=3)
 
-        mu_integrand = self.dnumber_dmass()[np.newaxis, :, ...] * self.mass(self.mus)[np.newaxis, np.newaxis, :, np.newaxis]
+        mu_integrand = self.dnumber_dmass()[np.newaxis, :, np.newaxis] * self.mass(self.mus)[np.newaxis, np.newaxis, :]
         mu_integrand = mu_integrand * mu_sz_integral
         mu_integral = integrate.simps(mu_integrand, x=self.mus, axis=2)
 
-        z_integrand = (self.lensing_weights() * self.comoving_vol())[np.newaxis, :, np.newaxis, np.newaxis]
+        z_integrand = (self.lensing_weights() * self.comoving_vol())[np.newaxis, :]
         z_integrand = z_integrand * mu_integral
         z_integral = integrate.simps(z_integrand, x=self.zs, axis=1)
 
@@ -81,11 +81,11 @@ class StackedModel():
                            * self.delta_sigma_of_mass(rs, self.mus)[:, :, :, np.newaxis])
         mu_sz_integral = integrate.simps(mu_sz_integrand, x=self.mu_szs, axis=3)
 
-        mu_integrand = self.dnumber_dmass()[np.newaxis, :, ...] * self.mass(self.mus)[np.newaxis, np.newaxis, :, np.newaxis]
+        mu_integrand = self.dnumber_dmass()[np.newaxis, :, np.newaxis] * self.mass(self.mus)[np.newaxis, np.newaxis, :]
         mu_integrand = mu_integrand * mu_sz_integral
         mu_integral = integrate.simps(mu_integrand, x=self.mus, axis=2)
 
-        z_integrand = (self.lensing_weights() * self.comoving_vol())[np.newaxis, :, np.newaxis, np.newaxis]
+        z_integrand = (self.lensing_weights() * self.comoving_vol())[np.newaxis, :]
         z_integrand = z_integrand * mu_integral
         z_integral = integrate.simps(z_integrand, x=self.zs, axis=1)
 
