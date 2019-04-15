@@ -5,9 +5,10 @@ def test_mu_sz():
     stacked_model = StackedModel()
 
     mus = np.linspace(1, 10)
-    bs = np.linspace(-5,5)
-    as_ = np.ones(50)
-    mu_szs = stacked_model.mu_sz(mus, as_, bs)
+    stacked_model.bs = np.linspace(-5,5)
+    stacked_model.as_ = np.ones(50)
+
+    mu_szs = stacked_model.mu_sz(mus)
 
     precomp_mu_szs = np.array(
         [-4.        , -4.67680133, -5.2786339 , -5.80549771, -6.25739275,
@@ -24,29 +25,36 @@ def test_mu_sz():
 
     np.testing.assert_allclose(mu_szs, precomp_mu_szs)
 
+
 def test_prob_musz_given_mu():
     stacked_model = StackedModel()
 
-    mus = np.linspace(1, 10)
-    bs = np.linspace(-5,5)
-    as_ = np.ones(50)
+    mus = np.linspace(2, 3, num=5)
+    mu_szs = np.linspace(2, 3, num=5)
+    stacked_model.bs = np.linspace(-5,5, num=5)
+    stacked_model.as_ = np.ones(5)
 
-    probs = stacked_model.prob_musz_given_mu(mus, as_, bs)
+    probs = stacked_model.prob_musz_given_mu(mu_szs, mus)
 
     precomp_probs = np.array(
-        [7.36823067e-196, 6.20808079e-256, 8.58288864e-318, 0.00000000e+000,
-         0.00000000e+000, 0.00000000e+000, 0.00000000e+000, 0.00000000e+000,
-         0.00000000e+000, 0.00000000e+000, 0.00000000e+000, 0.00000000e+000,
-         0.00000000e+000, 0.00000000e+000, 0.00000000e+000, 0.00000000e+000,
-         0.00000000e+000, 0.00000000e+000, 0.00000000e+000, 0.00000000e+000,
-         0.00000000e+000, 0.00000000e+000, 4.93886467e-315, 3.27872392e-253,
-         2.90647215e-193, 2.67479729e-137, 1.30344701e-087, 1.12544087e-046,
-         3.77974403e-017, 7.11100045e-002, 7.08076925e-004, 2.31312449e-026,
-         1.00811114e-072, 1.56374262e-146, 1.51098727e-251, 0.00000000e+000,
-         0.00000000e+000, 0.00000000e+000, 0.00000000e+000, 0.00000000e+000,
-         0.00000000e+000, 0.00000000e+000, 0.00000000e+000, 0.00000000e+000,
-         0.00000000e+000, 0.00000000e+000, 0.00000000e+000, 0.00000000e+000,
-         0.00000000e+000, 0.00000000e+000]
+        [[7.43359757e-06, 1.76297841e-03, 8.76415025e-02, 9.13245427e-01, 1.99471140e+00],
+         [6.57000909e-09, 7.43359757e-06, 1.76297841e-03, 8.76415025e-02, 9.13245427e-01],
+         [1.21716027e-12, 6.57000909e-09, 7.43359757e-06, 1.76297841e-03, 8.76415025e-02],
+         [4.72655194e-17, 1.21716027e-12, 6.57000909e-09, 7.43359757e-06, 1.76297841e-03],
+         [3.84729931e-22, 4.72655194e-17, 1.21716027e-12, 6.57000909e-09, 7.43359757e-06]]
     )
 
     np.testing.assert_allclose(probs, precomp_probs)
+
+
+def test_delta_sigma_of_r_dummy():
+    stacked_model = StackedModel()
+
+    rs = np.logspace(0, 1, 40)
+    stacked_model.delta_sigma_of_mass = lambda rs,mus: np.ones((rs.size, stacked_model.zs.size,  stacked_model.mus.size))
+
+    delta_sigmas = stacked_model.delta_sigma(rs)
+
+    precomp_delta_sigmas = np.array([])
+
+    np.testing.assert_allclose(delta_sigmas, precomp_delta_sigmas)
