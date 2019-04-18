@@ -60,10 +60,8 @@ def test_delta_sigma_of_r_dummy():
     stacked_model.mus = np.linspace(1, 10, 20)
     stacked_model.zs = np.linspace(0, 2, 8)
 
-    stacked_model.delta_sigma_of_mass = lambda rs,mus: np.ones((rs.size, self.zs.size,  mus.size))
-
     rs = np.logspace(-1, 1, 40)
-    stacked_model.delta_sigma_of_mass = lambda rs,mus: np.ones((rs.size, stacked_model.zs.size,  stacked_model.mus.size))
+    stacked_model.delta_sigma_of_mass = lambda rs,mus,cons: np.ones((rs.size, stacked_model.mus.size))
 
     delta_sigmas = stacked_model.delta_sigma(rs)
 
