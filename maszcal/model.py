@@ -1,5 +1,7 @@
 import numpy as np
 import scipy.integrate as integrate
+from offset_nfw.nfw import NFWModel
+from astropy.cosmology import FlatLambdaCDM
 
 class StackedModel():
     def __init__(self):
@@ -8,8 +10,13 @@ class StackedModel():
         self.b_param = 1
 
         self.mu_szs = np.linspace(1, 10, 10)
-        self.mus = np.linspace(1, 10, 20)
-        self.zs = 0.1 * np.linspace(0, 2, 8)
+        self.mus = np.linspace(1, 10, 10)
+        self.zs = 0.1 * np.linspace(0, 2, 10)
+
+
+    def init_nfw(self):
+        self.cosmology = FlatLambdaCDM(H0=70, Om0=0.3)
+        self.nfw_model = NFWModel(self.cosmology)
 
 
     def mu_sz(self, mus):
@@ -39,8 +46,19 @@ class StackedModel():
         return np.ones((self.zs.size, mu_szs.size))
 
 
+    def concentration_from_mass(self, masses):
+        return masses
+
+
     def delta_sigma_of_mass(self, rs, mus):
-        return np.ones((rs.size, self.zs.size,  mus.size))
+        masses = self.mass(mus)
+        concentrations = self.concentration_from_mass(masses)
+
+        try:
+            return self.nfw_model.deltasigma_theory(rs, masses, concentrations, self.zs)
+        except AttributeError:
+            self.init_nfw()
+            return self.nfw_model.deltasigma_theory(rs, masses, concentrations, self.zs)
 
 
     def dnumber_dmass(self):
