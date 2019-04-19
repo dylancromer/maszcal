@@ -27,3 +27,7 @@ def test_delta_sigma_of_r():
     precomp_delta_sigmas = np.ones(rs.shape)
 
     np.testing.assert_allclose(delta_sigmas, precomp_delta_sigmas)
+
+
+def test_power_spectrum():
+    stacked_model.calc_power_spect()

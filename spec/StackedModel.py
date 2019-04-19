@@ -1,6 +1,9 @@
 from maszcal.model import StackedModel
 import numpy as np
 
+
+
+
 def test_mu_sz():
     stacked_model = StackedModel()
 
@@ -26,6 +29,19 @@ def test_mu_sz():
     np.testing.assert_allclose(mu_szs, precomp_mu_szs)
 
 
+def test_prob_musz_given_mu_not_negative():
+    stacked_model = StackedModel()
+
+    mus = np.random.rand(5)
+    mu_szs = np.random.rand(5)
+    stacked_model.b_param = np.random.rand(1)
+    stacked_model.a_param = np.random.rand(1)
+
+    prob_param = stacked_model.prob_musz_given_mu(mu_szs, mus)
+
+    assert np.all(prob_param > 0)
+
+
 def test_prob_musz_given_mu():
     stacked_model = StackedModel()
 
@@ -47,7 +63,7 @@ def test_prob_musz_given_mu():
     np.testing.assert_allclose(prob_param, precomp_prob_param)
 
 
-def test_delta_sigma_of_r_dummy():
+def test_delta_sigma_of_r_divby_nsz():
     """
     This test functions by setting delta_sigma_of_mass to be constant,
     resulting in it being identical to the normalization. Thus this test should

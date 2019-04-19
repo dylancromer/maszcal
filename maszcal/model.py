@@ -1,7 +1,12 @@
 import numpy as np
 import scipy.integrate as integrate
+import camb
 from offset_nfw.nfw import NFWModel
 from astropy.cosmology import FlatLambdaCDM
+from szar.tinker import dn_dlogM
+from maszcal.cosmo_utils import get_camb_params
+from maszcal.cosmology import CosmoParams
+
 
 class StackedModel():
     def __init__(self):
@@ -12,12 +17,25 @@ class StackedModel():
         self.mu_szs = np.logspace(0, 1, 10)
         self.mus = np.logspace(0, 1, 10)
         self.concentrations = np.logspace(0, 1, 10)
-        self.zs = 0.1 * np.linspace(0, 2, 10)
+        self.zs =  np.linspace(0, 2, 10)
+
+        self.cosmo_params = CosmoParams()
+
+
+    def calc_power_spect(self):
+        params = get_camb_params(self.cosmo_params)
+        self.power_spectrum_interp = camb.get_matter_power_interpolator(
+            params,
+            zs=self.zs,
+            kmax=0.14,
+            nonlinear=False,
+        )
 
 
     def init_nfw(self):
-        self.cosmology = FlatLambdaCDM(H0=70, Om0=0.3)
-        self.nfw_model = NFWModel(self.cosmology)
+        #TODO: Astropy cosmology is broken. Need get rid of this dep
+        astropy_cosmology = FlatLambdaCDM(H0=70, Om0=0.3)
+        self.nfw_model = NFWModel(astropy_cosmology)
 
 
     def mu_sz(self, mus):
@@ -59,8 +77,13 @@ class StackedModel():
             return self.nfw_model.deltasigma_theory(rs, masses, concentrations, self.zs).value.transpose()
 
 
-    def dnumber_dmass(self):
-        return np.ones(self.zs.shape)
+    def dnumber_dlogmass(self):
+        masses = self.mass(self.mus)
+        delta_zs = np.gradient(self.zs)
+        rho_matter = np.ones(self.zs.shape)
+
+        dn_dlogms = np.ones(self.zs.shape) #dn_dlogM(masses, self.zs, rho_matter, delta_zs, self.ks, self.power_spect, 'comoving')
+        return dn_dlogms
 
 
     def lensing_weights(self):
@@ -77,7 +100,7 @@ class StackedModel():
                            * self.prob_musz_given_mu(self.mu_szs, self.mus)[np.newaxis, np.newaxis, :, :])
         mu_sz_integral = integrate.simps(mu_sz_integrand, x=self.mu_szs, axis=3)
 
-        mu_integrand = self.dnumber_dmass()[np.newaxis, :, np.newaxis] * self.mass(self.mus)[np.newaxis, np.newaxis, :]
+        mu_integrand = self.dnumber_dlogmass()[np.newaxis, :, np.newaxis]
         mu_integrand = mu_integrand * mu_sz_integral
         mu_integral = integrate.simps(mu_integrand, x=self.mus, axis=2)
 
@@ -97,7 +120,7 @@ class StackedModel():
                            * self.delta_sigma_of_mass(rs, self.mus, self.concentrations)[:, np.newaxis, :, np.newaxis])
         mu_sz_integral = integrate.simps(mu_sz_integrand, x=self.mu_szs, axis=3)
 
-        mu_integrand = self.dnumber_dmass()[np.newaxis, :, np.newaxis] * self.mass(self.mus)[np.newaxis, np.newaxis, :]
+        mu_integrand = self.dnumber_dlogmass()[np.newaxis, :, np.newaxis]
         mu_integrand = mu_integrand * mu_sz_integral
         mu_integral = integrate.simps(mu_integrand, x=self.mus, axis=2)
 
