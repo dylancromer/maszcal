@@ -3,9 +3,11 @@ import scipy.integrate as integrate
 import camb
 from offset_nfw.nfw import NFWModel
 from astropy.cosmology import FlatLambdaCDM
-from szar.tinker import dn_dlogM
+from maszcal.tinker import dn_dlogM
 from maszcal.cosmo_utils import get_camb_params
 from maszcal.cosmology import CosmoParams
+
+
 
 
 class StackedModel():
@@ -14,10 +16,11 @@ class StackedModel():
         self.a_param = 0
         self.b_param = 1
 
-        self.mu_szs = np.logspace(0, 1, 10)
-        self.mus = np.logspace(0, 1, 10)
+        self.mu_szs = np.log(np.logspace(10, 16, 10))
+        self.mus = np.log(np.logspace(10, 16, 10))
         self.concentrations = np.logspace(0, 1, 10)
         self.zs =  np.linspace(0, 2, 10)
+        self.ks = np.logspace(-4, -1, 200)
 
         self.cosmo_params = CosmoParams()
 
@@ -65,7 +68,6 @@ class StackedModel():
         return np.ones((self.zs.size, mu_szs.size))
 
 
-
     def delta_sigma_of_mass(self, rs, mus, cons):
         masses = self.mass(mus)
         concentrations = cons
@@ -79,10 +81,16 @@ class StackedModel():
 
     def dnumber_dlogmass(self):
         masses = self.mass(self.mus)
-        delta_zs = np.gradient(self.zs)
-        rho_matter = np.ones(self.zs.shape)
+        overdensity = 200
+        rho_matter = self.cosmo_params.rho_crit * self.cosmo_params.omega_matter
 
-        dn_dlogms = np.ones(self.zs.shape) #dn_dlogM(masses, self.zs, rho_matter, delta_zs, self.ks, self.power_spect, 'comoving')
+        try:
+            power_spect = self.power_spectrum_interp(self.zs, self.ks)
+        except AttributeError:
+            self.calc_power_spect()
+            power_spect = self.power_spectrum_interp(self.zs, self.ks)
+
+        dn_dlogms = dn_dlogM(masses, self.zs, rho_matter, overdensity, self.ks, power_spect, 'comoving')
         return dn_dlogms
 
 
