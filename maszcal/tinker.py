@@ -4,6 +4,7 @@ from builtins import range
 from past.utils import old_div
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline as iuSpline
+from scipy.integrate import simps
 np.seterr(divide='ignore', invalid='ignore')
 
 # Tinker stuff
@@ -94,27 +95,12 @@ def radius_from_mass(M, rho):
     return (3.*M / (4.*np.pi*rho))**(old_div(1,3.))
 
 
-def top_hatf_poly(kR):
-    """
-    Returns the small-argument approximation to the Fourier
-    transform of the spherical top-hat function evaluated at k*R.
-    """
-    xx = kR*kR
-    return 1 - .1*xx + .00357142857143*xx*xx
-
-
 def top_hatf(kR):
     """
     Returns the Fourier transform of the spherical top-hat function
     evaluated at a given k*R.
-
-    Notes:
-    -------
-    * This is called many times and costs a lot of runtime.
-    * For small values, use Taylor series.
     """
     out = old_div(np.nan_to_num(3*(np.sin(kR) - (kR)*np.cos(kR))),((kR)**3))
-    out[kR<.1] = top_hatf_poly(kR[kR<.1])
     return out
 
 
@@ -137,7 +123,7 @@ def sigma_sq_integral(R_grid, power_spt, k_val):
         ]
     )
 
-    return np.trapz((old_div(1,(2*np.pi**2)))*to_integ, k_val, axis = 0, dx=1e-6)
+    return simps(to_integ/(2*np.pi**2), x=k_val, axis=0)
 
 
 def fnl_correction(sigma2,fnl):

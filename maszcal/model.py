@@ -19,13 +19,13 @@ class StackedModel():
 
         self.concentrations = np.logspace(0, 1, 10)
         self.zs =  np.linspace(0, 2, 20)
-        self.ks = np.logspace(-6, 0, 200)
+        self.ks = np.logspace(-4, 1, 400)
 
         self.cosmo_params = CosmoParams()
         self.astropy_cosmology = Planck15 #TODO: Astropy cosmology is broken. Neutrino masses always 0
 
-        self.mu_szs = np.log(np.logspace(16, 5, 50))
-        self.mus = np.log(np.logspace(16, 5, 50))
+        self.mu_szs = np.linspace(16, 10, 50)
+        self.mus = np.linspace(16, 10, 50)
 
         self.constants = Constants()
 
@@ -35,7 +35,7 @@ class StackedModel():
         self.power_spectrum_interp = camb.get_matter_power_interpolator(
             params,
             zs=self.zs,
-            kmax=1,
+            kmax=self.ks.max(),
             nonlinear=True,
         )
 
@@ -60,11 +60,11 @@ class StackedModel():
 
 
     def mass_sz(self, mu_szs):
-        return np.exp(mu_szs)
+        return 10**mu_szs
 
 
     def mass(self, mus):
-        return np.exp(mus)
+        return 10**mus
 
 
     def selection_func(self, mu_szs):
@@ -81,7 +81,7 @@ class StackedModel():
     def dnumber_dlogmass(self):
         masses = self.mass(self.mus)
         overdensity = 200
-        rho_matter = self.cosmo_params.rho_crit * self.cosmo_params.omega_matter
+        rho_matter = self.cosmo_params.rho_crit * self.cosmo_params.omega_matter / self.cosmo_params.h**2
 
         try:
             power_spect = self.power_spectrum_interp(self.zs, self.ks)

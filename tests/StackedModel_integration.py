@@ -28,7 +28,7 @@ def _delta_sigma_of_m():
     np.testing.assert_allclose(delta_sigmas, precomp_delta_sigmas)
 
 
-def delta_sigma_of_r():
+def _delta_sigma_of_r():
     #TODO: Once other collaborator functions are implemented, will input precomputed vals
     rs = np.logspace(-1, 1, 40)
 
@@ -57,7 +57,22 @@ def test_power_spectrum():
     plt.gcf().clear()
 
 
+def test_comoving_vol():
+    vols = stacked_model.comoving_vol()
+    zs = stacked_model.zs
+
+    plt.plot(zs, vols)
+    plt.xlabel(r'$ z $')
+    plt.ylabel(r'$ c r^2(z)/H(z)$')
+
+    plt.savefig('figs/test/comoving_vol.svg')
+    plt.gcf().clear()
+
+
+stacked_model = StackedModel()
 def test_tinker_mf():
+    stacked_model.zs = np.zeros(1)
+
     masses = stacked_model.mass(stacked_model.mus)
     dn_dlnms = stacked_model.dnumber_dlogmass() #masses, zs
     dn_dms = dn_dlnms[0, :]/masses
@@ -72,16 +87,4 @@ def test_tinker_mf():
     plt.yscale('log')
 
     plt.savefig('figs/test/dn_dlnm_redshift0.svg')
-    plt.gcf().clear()
-
-
-def test_comoving_vol():
-    vols = stacked_model.comoving_vol()
-    zs = stacked_model.zs
-
-    plt.plot(zs, vols)
-    plt.xlabel(r'$ z $')
-    plt.ylabel(r'$ c r^2(z)/H(z)$')
-
-    plt.savefig('figs/test/comoving_vol.svg')
     plt.gcf().clear()
