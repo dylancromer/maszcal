@@ -1,5 +1,8 @@
 from dataclasses import dataclass
 
+
+
+
 @dataclass
 class CosmoParams:
     hubble_constant: float = 67.74
@@ -13,3 +16,8 @@ class CosmoParams:
     rho_crit: float = 1.274e11 #8.62e-27
 
     h: float = hubble_constant/100
+
+
+@dataclass
+class Constants:
+    speed_of_light: float = 2.99792e5 # km/s

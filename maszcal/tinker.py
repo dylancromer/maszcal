@@ -130,9 +130,12 @@ def sigma_sq_integral(R_grid, power_spt, k_val):
       smarter way using numpy arrays.
 
     """
-    to_integ = np.array([top_hatf(R_grid*k)**2*np.tile(power_spt[:,i],
-                     (R_grid.shape[0],1))*k**2
-                     for k,i in zip(k_val,np.arange(len(k_val)))])
+    to_integ = np.array(
+        [
+            top_hatf(R_grid * k)**2 * np.tile(power_spt[:,i], (R_grid.shape[0],1)) * k**2
+            for k,i in zip(k_val,np.arange(len(k_val)))
+        ]
+    )
 
     return np.trapz((old_div(1,(2*np.pi**2)))*to_integ, k_val, axis = 0, dx=1e-6)
 
@@ -165,9 +168,7 @@ def dn_dlogM(M, z, rho, delta, k, P, comoving=False):
     if not comoving:
         R =  R * np.transpose(1+z)
 
-    sigma = sigma_sq_integral(R, P, k)**.5
-
-    assert False, sigma
+    sigma = np.sqrt(sigma_sq_integral(R, P, k))
 
     if R.shape[-1] == 1:
         dlogs = -np.gradient(np.log(sigma[...,0]))[:,None]
@@ -176,7 +177,6 @@ def dn_dlogM(M, z, rho, delta, k, P, comoving=False):
 
     tp = tinker_params(delta, z)
     tf = tinker_f(sigma, tp)
-    assert False, tf
 
     if M.shape[-1] == 1:
         dM = np.gradient(np.log(M[:,0]))[:,None] * M
