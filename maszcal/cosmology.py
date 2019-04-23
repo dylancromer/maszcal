@@ -5,17 +5,23 @@ from dataclasses import dataclass
 
 @dataclass
 class CosmoParams:
-    hubble_constant: float = 67.74
-    omega_bary_hsqr: float = 0.02230
-    omega_cdm_hsqr: float = 0.1188
+    hubble_constant: float = 67
+    omega_bary_hsqr: float = 0.022
+    omega_cdm_hsqr: float = 0.1194
     spectral_index: float = 0.9667
-    tau_reion: float = 0.066
-    neutrino_mass_sum: float = 0.06
+    scalar_amp: float = 2.2e-9
+    tau_reion: float = 0.06
     omega_matter: float = 0.3089
     omega_lambda: float = 0.6911
-    rho_crit: float = 1.274e11 #8.62e-27
+    rho_crit: float = 1.274e11 #8.62e-27 from wiki
 
     h: float = hubble_constant/100
+
+    w0: float = -1.0
+    wa: float = 0.0
+    neutrino_mass_sum: float = 0.06
+
+    use_ppf: bool = True
 
 
 @dataclass

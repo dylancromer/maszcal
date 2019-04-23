@@ -19,7 +19,9 @@ class StackedModel():
 
         self.concentrations = np.logspace(0, 1, 10)
         self.zs =  np.linspace(0, 2, 20)
-        self.ks = np.logspace(-4, 1, 400)
+        self.max_k = 5
+        self.min_k = 1e-4
+        self.number_ks = 400
 
         self.cosmo_params = CosmoParams()
         self.astropy_cosmology = Planck15 #TODO: Astropy cosmology is broken. Neutrino masses always 0
@@ -31,13 +33,13 @@ class StackedModel():
 
 
     def calc_power_spect(self):
-        params = get_camb_params(self.cosmo_params)
-        self.power_spectrum_interp = camb.get_matter_power_interpolator(
-            params,
-            zs=self.zs,
-            kmax=self.ks.max(),
-            nonlinear=True,
-        )
+        params = get_camb_params(self.cosmo_params, self.max_k, self.zs)
+
+        results = camb.get_results(params)
+
+        self.ks, _, self.power_spect = results.get_matter_power_spectrum(minkh = self.min_k,
+                                                                         maxkh = self.max_k,
+                                                                         npoints = self.number_ks)
 
 
     def init_nfw(self):
@@ -84,10 +86,10 @@ class StackedModel():
         rho_matter = self.cosmo_params.rho_crit * self.cosmo_params.omega_matter / self.cosmo_params.h**2
 
         try:
-            power_spect = self.power_spectrum_interp(self.zs, self.ks)
+            power_spect = self.power_spect
         except AttributeError:
             self.calc_power_spect()
-            power_spect = self.power_spectrum_interp(self.zs, self.ks)
+            power_spect = self.power_spect
 
         dn_dlogms = dn_dlogM(masses, self.zs, rho_matter, overdensity, self.ks, power_spect, 'comoving')
         return dn_dlogms.T

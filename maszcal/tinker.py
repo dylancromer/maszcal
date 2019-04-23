@@ -109,12 +109,6 @@ def sigma_sq_integral(R_grid, power_spt, k_val):
     """
     Determines the sigma^2 parameter over the m-z grid by integrating
     over k.
-
-    Notes:
-    -------
-    * Fastest python solution I have found for this. There is probably a
-      smarter way using numpy arrays.
-
     """
     to_integ = np.array(
         [
@@ -123,7 +117,7 @@ def sigma_sq_integral(R_grid, power_spt, k_val):
         ]
     )
 
-    return simps(to_integ/(2*np.pi**2), x=k_val, axis=0)
+    return simps(to_integ/(2 * np.pi**2), x=k_val, axis=0)
 
 
 def fnl_correction(sigma2,fnl):
