@@ -1,5 +1,6 @@
 from maszcal.model import StackedModel
 import numpy as np
+import astropy.units as u
 
 import matplotlib
 matplotlib.rcParams['text.usetex'] = True
@@ -21,7 +22,10 @@ def _delta_sigma_of_m():
     mus = np.array([15])
     cons = np.array([2])
 
-    delta_sigmas = stacked_model.delta_sigma_of_mass(rs, mus, concentrations=cons)
+    delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
+                                                     mus,
+                                                     concentrations=cons,
+                                                     units=u.Msol/(u.Mpc * u.pc))
 
     plt.plot(rs, rs * delta_sigmas[:, 0]/1e6)
     plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')

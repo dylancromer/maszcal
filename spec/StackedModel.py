@@ -8,8 +8,8 @@ def test_mu_sz():
     stacked_model = StackedModel()
 
     mus = np.linspace(1, 10)
-    stacked_model.b_param = np.linspace(-5,5)
-    stacked_model.a_param = np.ones(50)
+    stacked_model.b_sz = np.linspace(-5,5)
+    stacked_model.a_sz = np.ones(50)
 
     mu_szs = stacked_model.mu_sz(mus)
 
@@ -34,12 +34,12 @@ def test_prob_musz_given_mu_not_negative():
 
     mus = np.random.rand(5)
     mu_szs = np.random.rand(5)
-    stacked_model.b_param = np.random.rand(1)
-    stacked_model.a_param = np.random.rand(1)
+    stacked_model.b_sz = np.random.rand(1)
+    stacked_model.a_sz = np.random.rand(1)
 
-    prob_param = stacked_model.prob_musz_given_mu(mu_szs, mus)
+    prob_sz = stacked_model.prob_musz_given_mu(mu_szs, mus)
 
-    assert np.all(prob_param > 0)
+    assert np.all(prob_sz > 0)
 
 
 def test_prob_musz_given_mu():
@@ -47,12 +47,12 @@ def test_prob_musz_given_mu():
 
     mus = np.linspace(2, 3, num=5)
     mu_szs = np.linspace(2, 3, num=5)
-    stacked_model.b_param = np.linspace(-5,5, num=5)
-    stacked_model.a_param = np.ones(5)
+    stacked_model.b_sz = np.linspace(-5,5, num=5)
+    stacked_model.a_sz = np.ones(5)
 
-    prob_param = stacked_model.prob_musz_given_mu(mu_szs, mus)
+    prob_sz = stacked_model.prob_musz_given_mu(mu_szs, mus)
 
-    precomp_prob_param = np.array(
+    precomp_prob_sz = np.array(
         [[7.43359757e-06, 1.76297841e-03, 8.76415025e-02, 9.13245427e-01, 1.99471140e+00],
          [6.57000909e-09, 7.43359757e-06, 1.76297841e-03, 8.76415025e-02, 9.13245427e-01],
          [1.21716027e-12, 6.57000909e-09, 7.43359757e-06, 1.76297841e-03, 8.76415025e-02],
@@ -60,7 +60,7 @@ def test_prob_musz_given_mu():
          [3.84729931e-22, 4.72655194e-17, 1.21716027e-12, 6.57000909e-09, 7.43359757e-06]]
     )
 
-    np.testing.assert_allclose(prob_param, precomp_prob_param)
+    np.testing.assert_allclose(prob_sz, precomp_prob_sz)
 
 
 def test_delta_sigma_of_r_divby_nsz():
@@ -72,8 +72,8 @@ def test_delta_sigma_of_r_divby_nsz():
 
     stacked_model = StackedModel()
 
-    stacked_model.mu_szs = np.linspace(1, 10, 10)
-    stacked_model.mus = np.linspace(1, 10, 20)
+    stacked_model.mu_szs = np.linspace(12, 16, 10)
+    stacked_model.mus = np.linspace(12, 16, 20)
     stacked_model.zs = np.linspace(0, 2, 8)
 
     stacked_model.dnumber_dlogmass = lambda : np.ones((stacked_model.zs.size, stacked_model.mus.size))
@@ -86,3 +86,20 @@ def test_delta_sigma_of_r_divby_nsz():
     precomp_delta_sigmas = np.ones(rs.shape)
 
     np.testing.assert_allclose(delta_sigmas, precomp_delta_sigmas)
+
+
+def test_weak_lensing_avg_mass():
+    stacked_model = StackedModel()
+
+    stacked_model.mu_szs = np.linspace(12, 16, 10)
+    stacked_model.mus = np.linspace(12, 16, 20)
+    stacked_model.zs = np.linspace(0, 2, 8)
+
+    stacked_model.dnumber_dlogmass = lambda : np.ones((stacked_model.zs.size, stacked_model.mus.size))
+
+    rs = np.logspace(-1, 1, 40)
+    stacked_model.delta_sigma_of_mass = lambda rs,mus,cons: np.ones((rs.size, stacked_model.mus.size))
+
+    avg_wl_mass = stacked_model.weak_lensing_avg_mass()
+
+    assert not np.isnan(avg_wl_mass)

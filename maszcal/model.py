@@ -15,12 +15,14 @@ from maszcal.nfw import SimpleDeltaSigma
 class StackedModel():
     def __init__(self):
         self.sigma_muszmu = 0.2
-        self.a_param = 0
-        self.b_param = 1
+        self.a_sz = 0
+        self.b_sz = 1
+        self.a_wl = 0
+        self.b_wl = 1
+        self.concen_param = 2
 
-        self.concentrations = 2 * np.ones(20)
         self.zs =  np.linspace(0, 2, 20)
-        self.max_k = 5
+        self.max_k = 10
         self.min_k = 1e-4
         self.number_ks = 400
 
@@ -29,6 +31,7 @@ class StackedModel():
 
         self.mu_szs = np.linspace(12, 16, 20)
         self.mus = np.linspace(12, 16, 20)
+        self.concentrations = self.concen_param * np.ones(20)
 
         self.constants = Constants()
 
@@ -49,7 +52,11 @@ class StackedModel():
 
 
     def mu_sz(self, mus):
-        return self.b_param*mus + self.a_param
+        return self.b_sz*mus + self.a_sz
+
+
+    def mu_wl(self, mus):
+        return self.b_wl*mus + self.a_wl
 
 
     def prob_musz_given_mu(self, mu_szs, mus):
@@ -58,7 +65,7 @@ class StackedModel():
 
         pref = 1/(np.sqrt(2*np.pi) * self.sigma_muszmu)
 
-        exps = np.exp(-(mu_szs - mus - self.a_param)**2 / (2*(self.sigma_muszmu)**2))
+        exps = np.exp(-(mu_szs - mus - self.a_sz)**2 / (2*(self.sigma_muszmu)**2))
 
         return pref*exps
 
@@ -74,8 +81,8 @@ class StackedModel():
     def selection_func(self, mu_szs):
         sel_func = np.ones((self.zs.size, mu_szs.size))
 
-        low_mass_indices = np.where(mu_szs < 14)
-        sel_func[low_mass_indices] = 0
+        low_mass_indices = np.where(mu_szs < np.log10(3e14))
+        sel_func[:, low_mass_indices] = 0
 
         return sel_func
 
@@ -87,18 +94,18 @@ class StackedModel():
         return simple_delta_sig.delta_sigma_of_mass(rs, mus, 200) #delta=200
 
 
-    def delta_sigma_of_mass(self, rs, mus, concentrations=None):
+    def delta_sigma_of_mass(self, rs, mus, concentrations=None, units=u.Msun/u.pc**2):
         masses = self.mass(mus)
 
         if concentrations is None:
             concentrations = self.concentrations
 
         try:
-            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.zs).to(u.Msun/(u.Mpc * u.pc))
+            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.zs).to(units)
             return result.value.T
         except AttributeError:
             self.init_onfw()
-            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.zs).to(u.Msun/(u.Mpc * u.pc))
+            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.zs).to(units)
             return result.value.T
 
 
@@ -129,10 +136,16 @@ class StackedModel():
         return c * comov_dist**2 / hubble_z
 
 
+    def _sz_measure(self):
+        #TODO: maybe make this an @property and save the result???
+        return (self.mass_sz(self.mu_szs)[np.newaxis, np.newaxis, np.newaxis, :]
+                * self.selection_func(self.mu_szs)[np.newaxis, :, np.newaxis, :]
+                * self.prob_musz_given_mu(self.mu_szs, self.mus)[np.newaxis, np.newaxis, :, :])
+
+
     def number_sz(self):
-        mu_sz_integrand = (self.mass_sz(self.mu_szs)[np.newaxis, np.newaxis, np.newaxis, :]
-                           * self.selection_func(self.mu_szs)[np.newaxis, :, np.newaxis, :]
-                           * self.prob_musz_given_mu(self.mu_szs, self.mus)[np.newaxis, np.newaxis, :, :])
+        #TODO: maybe make this an @property and save the result???
+        mu_sz_integrand = self._sz_measure()
         mu_sz_integral = integrate.simps(mu_sz_integrand, x=self.mu_szs, axis=3)
 
         mu_integrand = self.dnumber_dlogmass()[np.newaxis, :, :]
@@ -149,10 +162,9 @@ class StackedModel():
     def delta_sigma(self, rs):
         normalization = 1/self.number_sz()
 
-        mu_sz_integrand = (self.mass_sz(self.mu_szs)[np.newaxis, np.newaxis, np.newaxis, :]
-                           * self.selection_func(self.mu_szs)[np.newaxis, :, np.newaxis, :]
-                           * self.prob_musz_given_mu(self.mu_szs, self.mus)[np.newaxis, np.newaxis, :, :]
+        mu_sz_integrand = (self._sz_measure()
                            * self.delta_sigma_of_mass(rs, self.mus, self.concentrations)[:, np.newaxis, :, np.newaxis])
+
         mu_sz_integral = integrate.simps(mu_sz_integrand, x=self.mu_szs, axis=3)
 
         mu_integrand = self.dnumber_dlogmass()[np.newaxis, :, :]
@@ -165,3 +177,24 @@ class StackedModel():
 
         delta_sigmas = normalization * z_integral
         return delta_sigmas
+
+
+    def weak_lensing_avg_mass(self):
+        normalization = 1/self.number_sz()
+
+        mu_wl = self.mu_wl(self.mus)
+        mass_wl = self.mass(mu_wl)[np.newaxis, np.newaxis, :, np.newaxis]
+
+        mu_sz_integrand = self._sz_measure() * mass_wl
+        mu_sz_integral = integrate.simps(mu_sz_integrand, x=self.mu_szs, axis=3)
+
+        mu_integrand = self.dnumber_dlogmass()[np.newaxis, :, :]
+        mu_integrand = mu_integrand * mu_sz_integral
+        mu_integral = integrate.simps(mu_integrand, x=self.mus, axis=2)
+
+        z_integrand = (self.lensing_weights() * self.comoving_vol())[np.newaxis, :]
+        z_integrand = z_integrand * mu_integral
+        z_integral = integrate.simps(z_integrand, x=self.zs, axis=1)
+
+        avg_wl_mass = normalization * z_integral
+        return avg_wl_mass
