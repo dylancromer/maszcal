@@ -17,7 +17,8 @@ class SimpleDeltaSigma:
             ans = (3 * mass / (4 * np.pi * delta * self.rhocrit_of_z(z)))**(1.0/3.0)
 
         elif mode == 'duffy':
-            ans = (3 * mass / (4 * np.pi * delta * self.cosmo_par.rhom_0mpc))**(1.0/3.0)
+            rho_m0 = self.cosmo_params.omega_matter
+            ans = (3 * mass / (4 * np.pi * delta * rho_m0))**(1.0/3.0)
 
         else:
             raise ValueError('mode must be seljak or duffy')
@@ -46,18 +47,21 @@ class SimpleDeltaSigma:
         rdels = self.rdel(mdel, z, delta, 'seljak') * (1. + z)
         ans = 0
 
-        while np.abs(ans/mass - 1) > EPS :
+        while np.any(np.abs(ans/mass - 1)) > EPS :
             ans = mass
-            conz = con(mass, z, 2) #DUFFY
+            conz = self.concentration(mass, z, 'duffy') #DUFFY
             rs = self.rdel(mass, z, 200, 'duffy')/conz
             xx = rdels / rs
-            mass = mdel * m_x(conz) / m_x(xx)
+            assert False, 'I am in a loop'
+            mass = mdel * self.m_x(conz) / self.m_x(xx)
+
+        assert False, 'I got out of the loop'
 
         return ans
 
 
     def rho_s(self, c_delta, delta,z):
-        return c_delta**3 * cosmo_par['rhom_0mpc'] * delta / 3. / (np.log(1.+c_delta)-c_delta/(1.+c_delta))
+        return c_delta**3 * cosmo_params['rhom_0mpc'] * delta / 3. / (np.log(1.+c_delta)-c_delta/(1.+c_delta))
 
 
     def m_x(self, x):

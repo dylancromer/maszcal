@@ -3,6 +3,7 @@ import scipy.integrate as integrate
 import camb
 from offset_nfw.nfw import NFWModel
 from astropy.cosmology import Planck15
+from astropy import units as u
 from maszcal.tinker import dn_dlogM
 from maszcal.cosmo_utils import get_camb_params
 from maszcal.cosmology import CosmoParams, Constants
@@ -17,7 +18,7 @@ class StackedModel():
         self.a_param = 0
         self.b_param = 1
 
-        self.concentrations = np.logspace(0, 1, 10)
+        self.concentrations = 2 * np.ones(20)
         self.zs =  np.linspace(0, 2, 20)
         self.max_k = 5
         self.min_k = 1e-4
@@ -26,8 +27,8 @@ class StackedModel():
         self.cosmo_params = CosmoParams()
         self.astropy_cosmology = Planck15 #TODO: Astropy cosmology is broken. Neutrino masses always 0
 
-        self.mu_szs = np.linspace(16, 10, 50)
-        self.mus = np.linspace(16, 10, 50)
+        self.mu_szs = np.linspace(12, 16, 20)
+        self.mus = np.linspace(12, 16, 20)
 
         self.constants = Constants()
 
@@ -73,11 +74,19 @@ class StackedModel():
         return np.ones((self.zs.size, mu_szs.size))
 
 
-    def delta_sigma_of_mass(self, rs, mus):
-        rhocrit_of_z_func = lambda z: self.cosmo_params.rho_crit * self.astropy_cosmology.efunc(z)**2
-        simple_delta_sig = SimpleDeltaSigma(self.cosmo_params, self.zs, rhocrit_of_z_func)
+    def delta_sigma_of_mass(self, rs, mus, concentrations=None):
+        masses = self.mass(mus)
 
-        return simple_delta_sig.delta_sigma_of_mass(rs, mus, 200) #delta=200
+        if concentrations is None:
+            concentrations = self.concentrations
+
+        try:
+            result = self.nfw_model.deltasigma_theory(rs, masses, concentrations, self.zs).to(u.Msun/(u.Mpc * u.pc))
+            return result.value.T
+        except AttributeError:
+            self.init_nfw()
+            result = self.nfw_model.deltasigma_theory(rs, masses, concentrations, self.zs).to(u.Msun/(u.Mpc * u.pc))
+            return result.value.T
 
 
     def dnumber_dlogmass(self):

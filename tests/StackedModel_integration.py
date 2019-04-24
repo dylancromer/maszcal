@@ -16,16 +16,22 @@ sns.set(style='whitegrid', font_scale=1.5, rc={"lines.linewidth": 2,'lines.marke
 stacked_model = StackedModel()
 
 
-def _delta_sigma_of_m():
+def test_delta_sigma_of_m():
     #TODO: Once other collaborator functions are implemented, will input precomputed vals
-    rs = np.logspace(-1, 2, 20)
-    mus = stacked_model.mus
+    rs = np.logspace(-1, 2, 40)
+    mus = np.array([15])
+    cons = np.array([2])
 
-    delta_sigmas = stacked_model.delta_sigma_of_mass(rs, mus)
+    delta_sigmas = stacked_model.delta_sigma_of_mass(rs, mus, concentrations=cons)
 
-    precomp_delta_sigmas = np.ones((rs.size, mus.size))
+    plt.plot(rs, rs * delta_sigmas[:, 0]/1e6)
+    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
+    plt.xlabel(r'$ r $')
+    plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
+    plt.xscale('log')
 
-    np.testing.assert_allclose(delta_sigmas, precomp_delta_sigmas)
+    plt.savefig('figs/test/delta_sigma_r_m.svg')
+    plt.gcf().clear()
 
 
 def _delta_sigma_of_r():
@@ -39,7 +45,7 @@ def _delta_sigma_of_r():
     np.testing.assert_allclose(delta_sigmas, precomp_delta_sigmas)
 
 
-def test_power_spectrum():
+def _power_spectrum():
     #Need to check plots on this one!
     stacked_model.calc_power_spect()
 
@@ -48,7 +54,7 @@ def test_power_spectrum():
 
     power_spect_redshift0 = stacked_model.power_spect
     plt.plot(ks, power_spect_redshift0.T)
-    plt.xlabel(r'$ kh $')
+    plt.xlabel(r'$ k/h $')
     plt.ylabel(r'$ P(z=0, k) $')
     plt.xscale('log')
     plt.yscale('log')
@@ -57,7 +63,7 @@ def test_power_spectrum():
     plt.gcf().clear()
 
 
-def test_comoving_vol():
+def _comoving_vol():
     vols = stacked_model.comoving_vol()
     zs = stacked_model.zs
 
@@ -71,7 +77,7 @@ def test_comoving_vol():
 
 from maszcal.cosmology import CosmoParams
 stacked_model = StackedModel()
-def test_tinker_mf():
+def _tinker_mf():
     #WMAP cosmology
     used_ppf = True
     stacked_model.cosmo_params = CosmoParams(
@@ -90,7 +96,7 @@ def test_tinker_mf():
 
     z = 0
     mink = 1e-4
-    maxks = [1, 3, 5, 10]
+    maxks = [10]
     for maxk in maxks:
         stacked_model.zs = np.array([z])
         stacked_model.min_k = mink
@@ -107,7 +113,7 @@ def test_tinker_mf():
         plt.plot(masses, masses**2 * dn_dms / rho_matter, label=plotlabel)
 
     plt.title(rf'$z = {z}$, ppf {used_ppf}')
-    plt.xlabel(r'$ M \; (M_{\odot}) $')
+    plt.xlabel(r'$ M \; (M_{\odot}/h) $')
     plt.ylabel(r'$ M^2/\rho_m \; dn/dM$')
     plt.legend(loc='best')
     plt.ylim((4e-4, 3e-1))
