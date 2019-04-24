@@ -43,8 +43,9 @@ class StackedModel():
                                                                          npoints = self.number_ks)
 
 
-    def init_nfw(self):
-        self.nfw_model = NFWModel(self.astropy_cosmology)
+    def init_onfw(self):
+        self.onfw_model = NFWModel(self.astropy_cosmology)
+
 
 
     def mu_sz(self, mus):
@@ -71,7 +72,19 @@ class StackedModel():
 
 
     def selection_func(self, mu_szs):
-        return np.ones((self.zs.size, mu_szs.size))
+        sel_func = np.ones((self.zs.size, mu_szs.size))
+
+        low_mass_indices = np.where(mu_szs < 14)
+        sel_func[low_mass_indices] = 0
+
+        return sel_func
+
+
+    def delta_sigma_of_mass_alt(self, rs, mus):
+        rhocrit_of_z_func = lambda z: self.cosmo_params.rho_crit * self.astropy_cosmology.efunc(z)**2
+        simple_delta_sig = SimpleDeltaSigma(self.cosmo_params, self.zs, rhocrit_of_z_func)
+
+        return simple_delta_sig.delta_sigma_of_mass(rs, mus, 200) #delta=200
 
 
     def delta_sigma_of_mass(self, rs, mus, concentrations=None):
@@ -81,11 +94,11 @@ class StackedModel():
             concentrations = self.concentrations
 
         try:
-            result = self.nfw_model.deltasigma_theory(rs, masses, concentrations, self.zs).to(u.Msun/(u.Mpc * u.pc))
+            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.zs).to(u.Msun/(u.Mpc * u.pc))
             return result.value.T
         except AttributeError:
-            self.init_nfw()
-            result = self.nfw_model.deltasigma_theory(rs, masses, concentrations, self.zs).to(u.Msun/(u.Mpc * u.pc))
+            self.init_onfw()
+            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.zs).to(u.Msun/(u.Mpc * u.pc))
             return result.value.T
 
 

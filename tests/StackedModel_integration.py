@@ -16,8 +16,7 @@ sns.set(style='whitegrid', font_scale=1.5, rc={"lines.linewidth": 2,'lines.marke
 stacked_model = StackedModel()
 
 
-def test_delta_sigma_of_m():
-    #TODO: Once other collaborator functions are implemented, will input precomputed vals
+def _delta_sigma_of_m():
     rs = np.logspace(-1, 2, 40)
     mus = np.array([15])
     cons = np.array([2])
@@ -34,15 +33,18 @@ def test_delta_sigma_of_m():
     plt.gcf().clear()
 
 
-def _delta_sigma_of_r():
-    #TODO: Once other collaborator functions are implemented, will input precomputed vals
-    rs = np.logspace(-1, 1, 40)
+def test_delta_sigma_of_r():
+    rs = np.logspace(-1, 2, 40)
 
     delta_sigmas = stacked_model.delta_sigma(rs)
 
-    precomp_delta_sigmas = np.ones(rs.shape)
+    plt.plot(rs, rs * delta_sigmas/1e6)
+    plt.xlabel(r'$ r $')
+    plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
+    plt.xscale('log')
 
-    np.testing.assert_allclose(delta_sigmas, precomp_delta_sigmas)
+    plt.savefig('figs/test/delta_sigma_r.svg')
+    plt.gcf().clear()
 
 
 def _power_spectrum():
