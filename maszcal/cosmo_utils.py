@@ -3,7 +3,6 @@ import camb
 def get_camb_params(cosmology_params, max_k, zs):
     params = camb.model.CAMBparams()
 
-
     params.set_cosmology(
         H0 = cosmology_params.hubble_constant,
         ombh2 = cosmology_params.omega_bary_hsqr,
