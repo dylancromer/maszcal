@@ -2,18 +2,25 @@ import numpy as np
 import scipy.integrate as integrate
 import camb
 from offset_nfw.nfw import NFWModel
-from astropy.cosmology import Planck15
 from astropy import units as u
 from maszcal.tinker import dn_dlogM
-from maszcal.cosmo_utils import get_camb_params
+from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
 from maszcal.nfw import SimpleDeltaSigma
 
 
 
 
+class DefaultCosmology():
+    pass
+
+class NoPowerSpectrum():
+    pass
+
 class StackedModel():
-    def __init__(self):
+    def __init__(self,
+                 cosmo_params=DefaultCosmology(),
+                 power_spectrum=NoPowerSpectrum()):
         self.sigma_muszmu = 0.2
         self.a_sz = 0
         self.b_sz = 1
@@ -26,8 +33,17 @@ class StackedModel():
         self.min_k = 1e-4
         self.number_ks = 400
 
-        self.cosmo_params = CosmoParams()
-        self.astropy_cosmology = Planck15 #TODO: Astropy cosmology is broken. Neutrino masses always 0
+        if isinstance(power_spectrum, NoPowerSpectrum):
+            pass
+        else:
+            self.ks, self.power_spect = power_spectrum
+
+        if isinstance(cosmo_params, DefaultCosmology):
+            self.cosmo_params = CosmoParams()
+        else:
+            self.cosmo_params = cosmo_params
+
+        self.astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
 
         self.mu_szs = np.linspace(12, 16, 20)
         self.mus = np.linspace(12, 16, 20)

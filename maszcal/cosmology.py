@@ -16,6 +16,7 @@ class CosmoParams:
     rho_crit: float = 1.274e11 #8.62e-27 from wiki
 
     h: float = hubble_constant/100
+    cmb_temp: float = 2.725
 
     w0: float = -1.0
     wa: float = 0.0
