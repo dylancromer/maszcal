@@ -7,6 +7,7 @@ from maszcal.tinker import dn_dlogM
 from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
 from maszcal.nfw import SimpleDeltaSigma
+from maszcal.likelihood import GaussianLikelihood
 
 
 
@@ -21,6 +22,8 @@ class StackedModel():
     def __init__(self,
                  cosmo_params=DefaultCosmology(),
                  power_spectrum=NoPowerSpectrum()):
+
+        ### FITTING PARAMETERS AND LIKELIHOOD ###
         self.sigma_muszmu = 0.2
         self.a_sz = 0
         self.b_sz = 1
@@ -28,6 +31,9 @@ class StackedModel():
         self.b_wl = 1
         self.concen_param = 2
 
+        self.likelihood = GaussianLikelihood()
+
+        ### SPATIAL QUANTITIES AND MATTER POWER ###
         self.zs =  np.linspace(0, 2, 20)
         self.max_k = 10
         self.min_k = 1e-4
@@ -38,6 +44,7 @@ class StackedModel():
         else:
             self.ks, self.power_spect = power_spectrum
 
+        ### COSMOLOGICAL PARAMETERS ###
         if isinstance(cosmo_params, DefaultCosmology):
             self.cosmo_params = CosmoParams()
         else:
@@ -45,10 +52,13 @@ class StackedModel():
 
         self.astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
 
+
+        ### CLUSTER MASSES AND RELATED ###
         self.mu_szs = np.linspace(12, 16, 20)
         self.mus = np.linspace(12, 16, 20)
         self.concentrations = self.concen_param * np.ones(20)
 
+        ### MISC CONSTANTS ###
         self.constants = Constants()
 
 
