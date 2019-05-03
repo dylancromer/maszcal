@@ -1,4 +1,4 @@
-from maszcal.model import StackedModel
+import xarray as xa
 import numpy as np
 import astropy.units as u
 
@@ -11,13 +11,15 @@ rcParams.update({'figure.autolayout': True})
 import seaborn as sns
 sns.set(style='whitegrid', font_scale=1.5, rc={"lines.linewidth": 2,'lines.markersize': 8.0,})
 
+from maszcal.model import StackedModel
+
 
 
 
 stacked_model = StackedModel()
 
 
-def _delta_sigma_of_m():
+def test_delta_sigma_of_m():
     rs = np.logspace(-1, 2, 40)
     mus = np.array([15])
     cons = np.array([2])
@@ -25,7 +27,7 @@ def _delta_sigma_of_m():
     delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
                                                      mus,
                                                      concentrations=cons,
-                                                     units=u.Msol/(u.Mpc * u.pc))
+                                                     units=u.Msun/(u.Mpc * u.pc))
 
     plt.plot(rs, rs * delta_sigmas[:, 0]/1e6)
     plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
@@ -38,9 +40,9 @@ def _delta_sigma_of_m():
 
 
 def test_delta_sigma_of_r():
-    rs = np.logspace(-1, 2, 40)
+    rs = xa.DataArray(np.logspace(-1, 2, 40), dims=('radius'))
 
-    delta_sigmas = stacked_model.delta_sigma(rs)
+    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc))
 
     plt.plot(rs, rs * delta_sigmas/1e6)
     plt.xlabel(r'$ r $')
@@ -51,7 +53,7 @@ def test_delta_sigma_of_r():
     plt.gcf().clear()
 
 
-def _power_spectrum():
+def test_power_spectrum():
     #Need to check plots on this one!
     stacked_model.calc_power_spect()
 
@@ -69,7 +71,7 @@ def _power_spectrum():
     plt.gcf().clear()
 
 
-def _comoving_vol():
+def test_comoving_vol():
     vols = stacked_model.comoving_vol()
     zs = stacked_model.zs
 
@@ -83,7 +85,7 @@ def _comoving_vol():
 
 from maszcal.cosmology import CosmoParams
 stacked_model = StackedModel()
-def _tinker_mf():
+def test_tinker_mf():
     #WMAP cosmology
     used_ppf = True
     stacked_model.cosmo_params = CosmoParams(
@@ -98,13 +100,17 @@ def _tinker_mf():
     )
 
     h = stacked_model.cosmo_params.h
-    rho_matter = stacked_model.cosmo_params.rho_crit * stacked_model.cosmo_params.omega_matter / h**2
+    rho_matter = (stacked_model.cosmo_params.rho_crit
+                  * stacked_model.cosmo_params.omega_matter
+                  / h**2)
+
+    stacked_model.mu_szs = xa.DataArray(np.linspace(10, 16, 20), dims=('mu_sz'))
+    stacked_model.mus = xa.DataArray(np.linspace(10, 16, 20), dims=('mu'))
 
     z = 0
     mink = 1e-4
-    maxks = [10]
+    maxks = [1, 3, 5, 10]
     for maxk in maxks:
-        stacked_model.zs = np.array([z])
         stacked_model.min_k = mink
         stacked_model.max_k = maxk
 
