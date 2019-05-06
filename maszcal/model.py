@@ -7,7 +7,7 @@ import scipy.integrate as integrate
 import camb
 from astropy import units as u
 ### LOW LEVEL DEPENDENCIES ###
-from offset_nfw.nfw import NFWModel
+from maszcal.offset_nfw.nfw import NFWModel
 ### IN-MODULE DEPENDCIES ###
 from maszcal.tinker import dn_dlogM
 from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
@@ -21,8 +21,10 @@ from maszcal.likelihood import GaussianLikelihood
 class DefaultCosmology():
     pass
 
+
 class NoPowerSpectrum():
     pass
+
 
 class StackedModel():
     def __init__(self,

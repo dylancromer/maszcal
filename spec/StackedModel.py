@@ -83,7 +83,7 @@ def test_delta_sigma_of_r_divby_nsz():
     )
 
     rs = xa.DataArray(np.logspace(-1, 1, 40), dims=('radius'))
-    stacked_model.delta_sigma_of_mass = lambda rs,mus,cons: xa.DataArray(
+    stacked_model.delta_sigma_of_mass = lambda rs,mus,cons,units: xa.DataArray(
         np.ones((rs.size, stacked_model.mus.size)),
         dims=('radius', 'mu')
     )
