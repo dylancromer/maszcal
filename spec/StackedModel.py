@@ -90,7 +90,7 @@ def test_delta_sigma_of_r_divby_nsz():
 
     delta_sigmas = stacked_model.delta_sigma(rs)
 
-    precomp_delta_sigmas = np.ones((1, rs.size))
+    precomp_delta_sigmas = np.ones((rs.size))
 
     np.testing.assert_allclose(delta_sigmas, precomp_delta_sigmas)
 

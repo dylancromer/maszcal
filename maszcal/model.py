@@ -33,11 +33,11 @@ class StackedModel():
 
         ### FITTING PARAMETERS AND LIKELIHOOD ###
         self.sigma_muszmu = 0.2
-        self.a_sz = xa.DataArray(np.array([0]), dims=('a_sz'))
+        self.a_sz = 2
         self.b_sz = 1
         self.a_wl = 0
         self.b_wl = 1
-        self.concen_param = 2
+        self.concen_param = xa.DataArray(np.array([2]), dims=('concen'))
 
         self.likelihood = GaussianLikelihood()
 
@@ -135,12 +135,14 @@ class StackedModel():
             concentrations = self.concentrations
 
         try:
-            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.zs).to(units)
-            return xa.DataArray(result.value.T, dims=('radius', 'mu'))
+            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.zs)
+            result = result * (u.Msun/u.Mpc**2).to(units)
+            return xa.DataArray(result.T, dims=('radius', 'mu'))
         except AttributeError:
             self.init_onfw()
-            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.zs).to(units)
-            return xa.DataArray(result.value.T, dims=('radius', 'mu'))
+            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.zs)
+            result = result * (u.Msun/u.Mpc**2).to(units)
+            return xa.DataArray(result.T, dims=('radius', 'mu'))
 
 
     def dnumber_dlogmass(self):

@@ -27,6 +27,7 @@ def _form_iterables(*args):
         if iter:
             obj_shapes.append(numpy.array(arg).shape)
     if len(set(obj_shapes))>1:
+        pass
         raise RuntimeError("All iterable non-r parameters must have same shape")
     # Add an extra axis to the non-r arguments so they're column vectors instead (or the analogue
     # for multi-dimensional arrays, lol).

@@ -60,14 +60,8 @@ class NFWModel(object):
         table. Precision is not guaranteed for values other than the default.
         [default: (0.0003, 300)]
     """
-    def __init__(self, cosmology, dir='.', rho='rho_m', comoving=True, delta=200,
-        precision=0.01, x_range=(0.0003, 300), miscentering_range=(0,4), generate=False):
-        if generate:
-            raise NotImplementedError("NFWModel currently can't do interpolation tables!")
-
-        if not os.path.exists(dir):
-            raise RuntimeError("Nonexistent save directory passed to NFWModel")
-        self.dir = dir
+    def __init__(self, cosmology, rho='rho_m', comoving=True, delta=200,
+        precision=0.01, x_range=(0.0003, 300), miscentering_range=(0,4)):
 
         if not (hasattr(cosmology, "angular_diameter_distance") and
                 hasattr(cosmology, "angular_diameter_distance_z1z2") and
@@ -79,7 +73,7 @@ class NFWModel(object):
             raise RuntimeError("Only rho_c and rho_m currently implemented")
         self.rho = rho
 
-        # Ordinarily I prefer Python duck-typing, but I want to avoid the case where somebody
+        # Ordinarily I prefer duck-typing, but I want to avoid the case where somebody
         # passes "comoving='physical'" and gets comoving coordinates instead because
         # `if 'physical'` evaluates to True!
         if not isinstance(comoving, bool):
@@ -185,13 +179,14 @@ class NFWModel(object):
         """Return the reference density for this halo: that is, critical density for rho_c,
            or matter density for rho_m, properly in comoving or physical."""
         if self.rho=='rho_c':
-            dens = self.cosmology.critical_density(z)
+            dens = self.cosmology.critical_density(z).to(u.Msun/u.Mpc**3).value
             if self.comoving:
                 return dens/(1.+z)**3
             else:
                 return dens
         else:
             dens = self.cosmology.Om0*self.cosmology.critical_density0
+            dens = dens.to(u.Msun/u.Mpc**3).value
             if self.comoving:
                 return dens
             else:
@@ -199,15 +194,13 @@ class NFWModel(object):
 
     def scale_radius(self, M, c, z):
         """ Return the scale radius in comoving Mpc. """
-        if not isinstance(M, u.Quantity):
-            M = (M*u.Msun).to(u.g)
+        #M = M * u.Msun.to(u.g)
         rs = self._rmod/c*(M/self.reference_density(z))**0.33333333
-        return rs.to(u.Mpc**0.99999999).value*u.Mpc  # to deal with fractional powers
+        return rs
 
     def nfw_norm(self, M, c, z):
         """ Return the normalization for delta sigma and sigma. """
-        if not isinstance(M, u.Quantity):
-            M = (M*u.Msun).to(u.g)
+        #M = M * u.Msun.to(u.g)
         deltac=self.delta/3.*c*c*c/(np.log(1.+c)-c/(1.+c))
         rs = self.scale_radius(M, c, z)
         return rs*deltac*self.reference_density(z)
@@ -247,9 +240,7 @@ class NFWModel(object):
             ``(n1, n2, ..., nn, len(r))``.
         """
         rs = self.scale_radius(M, c, z)
-        if not isinstance(r, u.Quantity):
-            r = r*u.Mpc
-        x = np.atleast_1d((r/rs).decompose().value)
+        x = np.atleast_1d(r/rs)
 
         norm = self.nfw_norm(M, c, z)
         return_vals = np.atleast_1d(np.zeros_like(x))
@@ -294,9 +285,8 @@ class NFWModel(object):
             ``(n1, n2, ..., nn, len(r))``.
         """
         rs = self.scale_radius(M, c, z)
-        if not isinstance(r, u.Quantity):
-            r = r*u.Mpc
-        x = np.atleast_1d((r/rs).decompose().value)
+        x = np.atleast_1d(r/rs)
+
         norm = self.nfw_norm(M, c, z)
         return_vals = np.atleast_1d(np.zeros_like(x))
         ltmask = x<1
@@ -340,9 +330,7 @@ class NFWModel(object):
             ``(n1, n2, ..., nn, len(r))``.
         """
         rs = self.scale_radius(M, c, z)
-        if not isinstance(r, u.Quantity):
-            r *= u.Mpc
-        x = np.atleast_1d((r/rs).decompose().value)
+        x = np.atleast_1d(r/rs)
         norm = self.nfw_norm(M, c, z)/rs
         return norm/(x*(1.+x)**2)
 
