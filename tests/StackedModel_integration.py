@@ -29,7 +29,7 @@ def test_delta_sigma_of_m():
                                                      concentrations=cons,
                                                      units=u.Msun/(u.Mpc * u.pc))
 
-    plt.plot(rs, rs * delta_sigmas[:, 0]/1e6)
+    plt.plot(rs, rs * delta_sigmas[0, 0, :]/1e6)
     plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
     plt.xlabel(r'$ r $')
     plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')

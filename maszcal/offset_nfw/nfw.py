@@ -1,4 +1,5 @@
 import numpy as np
+import xarray as xa
 import scipy.integrate
 import scipy.interpolate
 import os
@@ -205,7 +206,6 @@ class NFWModel(object):
         rs = self.scale_radius(M, c, z)
         return rs*deltac*self.reference_density(z)
 
-    @reshape
     def deltasigma_theory(self, r, M, c, z):
         """Return an NFW delta sigma from theory.
 
@@ -240,16 +240,17 @@ class NFWModel(object):
             ``(n1, n2, ..., nn, len(r))``.
         """
         rs = self.scale_radius(M, c, z)
-        x = np.atleast_1d(r/rs)
+        x = r/rs
 
         norm = self.nfw_norm(M, c, z)
-        return_vals = np.atleast_1d(np.zeros_like(x))
-        ltmask = x<1
-        return_vals[ltmask] = self._deltasigmalt(x[ltmask])
-        gtmask = x>1
-        return_vals[gtmask] = self._deltasigmagt(x[gtmask])
-        eqmask = x==1
-        return_vals[eqmask] = self._deltasigmaeq(x[eqmask])
+        return_vals = np.zeros_like(x)
+        ltmask = x.values < 1
+        return_vals[ltmask] = self._deltasigmalt(x.values[ltmask])
+        gtmask = x.values > 1
+        return_vals[gtmask] = self._deltasigmagt(x.values[gtmask])
+        eqmask = x.values == 1
+        return_vals[eqmask] = self._deltasigmaeq(x.values[eqmask])
+        return_vals = xa.DataArray(return_vals, dims=x.dims)
         return_vals = norm*return_vals
         return return_vals
 

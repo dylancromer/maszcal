@@ -37,7 +37,7 @@ class StackedModel():
         self.b_sz = 1
         self.a_wl = 0
         self.b_wl = 1
-        self.concen_param = xa.DataArray(np.array([2]), dims=('concen'))
+        self.concentrations = xa.DataArray(np.array([2]), dims=('concentration'))
 
         self.likelihood = GaussianLikelihood()
 
@@ -64,7 +64,6 @@ class StackedModel():
         ### CLUSTER MASSES AND RELATED ###
         self.mu_szs = xa.DataArray(np.linspace(12, 16, 20), dims=('mu_sz'))
         self.mus = xa.DataArray(np.linspace(12, 16, 20), dims=('mu'))
-        self.concentrations = self.concen_param * np.ones(20)
 
         ### MISC CONSTANTS ###
         self.constants = Constants()
@@ -134,15 +133,20 @@ class StackedModel():
         if concentrations is None:
             concentrations = self.concentrations
 
+        rs = xa.DataArray(rs, dims=('radius'))
+        masses = xa.DataArray(masses, dims=('mu'))
+        concentrations = xa.DataArray(concentrations, dims=('concentration'))
+        zs = xa.DataArray(self.zs, dims=('redshift'))
+
         try:
-            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.zs)
+            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, zs)
             result = result * (u.Msun/u.Mpc**2).to(units)
-            return xa.DataArray(result.T, dims=('radius', 'mu'))
+            return result
         except AttributeError:
             self.init_onfw()
-            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.zs)
+            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, zs)
             result = result * (u.Msun/u.Mpc**2).to(units)
-            return xa.DataArray(result.T, dims=('radius', 'mu'))
+            return result
 
 
     def dnumber_dlogmass(self):
