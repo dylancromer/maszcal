@@ -68,7 +68,6 @@ class StackedModel():
         ### MISC CONSTANTS ###
         self.constants = Constants()
 
-
     def calc_power_spect(self):
         params = get_camb_params(self.cosmo_params, self.max_k, self.zs)
 
@@ -78,18 +77,14 @@ class StackedModel():
                                                                          maxkh = self.max_k,
                                                                          npoints = self.number_ks)
 
-
     def init_onfw(self):
         self.onfw_model = NFWModel(self.astropy_cosmology)
-
 
     def mu_sz(self, mus):
         return self.b_sz*mus + self.a_sz
 
-
     def mu_wl(self, mus):
         return self.b_wl*mus + self.a_wl
-
 
     def prob_musz_given_mu(self, mu_szs, mus):
         pref = 1/(np.sqrt(2*np.pi) * self.sigma_muszmu)
@@ -100,14 +95,11 @@ class StackedModel():
 
         return pref*exps
 
-
     def mass_sz(self, mu_szs):
         return 10**mu_szs
 
-
     def mass(self, mus):
         return 10**mus
-
 
     def selection_func(self, mu_szs):
         sel_func = np.ones((self.zs.size, mu_szs.size))
@@ -119,13 +111,11 @@ class StackedModel():
 
         return sel_func
 
-
     def delta_sigma_of_mass_alt(self, rs, mus):
         rhocrit_of_z_func = lambda z: self.cosmo_params.rho_crit * self.astropy_cosmology.efunc(z)**2
         simple_delta_sig = SimpleDeltaSigma(self.cosmo_params, self.zs, rhocrit_of_z_func)
 
         return simple_delta_sig.delta_sigma_of_mass(rs, mus, 200) #delta=200
-
 
     def delta_sigma_of_mass(self, rs, mus, concentrations=None, units=u.Msun/u.pc**2):
         masses = self.mass(mus)
@@ -147,7 +137,6 @@ class StackedModel():
             result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, zs)
             result = result * (u.Msun/u.Mpc**2).to(units)
             return result
-
 
     def dnumber_dlogmass(self):
         masses = self.mass(self.mus).values
@@ -172,10 +161,8 @@ class StackedModel():
 
         return xa.DataArray(dn_dlogms.T, dims=('redshift', 'mu'))
 
-
     def lensing_weights(self):
         return xa.DataArray(np.ones(self.zs.shape), dims=('redshift'))
-
 
     def comoving_vol(self):
         c = self.constants.speed_of_light
@@ -184,40 +171,32 @@ class StackedModel():
 
         return xa.DataArray(c * comov_dist**2 / hubble_z, dims=('redshift'))
 
-
     def _sz_measure(self):
         #TODO: maybe make this an @property and save the result???
         return (self.mass_sz(self.mu_szs)
                 * self.selection_func(self.mu_szs)
                 * self.prob_musz_given_mu(self.mu_szs, self.mus))
 
-
     def number_sz(self):
-        #TODO: maybe make this an @property and save the result???
-        mu_sz_integrand = self._sz_measure()
         mu_sz_integral = xa.apply_ufunc(
             integrate.simps,
-            mu_sz_integrand,
+            self._sz_measure(),
             kwargs={'x':self.mu_szs,
                     'axis':-1},
             input_core_dims=[['mu_sz']]
         )
 
-        mu_integrand = self.dnumber_dlogmass()
-        mu_integrand = mu_integrand * mu_sz_integral
         mu_integral = xa.apply_ufunc(
             integrate.simps,
-            mu_integrand,
+            self.dnumber_dlogmass() * mu_sz_integral,
             kwargs={'x':self.mus,
                     'axis':-1},
             input_core_dims=[['mu']]
         )
 
-        z_integrand = (self.lensing_weights() * self.comoving_vol())
-        z_integrand = z_integrand * mu_integral
         z_integral = xa.apply_ufunc(
             integrate.simps,
-            z_integrand,
+            self.lensing_weights() * self.comoving_vol() * mu_integral,
             kwargs={'x':self.zs,
                     'axis':-1},
             input_core_dims=[['redshift']]
@@ -225,50 +204,35 @@ class StackedModel():
 
         return z_integral
 
-
     def delta_sigma(self, rs, units=u.Msun/u.pc**2):
-        normalization = 1/self.number_sz()
-
-        mu_sz_integrand = (self._sz_measure()
-                           * self.delta_sigma_of_mass(
-                               rs,
-                               self.mus,
-                               self.concentrations,
-                               units=units
-                             )
-                           )
-
         mu_sz_integral = xa.apply_ufunc(
             integrate.simps,
-            mu_sz_integrand,
+            (self._sz_measure() * self.delta_sigma_of_mass(rs,
+                                                           self.mus,
+                                                           self.concentrations,
+                                                           units=units)),
             kwargs={'x':self.mu_szs,
                     'axis':-1},
             input_core_dims=[['mu_sz']]
         )
 
-        mu_integrand = self.dnumber_dlogmass()
-        mu_integrand = mu_integrand * mu_sz_integral
         mu_integral = xa.apply_ufunc(
             integrate.simps,
-            mu_integrand,
+            self.dnumber_dlogmass() * mu_sz_integral,
             kwargs={'x':self.mus,
                     'axis':-1},
             input_core_dims=[['mu']]
         )
 
-        z_integrand = (self.lensing_weights() * self.comoving_vol())
-        z_integrand = z_integrand * mu_integral
         z_integral = xa.apply_ufunc(
             integrate.simps,
-            z_integrand,
+            self.lensing_weights() * self.comoving_vol() * mu_integral,
             kwargs={'x':self.zs,
                     'axis':-1},
             input_core_dims=[['redshift']]
         )
 
-        delta_sigmas = normalization * z_integral
-        return delta_sigmas
-
+        return z_integral/self.number_sz()
 
     def weak_lensing_avg_mass(self):
         normalization = 1/self.number_sz()
@@ -276,34 +240,28 @@ class StackedModel():
         mu_wl = self.mu_wl(self.mus)
         mass_wl = self.mass(mu_wl)
 
-        mu_sz_integrand = self._sz_measure() * mass_wl
         mu_sz_integral = xa.apply_ufunc(
             integrate.simps,
-            mu_sz_integrand,
+            self._sz_measure() * mass_wl,
             kwargs={'x':self.mu_szs,
                       'axis':-1},
             input_core_dims=[['mu_sz']]
         )
 
-        mu_integrand = self.dnumber_dlogmass()
-        mu_integrand = mu_integrand * mu_sz_integral
         mu_integral = xa.apply_ufunc(
             integrate.simps,
-            mu_integrand,
+            self.dnumber_dlogmass() * mu_sz_integral,
             kwargs={'x':self.mus,
                     'axis':-1},
             input_core_dims=[['mu']]
         )
 
-        z_integrand = (self.lensing_weights() * self.comoving_vol())
-        z_integrand = z_integrand * mu_integral
         z_integral = xa.apply_ufunc(
             integrate.simps,
-            z_integrand,
+            self.lensing_weights() * self.comoving_vol() * mu_integral,
             kwargs={'x':self.zs,
                     'axis':-1},
             input_core_dims=[['redshift']]
         )
 
-        avg_wl_mass = normalization * z_integral
-        return avg_wl_mass
+        return z_integral/self.number_sz()
