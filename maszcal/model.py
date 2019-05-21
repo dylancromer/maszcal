@@ -18,6 +18,19 @@ from maszcal.likelihood import GaussianLikelihood
 
 
 
+def _trapz(xarr, dim):
+    other_dims = np.array(xarr.dims)
+    assert dim in other_dims
+    other_dims = tuple(other_dims[other_dims != dim])
+    new_dims = (dim,) + other_dims
+    xarr = xarr.transpose(*new_dims)
+
+    return xa.DataArray(
+        0.5*(xarr.values[0, ...] + 2*xarr.values[1:-1,...].sum(axis=0) + xarr.values[-1,...]),
+        dims=other_dims,
+    )
+
+
 class DefaultCosmology():
     pass
 
@@ -178,90 +191,38 @@ class StackedModel():
                 * self.prob_musz_given_mu(self.mu_szs, self.mus))
 
     def number_sz(self):
-        mu_sz_integral = xa.apply_ufunc(
-            integrate.simps,
-            self._sz_measure(),
-            kwargs={'x':self.mu_szs,
-                    'axis':-1},
-            input_core_dims=[['mu_sz']]
-        )
+        mu_sz_integral = _trapz(self._sz_measure(), 'mu_sz')
 
-        mu_integral = xa.apply_ufunc(
-            integrate.simps,
-            self.dnumber_dlogmass() * mu_sz_integral,
-            kwargs={'x':self.mus,
-                    'axis':-1},
-            input_core_dims=[['mu']]
-        )
+        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu')
 
-        z_integral = xa.apply_ufunc(
-            integrate.simps,
-            self.lensing_weights() * self.comoving_vol() * mu_integral,
-            kwargs={'x':self.zs,
-                    'axis':-1},
-            input_core_dims=[['redshift']]
-        )
+        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift')
 
         return z_integral
 
     def delta_sigma(self, rs, units=u.Msun/u.pc**2):
-        mu_sz_integral = xa.apply_ufunc(
-            integrate.simps,
+        mu_sz_integral = _trapz(
             (self._sz_measure() * self.delta_sigma_of_mass(rs,
                                                            self.mus,
                                                            self.concentrations,
-                                                           units=units)),
-            kwargs={'x':self.mu_szs,
-                    'axis':-1},
-            input_core_dims=[['mu_sz']]
+                                                           units=units)
+             ),
+            'mu_sz',
         )
 
-        mu_integral = xa.apply_ufunc(
-            integrate.simps,
-            self.dnumber_dlogmass() * mu_sz_integral,
-            kwargs={'x':self.mus,
-                    'axis':-1},
-            input_core_dims=[['mu']]
-        )
+        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu')
 
-        z_integral = xa.apply_ufunc(
-            integrate.simps,
-            self.lensing_weights() * self.comoving_vol() * mu_integral,
-            kwargs={'x':self.zs,
-                    'axis':-1},
-            input_core_dims=[['redshift']]
-        )
+        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift')
 
         return z_integral/self.number_sz()
 
     def weak_lensing_avg_mass(self):
-        normalization = 1/self.number_sz()
-
         mu_wl = self.mu_wl(self.mus)
         mass_wl = self.mass(mu_wl)
 
-        mu_sz_integral = xa.apply_ufunc(
-            integrate.simps,
-            self._sz_measure() * mass_wl,
-            kwargs={'x':self.mu_szs,
-                      'axis':-1},
-            input_core_dims=[['mu_sz']]
-        )
+        mu_sz_integral = _trapz(self._sz_measure() * mass_wl, 'mu_sz')
 
-        mu_integral = xa.apply_ufunc(
-            integrate.simps,
-            self.dnumber_dlogmass() * mu_sz_integral,
-            kwargs={'x':self.mus,
-                    'axis':-1},
-            input_core_dims=[['mu']]
-        )
+        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu')
 
-        z_integral = xa.apply_ufunc(
-            integrate.simps,
-            self.lensing_weights() * self.comoving_vol() * mu_integral,
-            kwargs={'x':self.zs,
-                    'axis':-1},
-            input_core_dims=[['redshift']]
-        )
+        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift')
 
         return z_integral/self.number_sz()
