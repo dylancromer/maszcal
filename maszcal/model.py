@@ -18,12 +18,19 @@ from maszcal.likelihood import GaussianLikelihood
 
 
 
-def _trapz(xarr, dim):
+def _trapz(xarr, dim, dx=None):
     other_dims = np.array(xarr.dims)
     assert dim in other_dims
     other_dims = tuple(other_dims[other_dims != dim])
     new_dims = (dim,) + other_dims
     xarr = xarr.transpose(*new_dims)
+
+    if dx is None:
+        dx = xa.DataArray(np.ones(xarr.shape[0]), dims=(dim))
+    else:
+        dx = xa.DataArray(dx, dims=(dim))
+
+    xarr = xarr * dx
 
     return xa.DataArray(
         0.5*(xarr.values[0, ...] + 2*xarr.values[1:-1,...].sum(axis=0) + xarr.values[-1,...]),
@@ -191,15 +198,19 @@ class StackedModel():
                 * self.prob_musz_given_mu(self.mu_szs, self.mus))
 
     def number_sz(self):
-        mu_sz_integral = _trapz(self._sz_measure(), 'mu_sz')
+        dmu_szs = np.gradient(self.mu_szs)
+        mu_sz_integral = _trapz(self._sz_measure(), 'mu_sz', dmu_szs)
 
-        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu')
+        dmus = np.gradient(self.mus)
+        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu', dmus)
 
-        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift')
+        dzs = np.gradient(self.zs.values)
+        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift', dzs)
 
         return z_integral
 
     def delta_sigma(self, rs, units=u.Msun/u.pc**2):
+        dmu_szs = np.gradient(self.mu_szs)
         mu_sz_integral = _trapz(
             (self._sz_measure() * self.delta_sigma_of_mass(rs,
                                                            self.mus,
@@ -207,11 +218,14 @@ class StackedModel():
                                                            units=units)
              ),
             'mu_sz',
+            dmu_szs,
         )
 
-        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu')
+        dmus = np.gradient(self.mus)
+        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu', dmus)
 
-        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift')
+        dzs = np.gradient(self.zs.values)
+        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift', dzs)
 
         return z_integral/self.number_sz()
 
@@ -219,10 +233,13 @@ class StackedModel():
         mu_wl = self.mu_wl(self.mus)
         mass_wl = self.mass(mu_wl)
 
-        mu_sz_integral = _trapz(self._sz_measure() * mass_wl, 'mu_sz')
+        dmu_szs = np.gradient(self.mu_szs)
+        mu_sz_integral = _trapz(self._sz_measure() * mass_wl, 'mu_sz', dmu_szs)
 
-        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu')
+        dmus = np.gradient(self.mus)
+        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu', dmus)
 
-        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift')
+        dzs = np.gradient(self.zs.values)
+        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift', dzs)
 
         return z_integral/self.number_sz()
