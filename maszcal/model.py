@@ -209,7 +209,7 @@ class StackedModel():
 
         return z_integral
 
-    def delta_sigma(self, rs, units=u.Msun/u.pc**2):
+    def delta_sigma(self, rs, units=u.Msun/u.Mpc**2):
         dmu_szs = np.gradient(self.mu_szs)
         mu_sz_integral = _trapz(
             (self._sz_measure() * self.delta_sigma_of_mass(rs,
