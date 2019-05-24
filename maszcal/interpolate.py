@@ -29,11 +29,13 @@ class GaussInterpolator:
         self.model.optimize()
 
     def interp(self, coords):
-        X = cartesian_prod(*coords)
+        x = cartesian_prod(*coords)
 
         try:
-            Y,_ = self.model.predict(X)
-            return Y.reshape(*(coord.size for coord in coords))
+            y,y_err = self.model.predict(x)
+            y = y.reshape(*(coord.size for coord in coords))
+            y_err = y_err.reshape(*(coord.size for coord in coords))
+            return y,y_err
 
         except AttributeError as err:
             raise AttributeError(str(err) + "\nGaussian process interpolation not yet optimized.\

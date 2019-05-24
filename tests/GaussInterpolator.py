@@ -32,6 +32,6 @@ def test_interp_over_constant_input():
 
     test_coords = (test_xs, test_ys, test_zs)
 
-    interpolated_grid = gauss_interpolator.interp(test_coords)
+    interpolated_grid,_ = gauss_interpolator.interp(test_coords)
 
     assert np.allclose(interpolated_grid, np.ones((10, 10, 10)))
