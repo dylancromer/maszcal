@@ -21,3 +21,5 @@ def test_lensing_emulator():
 
     assert values_subgrid.shape == (10, 10)
     assert np.all(err > 0)
+
+#TODO: want to have automatic error checks for evaluating the kernel choice, priors on the GP params, etc
