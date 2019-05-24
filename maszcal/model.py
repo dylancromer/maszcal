@@ -13,7 +13,6 @@ from maszcal.tinker import dn_dlogM
 from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
 from maszcal.nfw import SimpleDeltaSigma
-from maszcal.likelihood import GaussianLikelihood
 
 
 
@@ -58,8 +57,6 @@ class StackedModel():
         self.a_wl = 0
         self.b_wl = 1
         self.concentrations = xa.DataArray(np.array([2]), dims=('concentration'))
-
-        self.likelihood = GaussianLikelihood()
 
         ### SPATIAL QUANTITIES AND MATTER POWER ###
         self.zs =  xa.DataArray(np.linspace(0, 2, 20), dims=('redshift'))
