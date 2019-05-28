@@ -11,7 +11,7 @@ def test_lensing_emulator():
     grid = np.ones((10, 10))
 
     emulator = LensingEmulator()
-    emulator.emulate(coords, grid)
+    emulator.emulate(coords, grid=grid)
 
     xs_subgrid = np.linspace(0, 0.5, 10)
     ys_suggrid = np.linspace(0.5, 1, 10)
@@ -22,4 +22,6 @@ def test_lensing_emulator():
     assert values_subgrid.shape == (10, 10)
     assert np.all(err > 0)
 
-#TODO: want to have automatic error checks for evaluating the kernel choice, priors on the GP params, etc
+
+def test_error_check_emulator():
+    pass
