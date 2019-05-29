@@ -82,8 +82,18 @@ class StackedModel():
         self.mu_szs = xa.DataArray(np.linspace(12, 16, 20), dims=('mu_sz'))
         self.mus = xa.DataArray(np.linspace(12, 16, 20), dims=('mu'))
 
-        ### MISC CONSTANTS ###
+        ### MISC ###
         self.constants = Constants()
+        self._comoving_radii = True
+
+    @property
+    def comoving_radii(self):
+        return self._comoving_radii
+
+    @comoving_radii.setter
+    def comoving_radii(self, rs_are_comoving):
+        self._comoving_radii = rs_are_comoving
+        self.init_onfw()
 
     def calc_power_spect(self):
         params = get_camb_params(self.cosmo_params, self.max_k, self.zs)
@@ -95,7 +105,7 @@ class StackedModel():
                                                                          npoints = self.number_ks)
 
     def init_onfw(self):
-        self.onfw_model = NFWModel(self.astropy_cosmology)
+        self.onfw_model = NFWModel(self.astropy_cosmology, comoving=self.comoving_radii)
 
     def mu_sz(self, mus):
         return self.b_sz*mus + self.a_sz
@@ -173,7 +183,7 @@ class StackedModel():
             overdensity,
             self.ks,
             power_spect,
-            'comoving'
+            comoving=True
         )
 
         return xa.DataArray(dn_dlogms.T, dims=('redshift', 'mu'))
