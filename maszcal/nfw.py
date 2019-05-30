@@ -11,7 +11,6 @@ class SimpleDeltaSigma:
 
         self.rhocrit_of_z = rhocrit_of_z_func
 
-
     def rdel(self, mass, z, delta, mode):
         if mode == 'seljak':
             ans = (3 * mass / (4 * np.pi * delta * self.rhocrit_of_z(z)))**(1.0/3.0)
@@ -24,7 +23,6 @@ class SimpleDeltaSigma:
             raise ValueError('mode must be seljak or duffy')
 
         return ans
-
 
     def concentration(self, virial_mass, z, mode):
         if mode == 'seljak': #Seljak 2000 with hs in units
@@ -40,7 +38,6 @@ class SimpleDeltaSigma:
             raise ValueError('mode must be seljak, duffy, or duffy_alt')
 
         return ans
-
 
     def mass_concentration_del_2_del_mean200(self, mdel, delta, z, EPS):
         mass = 2 * mdel
@@ -59,15 +56,12 @@ class SimpleDeltaSigma:
 
         return ans
 
-
     def rho_s(self, c_delta, delta,z):
         return c_delta**3 * cosmo_params['rhom_0mpc'] * delta / 3. / (np.log(1.+c_delta)-c_delta/(1.+c_delta))
-
 
     def m_x(self, x):
         ans = np.log(1 + x) - x/(1+x)
         return ans
-
 
     def delta_sigma_of_mass(self, r, m_delta, delta):
         ERRTOL = 1e-6

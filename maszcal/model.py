@@ -13,17 +13,23 @@ from maszcal.tinker import dn_dlogM
 from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
 from maszcal.nfw import SimpleDeltaSigma
-from maszcal.likelihood import GaussianLikelihood
 
 
 
 
-def _trapz(xarr, dim):
+def _trapz(xarr, dim, dx=None):
     other_dims = np.array(xarr.dims)
     assert dim in other_dims
     other_dims = tuple(other_dims[other_dims != dim])
     new_dims = (dim,) + other_dims
     xarr = xarr.transpose(*new_dims)
+
+    if dx is None:
+        dx = xa.DataArray(np.ones(xarr.shape[0]), dims=(dim))
+    else:
+        dx = xa.DataArray(dx, dims=(dim))
+
+    xarr = xarr * dx
 
     return xa.DataArray(
         0.5*(xarr.values[0, ...] + 2*xarr.values[1:-1,...].sum(axis=0) + xarr.values[-1,...]),
@@ -52,8 +58,6 @@ class StackedModel():
         self.b_wl = 1
         self.concentrations = xa.DataArray(np.array([2]), dims=('concentration'))
 
-        self.likelihood = GaussianLikelihood()
-
         ### SPATIAL QUANTITIES AND MATTER POWER ###
         self.zs =  xa.DataArray(np.linspace(0, 2, 20), dims=('redshift'))
         self.max_k = 10
@@ -78,8 +82,18 @@ class StackedModel():
         self.mu_szs = xa.DataArray(np.linspace(12, 16, 20), dims=('mu_sz'))
         self.mus = xa.DataArray(np.linspace(12, 16, 20), dims=('mu'))
 
-        ### MISC CONSTANTS ###
+        ### MISC ###
         self.constants = Constants()
+        self._comoving_radii = True
+
+    @property
+    def comoving_radii(self):
+        return self._comoving_radii
+
+    @comoving_radii.setter
+    def comoving_radii(self, rs_are_comoving):
+        self._comoving_radii = rs_are_comoving
+        self.init_onfw()
 
     def calc_power_spect(self):
         params = get_camb_params(self.cosmo_params, self.max_k, self.zs)
@@ -91,7 +105,7 @@ class StackedModel():
                                                                          npoints = self.number_ks)
 
     def init_onfw(self):
-        self.onfw_model = NFWModel(self.astropy_cosmology)
+        self.onfw_model = NFWModel(self.astropy_cosmology, comoving=self.comoving_radii)
 
     def mu_sz(self, mus):
         return self.b_sz*mus + self.a_sz
@@ -169,7 +183,7 @@ class StackedModel():
             overdensity,
             self.ks,
             power_spect,
-            'comoving'
+            comoving=True
         )
 
         return xa.DataArray(dn_dlogms.T, dims=('redshift', 'mu'))
@@ -191,15 +205,19 @@ class StackedModel():
                 * self.prob_musz_given_mu(self.mu_szs, self.mus))
 
     def number_sz(self):
-        mu_sz_integral = _trapz(self._sz_measure(), 'mu_sz')
+        dmu_szs = np.gradient(self.mu_szs)
+        mu_sz_integral = _trapz(self._sz_measure(), 'mu_sz', dmu_szs)
 
-        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu')
+        dmus = np.gradient(self.mus)
+        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu', dmus)
 
-        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift')
+        dzs = np.gradient(self.zs.values)
+        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift', dzs)
 
         return z_integral
 
-    def delta_sigma(self, rs, units=u.Msun/u.pc**2):
+    def delta_sigma(self, rs, units=u.Msun/u.Mpc**2):
+        dmu_szs = np.gradient(self.mu_szs)
         mu_sz_integral = _trapz(
             (self._sz_measure() * self.delta_sigma_of_mass(rs,
                                                            self.mus,
@@ -207,11 +225,14 @@ class StackedModel():
                                                            units=units)
              ),
             'mu_sz',
+            dmu_szs,
         )
 
-        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu')
+        dmus = np.gradient(self.mus)
+        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu', dmus)
 
-        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift')
+        dzs = np.gradient(self.zs.values)
+        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift', dzs)
 
         return z_integral/self.number_sz()
 
@@ -219,10 +240,13 @@ class StackedModel():
         mu_wl = self.mu_wl(self.mus)
         mass_wl = self.mass(mu_wl)
 
-        mu_sz_integral = _trapz(self._sz_measure() * mass_wl, 'mu_sz')
+        dmu_szs = np.gradient(self.mu_szs)
+        mu_sz_integral = _trapz(self._sz_measure() * mass_wl, 'mu_sz', dmu_szs)
 
-        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu')
+        dmus = np.gradient(self.mus)
+        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu', dmus)
 
-        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift')
+        dzs = np.gradient(self.zs.values)
+        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift', dzs)
 
         return z_integral/self.number_sz()
