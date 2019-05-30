@@ -1,5 +1,4 @@
 import numpy as np
-import xarray as xa
 import GPy as gpy
 from maszcal.interp_utils import cartesian_prod, make_flat
 

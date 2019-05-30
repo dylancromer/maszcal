@@ -2,7 +2,6 @@
 import numpy as np
 import pandas as pd
 import scipy.integrate as integrate
-from numba import jit
 ### MID LEVEL DEPENDCIES ###
 import camb
 from astropy import units as u
