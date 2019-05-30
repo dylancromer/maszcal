@@ -1,5 +1,4 @@
 import numpy as np
-import xarray as xa
 import scipy.integrate
 import scipy.interpolate
 import os
@@ -184,27 +183,29 @@ class NFWModel(object):
             if self.comoving:
                 return dens/(1.+z)**3
             else:
-                return dens
+                return dens*np.ones(z.size)
         else:
             dens = self.cosmology.Om0*self.cosmology.critical_density0
             dens = dens.to(u.Msun/u.Mpc**3).value
             if self.comoving:
-                return dens
+                return dens*np.ones(z.size)
             else:
                 return dens*(1.+z)**3
 
     def scale_radius(self, M, c, z):
         """ Return the scale radius in comoving Mpc. """
         #M = M * u.Msun.to(u.g)
-        rs = self._rmod/c*(M/self.reference_density(z))**0.33333333
+        rs = (self._rmod
+              / c[None, None, :]
+              * (M[:, None, None]/self.reference_density(z)[None, :, None])**0.33333333)
         return rs
 
     def nfw_norm(self, M, c, z):
         """ Return the normalization for delta sigma and sigma. """
         #M = M * u.Msun.to(u.g)
-        deltac=self.delta/3.*c*c*c/(np.log(1.+c)-c/(1.+c))
+        deltac = self.delta/3. * c**3/(np.log(1.+c) - c/(1.+c))
         rs = self.scale_radius(M, c, z)
-        return rs*deltac*self.reference_density(z)
+        return rs*deltac[None, None, :]*self.reference_density(z)[None, :, None]
 
     def deltasigma_theory(self, r, M, c, z):
         """Return an NFW delta sigma from theory.
@@ -240,19 +241,17 @@ class NFWModel(object):
             ``(n1, n2, ..., nn, len(r))``.
         """
         rs = self.scale_radius(M, c, z)
-        x = r/rs
+        x = r[None, None, :, None]/rs[:, :, None, :]
 
         norm = self.nfw_norm(M, c, z)
         return_vals = np.zeros_like(x)
-        ltmask = x.values < 1
-        return_vals[ltmask] = self._deltasigmalt(x.values[ltmask])
-        gtmask = x.values > 1
-        return_vals[gtmask] = self._deltasigmagt(x.values[gtmask])
-        eqmask = x.values == 1
-        return_vals[eqmask] = self._deltasigmaeq(x.values[eqmask])
-        return_vals = xa.DataArray(return_vals, dims=x.dims)
-        return_vals = norm*return_vals
-        return return_vals
+        ltmask = x < 1
+        return_vals[ltmask] = self._deltasigmalt(x[ltmask])
+        gtmask = x > 1
+        return_vals[gtmask] = self._deltasigmagt(x[gtmask])
+        eqmask = x == 1
+        return_vals[eqmask] = self._deltasigmaeq(x[eqmask])
+        return norm[:, :, None, :]*return_vals
 
     @reshape
     def sigma_theory(self, r, M, c, z):

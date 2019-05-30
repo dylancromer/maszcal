@@ -1,8 +1,8 @@
 ### HIGH LEVEL DEPENDENCIES ###
 import numpy as np
-import xarray as xa
 import pandas as pd
 import scipy.integrate as integrate
+from numba import jit
 ### MID LEVEL DEPENDCIES ###
 import camb
 from astropy import units as u
@@ -17,24 +17,22 @@ from maszcal.nfw import SimpleDeltaSigma
 
 
 
-def _trapz(xarr, dim, dx=None):
-    other_dims = np.array(xarr.dims)
-    assert dim in other_dims
-    other_dims = tuple(other_dims[other_dims != dim])
-    new_dims = (dim,) + other_dims
-    xarr = xarr.transpose(*new_dims)
+def atleast_kd(array, k):
+    array = np.asarray(array)
+    new_shape = array.shape + (1,) * (k - array.ndim)
+    return array.reshape(new_shape)
+
+
+def _trapz(arr, axis, dx=None):
+    arr = np.moveaxis(arr, axis, 0)
 
     if dx is None:
-        dx = xa.DataArray(np.ones(xarr.shape[0]), dims=(dim))
-    else:
-        dx = xa.DataArray(dx, dims=(dim))
+        dx = np.ones(arr.shape[0])
+    dx = atleast_kd(dx, arr.ndim)
 
-    xarr = xarr * dx
+    arr = dx*arr
 
-    return xa.DataArray(
-        0.5*(xarr.values[0, ...] + 2*xarr.values[1:-1,...].sum(axis=0) + xarr.values[-1,...]),
-        dims=other_dims,
-    )
+    return 0.5*(arr[0, ...] + 2*arr[1:-1,...].sum(axis=0) + arr[-1,...])
 
 
 class DefaultCosmology():
@@ -46,20 +44,22 @@ class NoPowerSpectrum():
 
 
 class StackedModel():
+    """
+    Canonical variable order:
+    mu_sz, mu, z, r, c, a_sz
+    """
     def __init__(self,
                  cosmo_params=DefaultCosmology(),
                  power_spectrum=NoPowerSpectrum()):
 
         ### FITTING PARAMETERS AND LIKELIHOOD ###
         self.sigma_muszmu = 0.2
-        self.a_sz = 2
+        self.a_sz = np.array([2])
         self.b_sz = 1
-        self.a_wl = 0
-        self.b_wl = 1
-        self.concentrations = xa.DataArray(np.array([2]), dims=('concentration'))
+        self.concentrations = np.array([2])
 
         ### SPATIAL QUANTITIES AND MATTER POWER ###
-        self.zs =  xa.DataArray(np.linspace(0, 2, 20), dims=('redshift'))
+        self.zs =  np.linspace(0, 2, 20)
         self.max_k = 10
         self.min_k = 1e-4
         self.number_ks = 400
@@ -79,8 +79,8 @@ class StackedModel():
 
 
         ### CLUSTER MASSES AND RELATED ###
-        self.mu_szs = xa.DataArray(np.linspace(12, 16, 20), dims=('mu_sz'))
-        self.mus = xa.DataArray(np.linspace(12, 16, 20), dims=('mu'))
+        self.mu_szs = np.linspace(12, 16, 20)
+        self.mus = np.linspace(12, 16, 20)
 
         ### MISC ###
         self.constants = Constants()
@@ -110,13 +110,13 @@ class StackedModel():
     def mu_sz(self, mus):
         return self.b_sz*mus + self.a_sz
 
-    def mu_wl(self, mus):
-        return self.b_wl*mus + self.a_wl
-
     def prob_musz_given_mu(self, mu_szs, mus):
+        """
+        SHAPE mu_sz, mu, a_sz
+        """
         pref = 1/(np.sqrt(2*np.pi) * self.sigma_muszmu)
 
-        diff = (mu_szs - mus) - self.a_sz
+        diff = (mu_szs[:, None] - mus[None, :])[..., None] - self.a_sz[None, None, :]
 
         exps = np.exp(-diff**2 / (2*(self.sigma_muszmu)**2))
 
@@ -129,44 +129,47 @@ class StackedModel():
         return 10**mus
 
     def selection_func(self, mu_szs):
-        sel_func = np.ones((self.zs.size, mu_szs.size))
+        """
+        SHAPE mu_sz, z
+        """
+        sel_func = np.ones((mu_szs.size, self.zs.size))
 
         low_mass_indices = np.where(mu_szs < np.log10(3e14))
         sel_func[:, low_mass_indices] = 0
 
-        sel_func = xa.DataArray(sel_func, dims=('redshift', 'mu_sz'))
-
         return sel_func
 
     def delta_sigma_of_mass_alt(self, rs, mus):
+        #TODO: Update shape to conform to canonical order
         rhocrit_of_z_func = lambda z: self.cosmo_params.rho_crit * self.astropy_cosmology.efunc(z)**2
         simple_delta_sig = SimpleDeltaSigma(self.cosmo_params, self.zs, rhocrit_of_z_func)
 
         return simple_delta_sig.delta_sigma_of_mass(rs, mus, 200) #delta=200
 
     def delta_sigma_of_mass(self, rs, mus, concentrations=None, units=u.Msun/u.pc**2):
+        """
+        SHAPE mu, z, r, c
+        """
         masses = self.mass(mus)
 
         if concentrations is None:
             concentrations = self.concentrations
 
-        rs = xa.DataArray(rs, dims=('radius'))
-        masses = xa.DataArray(masses, dims=('mu'))
-        concentrations = xa.DataArray(concentrations, dims=('concentration'))
-        zs = xa.DataArray(self.zs, dims=('redshift'))
-
         try:
-            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, zs)
+            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.zs)
             result = result * (u.Msun/u.Mpc**2).to(units)
             return result
         except AttributeError:
             self.init_onfw()
-            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, zs)
+            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.zs)
             result = result * (u.Msun/u.Mpc**2).to(units)
             return result
 
     def dnumber_dlogmass(self):
-        masses = self.mass(self.mus).values
+        """
+        SHAPE mu, z
+        """
+        masses = self.mass(self.mus)
         overdensity = 200
         rho_matter = self.cosmo_params.rho_crit * self.cosmo_params.omega_matter / self.cosmo_params.h**2
 
@@ -178,7 +181,7 @@ class StackedModel():
 
         dn_dlogms = dn_dlogM(
             masses,
-            self.zs.values,
+            self.zs,
             rho_matter,
             overdensity,
             self.ks,
@@ -186,67 +189,109 @@ class StackedModel():
             comoving=True
         )
 
-        return xa.DataArray(dn_dlogms.T, dims=('redshift', 'mu'))
+        return dn_dlogms.T
 
     def lensing_weights(self):
-        return xa.DataArray(np.ones(self.zs.shape), dims=('redshift'))
+        """
+        SHAPE z
+        """
+        return np.ones(self.zs.shape)
 
     def comoving_vol(self):
+        """
+        SHAPE z
+        """
         c = self.constants.speed_of_light
         comov_dist = self.astropy_cosmology.comoving_distance(self.zs)
         hubble_z = self.astropy_cosmology.H(self.zs)
 
-        return xa.DataArray(c * comov_dist**2 / hubble_z, dims=('redshift'))
+        return c * comov_dist**2 / hubble_z
 
     def _sz_measure(self):
-        #TODO: maybe make this an @property and save the result???
-        return (self.mass_sz(self.mu_szs)
-                * self.selection_func(self.mu_szs)
-                * self.prob_musz_given_mu(self.mu_szs, self.mus))
+        """
+        SHAPE mu_sz, mu, z, a_sz
+        """
+        return (self.mass_sz(self.mu_szs)[:, None, None, None]
+                * self.selection_func(self.mu_szs)[:, None, :, None]
+                * self.prob_musz_given_mu(self.mu_szs, self.mus)[:, :, None, :])
 
     def number_sz(self):
+        """
+        SHAPE a_sz
+        """
         dmu_szs = np.gradient(self.mu_szs)
-        mu_sz_integral = _trapz(self._sz_measure(), 'mu_sz', dmu_szs)
+        mu_sz_integral = _trapz(self._sz_measure(), axis=0, dx=dmu_szs)
 
         dmus = np.gradient(self.mus)
-        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu', dmus)
+        mu_integral = _trapz(self.dnumber_dlogmass()[..., None] * mu_sz_integral, axis=0, dx=dmus)
 
-        dzs = np.gradient(self.zs.values)
-        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift', dzs)
+        dzs = np.gradient(self.zs)
+        z_integral = _trapz(
+            ((self.lensing_weights() * self.comoving_vol())[:, None]
+             * mu_integral),
+            axis=0,
+            dx=dzs
+        )
 
         return z_integral
 
     def delta_sigma(self, rs, units=u.Msun/u.Mpc**2):
+        """
+        SHAPE r, c, a_sz
+        """
         dmu_szs = np.gradient(self.mu_szs)
         mu_sz_integral = _trapz(
-            (self._sz_measure() * self.delta_sigma_of_mass(rs,
-                                                           self.mus,
-                                                           self.concentrations,
-                                                           units=units)
-             ),
-            'mu_sz',
-            dmu_szs,
+            (self._sz_measure()[:, :, :, None, None, :]
+             * self.delta_sigma_of_mass(
+                 rs,
+                 self.mus,
+                 self.concentrations,
+                 units=units
+             )[None, ..., None]),
+            axis=0,
+            dx=dmu_szs,
         )
 
         dmus = np.gradient(self.mus)
-        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu', dmus)
+        mu_integral = _trapz(
+            self.dnumber_dlogmass()[..., None, None, None] * mu_sz_integral,
+            axis=0,
+            dx=dmus
+        )
 
-        dzs = np.gradient(self.zs.values)
-        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift', dzs)
+        dzs = np.gradient(self.zs)
+        z_integral = _trapz(
+            ((self.lensing_weights() * self.comoving_vol())[:, None, None, None]
+             * mu_integral),
+            axis=0,
+            dx=dzs
+        )
 
-        return z_integral/self.number_sz()
+        return z_integral/self.number_sz()[None, None, :]
 
     def weak_lensing_avg_mass(self):
-        mu_wl = self.mu_wl(self.mus)
-        mass_wl = self.mass(mu_wl)
+        mass_wl = self.mass(self.mus)
 
         dmu_szs = np.gradient(self.mu_szs)
-        mu_sz_integral = _trapz(self._sz_measure() * mass_wl, 'mu_sz', dmu_szs)
+        mu_sz_integral = _trapz(
+            self._sz_measure() * mass_wl[None, :, None, None],
+            axis=0,
+            dx=dmu_szs
+        )
 
         dmus = np.gradient(self.mus)
-        mu_integral = _trapz(self.dnumber_dlogmass() * mu_sz_integral, 'mu', dmus)
+        mu_integral = _trapz(
+            self.dnumber_dlogmass()[..., None] * mu_sz_integral,
+            axis=0,
+            dx=dmus
+        )
 
-        dzs = np.gradient(self.zs.values)
-        z_integral = _trapz(self.lensing_weights() * self.comoving_vol() * mu_integral, 'redshift', dzs)
+        dzs = np.gradient(self.zs)
+        z_integral = _trapz(
+            ((self.lensing_weights() * self.comoving_vol())[:, None]
+             * mu_integral),
+            axis=0,
+            dx=dzs
+        )
 
-        return z_integral/self.number_sz()
+        return z_integral/self.number_sz()[None, :]
