@@ -1,4 +1,3 @@
-import xarray as xa
 import numpy as np
 import astropy.units as u
 
@@ -18,7 +17,6 @@ from maszcal.model import StackedModel
 
 stacked_model = StackedModel()
 
-
 def test_delta_sigma_of_m():
     rs = np.logspace(-1, 2, 40)
     mus = np.array([15])
@@ -29,7 +27,11 @@ def test_delta_sigma_of_m():
                                                      concentrations=cons,
                                                      units=u.Msun/(u.Mpc * u.pc))
 
-    plt.plot(rs, rs * delta_sigmas[0, 0, :]/1e6)
+
+    delta_sigmas = delta_sigmas[0,:,:,0]
+
+
+    plt.plot(rs, rs[:, None]*delta_sigmas.T/1e6)
     plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
     plt.xlabel(r'$ r $')
     plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
@@ -40,9 +42,9 @@ def test_delta_sigma_of_m():
 
 
 def test_delta_sigma_of_r():
-    rs = xa.DataArray(np.logspace(-1, 2, 40), dims=('radius'))
+    rs = np.logspace(-1, 2, 40)
 
-    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc))
+    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc))[:,0,0]
 
     plt.plot(rs, rs * delta_sigmas/1e6)
     plt.xlabel(r'$ r $')
@@ -53,7 +55,50 @@ def test_delta_sigma_of_r():
     plt.gcf().clear()
 
 
+def test_delta_sigma_of_m_nocomoving():
+    stacked_model.comoving_radii = False
+
+    rs = np.logspace(-1, 2, 40)
+    mus = np.array([15])
+    cons = np.array([2])
+
+    delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
+                                                     mus,
+                                                     concentrations=cons,
+                                                     units=u.Msun/(u.Mpc * u.pc))
+
+
+    delta_sigmas = delta_sigmas[0,:,:,0]
+
+
+    plt.plot(rs, rs[:, None]*delta_sigmas.T/1e6)
+    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
+    plt.xlabel(r'$ r $')
+    plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
+    plt.xscale('log')
+
+    plt.savefig('figs/test/delta_sigma_r_m_comoving_false.svg')
+    plt.gcf().clear()
+
+
+def test_delta_sigma_of_r_nocomoving():
+    stacked_model.comoving_radii = False
+
+    rs = np.logspace(-1, 2, 40)
+
+    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc))[:,0,0]
+
+    plt.plot(rs, rs * delta_sigmas/1e6)
+    plt.xlabel(r'$ r $')
+    plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
+    plt.xscale('log')
+
+    plt.savefig('figs/test/delta_sigma_r_comoving_false.svg')
+    plt.gcf().clear()
+
+
 def test_power_spectrum():
+    stacked_model = StackedModel()
     #Need to check plots on this one!
     stacked_model.calc_power_spect()
 
@@ -104,8 +149,8 @@ def test_tinker_mf():
                   * stacked_model.cosmo_params.omega_matter
                   / h**2)
 
-    stacked_model.mu_szs = xa.DataArray(np.linspace(10, 16, 20), dims=('mu_sz'))
-    stacked_model.mus = xa.DataArray(np.linspace(10, 16, 20), dims=('mu'))
+    stacked_model.mu_szs = np.linspace(10, 16, 20)
+    stacked_model.mus = np.linspace(10, 16, 20)
 
     z = 0
     mink = 1e-4

@@ -1,5 +1,4 @@
 import numpy as np
-import xarray as xa
 from maszcal.interpolate import GaussInterpolator
 from maszcal.model import StackedModel
 
@@ -25,9 +24,6 @@ class LensingEmulator:
         self.interpolator.process()
 
     def check_errors(self, coords):
-        if isinstance(coords, xa.DataArray):
-            coords = (c.values for c in coords)
-
         rand_coords = []
         for coord in coords:
             coord_length = coord.max() - coord.min()
