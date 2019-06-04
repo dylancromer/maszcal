@@ -12,14 +12,9 @@ from maszcal.tinker import dn_dlogM
 from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
 from maszcal.nfw import SimpleDeltaSigma
+from maszcal.mathutils import atleast_kd
 
 
-
-
-def atleast_kd(array, k):
-    array = np.asarray(array)
-    new_shape = array.shape + (1,) * (k - array.ndim)
-    return array.reshape(new_shape)
 
 
 def _trapz(arr, axis, dx=None):
@@ -53,9 +48,7 @@ class StackedModel():
 
         ### FITTING PARAMETERS AND LIKELIHOOD ###
         self.sigma_muszmu = 0.2
-        self.a_sz = np.array([2])
         self.b_sz = 1
-        self.concentrations = np.array([2])
 
         ### SPATIAL QUANTITIES AND MATTER POWER ###
         self.zs =  np.linspace(0, 2, 20)
@@ -84,6 +77,11 @@ class StackedModel():
         ### MISC ###
         self.constants = Constants()
         self._comoving_radii = True
+
+    def set_coords(self, coords):
+        self.radii = coords[0]
+        self.concentrations = coords[1]
+        self.a_sz = coords[2]
 
     @property
     def comoving_radii(self):
@@ -294,3 +292,6 @@ class StackedModel():
         )
 
         return z_integral/self.number_sz()[None, :]
+
+    def stacked_profile(self):
+        return self.delta_sigma(self.radii)
