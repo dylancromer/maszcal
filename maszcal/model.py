@@ -199,8 +199,8 @@ class StackedModel():
         SHAPE z
         """
         c = self.constants.speed_of_light
-        comov_dist = self.astropy_cosmology.comoving_distance(self.zs)
-        hubble_z = self.astropy_cosmology.H(self.zs)
+        comov_dist = self.astropy_cosmology.comoving_distance(self.zs).value
+        hubble_z = self.astropy_cosmology.H(self.zs).value
 
         return c * comov_dist**2 / hubble_z
 
