@@ -48,7 +48,9 @@ class StackedModel():
 
         ### FITTING PARAMETERS AND LIKELIHOOD ###
         self.sigma_muszmu = 0.2
+        self.a_sz = np.array([2])
         self.b_sz = 1
+        self.concentrations = np.array([2])
 
         ### SPATIAL QUANTITIES AND MATTER POWER ###
         self.zs =  np.linspace(0, 2, 20)
