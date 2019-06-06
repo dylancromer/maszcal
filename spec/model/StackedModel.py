@@ -9,7 +9,12 @@ def test_mu_sz():
 
     mus = np.linspace(1, 10)
     stacked_model.b_sz = np.linspace(-5,5)
-    stacked_model.a_sz = np.ones(1)
+
+    a_sz = np.ones(1)
+    con = None
+    radius = None
+
+    stacked_model.set_coords((radius, con, a_sz))
 
     mu_szs = stacked_model.mu_sz(mus)
 
@@ -35,7 +40,12 @@ def test_prob_musz_given_mu_not_negative():
     mus = np.random.rand(5)
     mu_szs = np.random.rand(5)
     stacked_model.b_sz = np.random.rand(1)
-    stacked_model.a_sz = np.random.rand(1)
+
+    a_sz = np.random.rand(1)
+    con = 2*np.ones(1)
+    radius = None
+
+    stacked_model.set_coords((radius, con, a_sz))
 
     prob_sz = stacked_model.prob_musz_given_mu(mu_szs, mus)
 
@@ -48,7 +58,12 @@ def test_prob_musz_given_mu():
     mus = np.linspace(2, 3, num=5)
     mu_szs = np.linspace(2, 3, num=5)
     stacked_model.b_sz = np.linspace(-5, 5, num=5)
-    stacked_model.a_sz = np.array([1])
+
+    a_sz = np.ones(1)
+    con = 2*np.ones(1)
+    radius = None
+
+    stacked_model.set_coords((radius, con, a_sz))
 
     prob_sz = stacked_model.prob_musz_given_mu(mu_szs, mus)
 
@@ -82,7 +97,13 @@ def test_delta_sigma_of_r_divby_nsz():
         (stacked_model.mus.size, stacked_model.zs.size)
     )
 
+    a_sz = np.ones(1)
+    con = 2*np.ones(1)
     rs = np.logspace(-1, 1, 40)
+
+    stacked_model.set_coords((rs, con, a_sz))
+
+
     stacked_model.delta_sigma_of_mass = lambda rs,mus,cons,units: np.ones(
         (stacked_model.mus.size, zs.size, rs.size, stacked_model.concentrations.size)
     )
@@ -101,11 +122,15 @@ def test_weak_lensing_avg_mass():
     stacked_model.mus = np.linspace(12, 16, 20)
     stacked_model.zs = np.linspace(0, 2, 8)
 
+    a_sz = 2*np.ones(1)
+    con = 2*np.ones(1)
+    rs = np.logspace(-1, 1, 40)
+    stacked_model.set_coords((rs, con, a_sz))
+
     stacked_model.dnumber_dlogmass = lambda : np.ones(
         (stacked_model.mus.size, stacked_model.zs.size)
     )
 
-    rs = np.logspace(-1, 1, 40)
     stacked_model.delta_sigma_of_mass = lambda rs,mus,cons: np.ones(
         (stacked_model.mus.size, rs.size)
     )

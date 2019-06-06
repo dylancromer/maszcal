@@ -12,28 +12,12 @@ from maszcal.tinker import dn_dlogM
 from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
 from maszcal.nfw import SimpleDeltaSigma
-from maszcal.mathutils import atleast_kd
+from maszcal.mathutils import atleast_kd, _trapz
 
 
-
-
-def _trapz(arr, axis, dx=None):
-    arr = np.moveaxis(arr, axis, 0)
-
-    if dx is None:
-        dx = np.ones(arr.shape[0])
-    dx = atleast_kd(dx, arr.ndim)
-
-    arr = dx*arr
-
-    return 0.5*(arr[0, ...] + 2*arr[1:-1,...].sum(axis=0) + arr[-1,...])
 
 
 class DefaultCosmology():
-    pass
-
-
-class NoPowerSpectrum():
     pass
 
 
@@ -42,26 +26,20 @@ class StackedModel():
     Canonical variable order:
     mu_sz, mu, z, r, c, a_sz
     """
-    def __init__(self,
-                 cosmo_params=DefaultCosmology(),
-                 power_spectrum=NoPowerSpectrum()):
+    def __init__(
+            self,
+            cosmo_params=DefaultCosmology()
+    ):
 
         ### FITTING PARAMETERS AND LIKELIHOOD ###
         self.sigma_muszmu = 0.2
-        self.a_sz = np.array([2])
         self.b_sz = 1
-        self.concentrations = np.array([2])
 
         ### SPATIAL QUANTITIES AND MATTER POWER ###
         self.zs =  np.linspace(0, 2, 20)
         self.max_k = 10
         self.min_k = 1e-4
         self.number_ks = 400
-
-        if isinstance(power_spectrum, NoPowerSpectrum):
-            pass
-        else:
-            ks, power_spect = power_spectrum
 
         ### COSMOLOGICAL PARAMETERS ###
         if isinstance(cosmo_params, DefaultCosmology):
