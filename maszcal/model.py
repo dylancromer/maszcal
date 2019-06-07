@@ -116,14 +116,51 @@ class StackedModel():
 
         return sel_func
 
-    def delta_sigma_of_mass_alt(self, rs, mus):
-        #TODO: Update shape to conform to canonical order
-        rhocrit_of_z_func = lambda z: self.cosmo_params.rho_crit * self.astropy_cosmology.efunc(z)**2
-        simple_delta_sig = SimpleDeltaSigma(self.cosmo_params, self.zs, rhocrit_of_z_func)
+    def sigma_of_mass(self, rs, mus, concentrations, units=u.Msun/u.pc**2):
+        """
+        SHAPE mu, z, r, c
+        """
+        masses = self.mass(mus)
 
-        return simple_delta_sig.delta_sigma_of_mass(rs, mus, 200) #delta=200
+        try:
+            result = self.onfw_model.sigma_theory(rs, masses, concentrations, self.zs)
+            result = result * (u.Msun/u.Mpc**2).to(units)
+            return result
+        except AttributeError:
+            self.init_onfw()
+            result = self.onfw_model.sigma_theory(rs, masses, concentrations, self.zs)
+            result = result * (u.Msun/u.Mpc**2).to(units)
+            return result
 
     def delta_sigma_of_mass(self, rs, mus, concentrations=None, units=u.Msun/u.pc**2):
+        """
+        SHAPE mu, z, r, c
+        """
+        sigmas = self.sigma_of_mass(rs, mus, concentrations, units)
+
+        INNER_LEN = 20
+        inner_rs = np.logspace(np.log10(rs[0]/1e2), np.log10(rs[0]), INNER_LEN)
+
+        inner_sigmas = self.sigma_of_mass(inner_rs, mus, concentrations, units)
+        extended_sigmas = np.concatenate((inner_sigmas, sigmas), axis=2)
+
+        extended_rs = np.concatenate((inner_rs, rs))
+        #drs = np.gradient(extended_rs)
+
+        sigmas_inside_r = integrate.cumtrapz(
+            extended_sigmas * extended_rs[None, None, :, None],
+            extended_rs,
+            axis=2,
+            initial=0
+        ) / integrate.cumtrapz(
+            extended_rs[None, None, :, None],
+            extended_rs,
+            axis=2,
+            initial=0
+        )
+        return sigmas_inside_r[:, :, INNER_LEN:, :] - sigmas
+
+    def delta_sigma_of_mass_nfw(self, rs, mus, concentrations=None, units=u.Msun/u.pc**2):
         """
         SHAPE mu, z, r, c
         """

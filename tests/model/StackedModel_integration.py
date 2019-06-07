@@ -17,6 +17,29 @@ from maszcal.model import StackedModel
 
 stacked_model = StackedModel()
 
+
+def test_sigma_of_m():
+    rs = np.logspace(-1, 2, 40)
+    mus = np.array([15])
+    cons = np.array([2])
+
+    sigmas = stacked_model.delta_sigma_of_mass(rs,
+                                               mus,
+                                               concentrations=cons,
+                                               units=u.Msun/(u.Mpc * u.pc))
+
+    sigmas = sigmas[0,:,:,0]
+
+    plt.plot(rs, rs[:, None]*sigmas.T/1e6)
+    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
+    plt.xlabel(r'$ r $')
+    plt.ylabel(r'$ r \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
+    plt.xscale('log')
+
+    plt.savefig('figs/test/sigma_r_m.svg')
+    plt.gcf().clear()
+
+
 def test_delta_sigma_of_m():
     rs = np.logspace(-1, 2, 40)
     mus = np.array([15])
@@ -26,7 +49,6 @@ def test_delta_sigma_of_m():
                                                      mus,
                                                      concentrations=cons,
                                                      units=u.Msun/(u.Mpc * u.pc))
-
 
     delta_sigmas = delta_sigmas[0,:,:,0]
 
@@ -41,8 +63,50 @@ def test_delta_sigma_of_m():
     plt.gcf().clear()
 
 
+def test_delta_sigma_of_m_from_sigma():
+    rs = np.logspace(-1, 2, 40)
+    mus = np.array([15])
+    cons = np.array([2])
+
+    delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
+                                                     mus,
+                                                     concentrations=cons,
+                                                     units=u.Msun/(u.Mpc * u.pc))
+
+    delta_sigmas_check = stacked_model.delta_sigma_of_mass_nfw(rs,
+                                                               mus,
+                                                               concentrations=cons,
+                                                               units=u.Msun/(u.Mpc * u.pc))[0,0,:,0]
+
+    delta_sigmas = delta_sigmas[0,0,:,0]
+
+    plt.plot(rs, rs*delta_sigmas/1e6, label=r'from $\Sigma$')
+    plt.plot(rs, rs*delta_sigmas_check/1e6, label=r'NFW $\Delta\Sigma$')
+    plt.legend(loc='best')
+    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
+    plt.xlabel(r'$ r $')
+    plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
+    plt.xscale('log')
+
+    plt.savefig('figs/test/delta_sigma_r_m_from_sigma.svg')
+    plt.gcf().clear()
+
+    plt.plot(rs, delta_sigmas/delta_sigmas_check, label='ratio')
+    plt.legend(loc='best')
+    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
+    plt.xlabel(r'$ r $')
+    plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
+    plt.xscale('log')
+
+    plt.savefig('figs/test/delta_sigma_r_m_from_sigma_ratio.svg')
+    plt.gcf().clear()
+
+
 def test_delta_sigma_of_r():
     rs = np.logspace(-1, 2, 40)
+    a_sz = 2*np.ones(1)
+    con = 2*np.ones(1)
+    stacked_model.set_coords((rs, con, a_sz))
 
     delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc))[:,0,0]
 
@@ -52,6 +116,30 @@ def test_delta_sigma_of_r():
     plt.xscale('log')
 
     plt.savefig('figs/test/delta_sigma_r.svg')
+    plt.gcf().clear()
+
+
+def test_sigma_of_m_nocomoving():
+    stacked_model.comoving_radii = False
+    rs = np.logspace(-1, 2, 40)
+    mus = np.array([15])
+    cons = np.array([2])
+
+    sigmas = stacked_model.delta_sigma_of_mass(rs,
+                                               mus,
+                                               concentrations=cons,
+                                               units=u.Msun/(u.Mpc * u.pc))
+
+    sigmas = sigmas[0,:,:,0]
+
+
+    plt.plot(rs, rs[:, None]*sigmas.T/1e6)
+    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
+    plt.xlabel(r'$ r $')
+    plt.ylabel(r'$ r \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
+    plt.xscale('log')
+
+    plt.savefig('figs/test/sigma_r_m_nocomoving.svg')
     plt.gcf().clear()
 
 
@@ -85,6 +173,9 @@ def test_delta_sigma_of_r_nocomoving():
     stacked_model.comoving_radii = False
 
     rs = np.logspace(-1, 2, 40)
+    a_sz = 2*np.ones(1)
+    con = 2*np.ones(1)
+    stacked_model.set_coords((rs, con, a_sz))
 
     delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc))[:,0,0]
 

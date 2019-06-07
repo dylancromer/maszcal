@@ -251,9 +251,8 @@ class NFWModel(object):
         return_vals[gtmask] = self._deltasigmagt(x[gtmask])
         eqmask = x == 1
         return_vals[eqmask] = self._deltasigmaeq(x[eqmask])
-        return norm[:, :, None, :]*return_vals
+        return norm[:, :, None, :] * return_vals
 
-    @reshape
     def sigma_theory(self, r, M, c, z):
         """Return an NFW sigma from theory.
 
@@ -285,17 +284,17 @@ class NFWModel(object):
             ``(n1, n2, ..., nn, len(r))``.
         """
         rs = self.scale_radius(M, c, z)
-        x = np.atleast_1d(r/rs)
+        x = r[None, None, :, None]/rs[:, :, None, :]
 
         norm = self.nfw_norm(M, c, z)
         return_vals = np.atleast_1d(np.zeros_like(x))
-        ltmask = x<1
+        ltmask = x < 1
         return_vals[ltmask] = self._sigmalt(x[ltmask])
-        gtmask = x>1
+        gtmask = x > 1
         return_vals[gtmask] = self._sigmagt(x[gtmask])
-        eqmask = x==1
+        eqmask = x == 1
         return_vals[eqmask] = self._sigmaeq(x[eqmask])
-        return_vals = norm*return_vals #*= doesn't propagate units
+        return_vals = norm[:, :, None, :] * return_vals #*= doesn't propagate units
         return return_vals
 
     @reshape
