@@ -132,7 +132,29 @@ class StackedModel():
             result = result * (u.Msun/u.Mpc**2).to(units)
             return result
 
-    def delta_sigma_of_mass(self, rs, mus, concentrations=None, units=u.Msun/u.pc**2):
+    def _off_sigma_of_mass(self, rs, r_offsets, mus, concentrations, units=u.Msun/u.pc**2):
+        """
+        SHAPE mu, z, r, r_offset, c
+        """
+        masses = self.mass(mus)
+
+        try:
+            result = self.onfw_model.off_sigma_theory(rs, r_offsets, masses, concentrations, self.zs)
+            result = result * (u.Msun/u.Mpc**2).to(units)
+            return result
+        except AttributeError:
+            self.init_onfw()
+            result = self.onfw_model.off_sigma_theory(rs, r_offsets, masses, concentrations, self.zs)
+            result = result * (u.Msun/u.Mpc**2).to(units)
+            return result
+
+    def misc_sigma(self, rs, mus, concentrations, cen_frac, units=u.Msun/u.pc**2):
+        offset_sigmas = self._off_sigma_of_mass(rs, r_offsets, mus, concentrations, units)
+        radial_integral = np.ones((mus.size, self.zs.size, rs.size, concentrations.size))
+        return (cen_frac * self.sigma_of_mass(rs, mus, concentrations, units)
+                + (1-cen_frac) * radial_integral)
+
+    def delta_sigma_of_mass(self, rs, mus, concentrations, units=u.Msun/u.pc**2):
         """
         SHAPE mu, z, r, c
         """
