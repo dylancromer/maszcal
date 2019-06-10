@@ -105,7 +105,7 @@ def describe_stacked_model():
         stacked_model.set_coords((rs, con, a_sz))
 
 
-        stacked_model.delta_sigma_of_mass = lambda rs,mus,cons,units: np.ones(
+        stacked_model.delta_sigma_of_mass = lambda rs,mus,cons,units,miscentered: np.ones(
             (stacked_model.mus.size, zs.size, rs.size, stacked_model.concentrations.size)
         )
 
@@ -132,7 +132,7 @@ def describe_stacked_model():
             (stacked_model.mus.size, stacked_model.zs.size)
         )
 
-        stacked_model.delta_sigma_of_mass = lambda rs,mus,cons: np.ones(
+        stacked_model.delta_sigma_of_mass = lambda rs,mus,cons,units,miscentered: np.ones(
             (stacked_model.mus.size, rs.size)
         )
 

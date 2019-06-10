@@ -178,7 +178,7 @@ class StackedModel():
         return (cen_frac * self.sigma_of_mass(rs, mus, concentrations, units)[..., None, None]
                 + (1-cen_frac) * r_offset_integral[..., None, :])
 
-    def delta_sigma_of_mass(self, rs, mus, concentrations, units=u.Msun/u.pc**2, miscentered=True):
+    def delta_sigma_of_mass(self, rs, mus, concentrations, units=u.Msun/u.pc**2, miscentered=False):
         """
         SHAPE mu, z, r, c
         """
@@ -315,7 +315,42 @@ class StackedModel():
 
         return z_integral
 
-    def delta_sigma(self, rs, units=u.Msun/u.Mpc**2):
+    def _delta_sigma_miscentered(self, rs, units):
+        """
+        SHAPE R, c, a_sz, centered_frac, miscenter_radius
+        """
+        dmu_szs = np.gradient(self.mu_szs)
+        mu_sz_integral = _trapz(
+            (self._sz_measure()[:, :, :, None, None, :, None, None]
+             * self.delta_sigma_of_mass(
+                 rs,
+                 self.mus,
+                 self.concentrations,
+                 units=units,
+                 miscentered=True,
+             )[None, ..., None, :, :]),
+            axis=0,
+            dx=dmu_szs,
+        )
+
+        dmus = np.gradient(self.mus)
+        mu_integral = _trapz(
+            self.dnumber_dlogmass()[..., None, None, None, None, None] * mu_sz_integral,
+            axis=0,
+            dx=dmus
+        )
+
+        dzs = np.gradient(self.zs)
+        z_integral = _trapz(
+            ((self.lensing_weights() * self.comoving_vol())[:, None, None, None, None, None]
+             * mu_integral),
+            axis=0,
+            dx=dzs
+        )
+
+        return z_integral/self.number_sz()[None, None, :, None, None]
+
+    def _delta_sigma(self, rs, units):
         """
         SHAPE r, c, a_sz
         """
@@ -326,7 +361,8 @@ class StackedModel():
                  rs,
                  self.mus,
                  self.concentrations,
-                 units=units
+                 units=units,
+                 miscentered=False,
              )[None, ..., None]),
             axis=0,
             dx=dmu_szs,
@@ -348,6 +384,12 @@ class StackedModel():
         )
 
         return z_integral/self.number_sz()[None, None, :]
+
+    def delta_sigma(self, rs, units=u.Msun/u.Mpc**2, miscentered=False):
+        if not miscentered:
+            return self._delta_sigma(rs, units)
+        else:
+            return self._delta_sigma_miscentered(rs, units)
 
     def weak_lensing_avg_mass(self):
         mass_wl = self.mass(self.mus)
@@ -376,5 +418,6 @@ class StackedModel():
 
         return z_integral/self.number_sz()[None, :]
 
-    def stacked_profile(self):
-        return self.delta_sigma(self.radii)
+
+    def stacked_profile(self, miscentered=False):
+            return self.delta_sigma(self.radii, miscentered=miscentered)
