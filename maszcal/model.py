@@ -132,27 +132,47 @@ class StackedModel():
             result = result * (u.Msun/u.Mpc**2).to(units)
             return result
 
-    def _off_sigma_of_mass(self, rs, r_offsets, mus, concentrations, units=u.Msun/u.pc**2):
+    def _offset_sigma_of_mass(self, rs, r_offsets, thetas, mus, concentrations, units=u.Msun/u.pc**2):
         """
-        SHAPE mu, z, r, r_offset, c
+        SHAPE mu, z, r, c, r_offset, theta
         """
         masses = self.mass(mus)
 
         try:
-            result = self.onfw_model.off_sigma_theory(rs, r_offsets, masses, concentrations, self.zs)
+            result = self.onfw_model.offset_sigma_theory(rs, r_offsets, thetas, masses, concentrations, self.zs)
             result = result * (u.Msun/u.Mpc**2).to(units)
             return result
         except AttributeError:
             self.init_onfw()
-            result = self.onfw_model.off_sigma_theory(rs, r_offsets, masses, concentrations, self.zs)
+            result = self.onfw_model.offset_sigma_theory(rs, r_offsets, thetas, masses, concentrations, self.zs)
             result = result * (u.Msun/u.Mpc**2).to(units)
             return result
 
-    def misc_sigma(self, rs, mus, concentrations, cen_frac, units=u.Msun/u.pc**2):
-        offset_sigmas = self._off_sigma_of_mass(rs, r_offsets, mus, concentrations, units)
-        radial_integral = np.ones((mus.size, self.zs.size, rs.size, concentrations.size))
-        return (cen_frac * self.sigma_of_mass(rs, mus, concentrations, units)
-                + (1-cen_frac) * radial_integral)
+    def misc_sigma(self, rs, mus, concentrations, cen_frac, r_misc, units=u.Msun/u.pc**2):
+        """
+        SHAPE mu, z, r, c, cen_frac, r_misc
+        """
+        r_offsets = np.linspace(r_misc.min()/1e3, 10*r_misc.max(), 30)
+        thetas = np.linspace(0, 2*np.pi, 10)
+
+        offset_sigmas = self._offset_sigma_of_mass(rs, r_offsets, thetas, mus, concentrations, units)
+
+        dthetas = np.gradient(thetas)
+        theta_integral = _trapz(offset_sigmas, axis=-1, dx=dthetas)/(2*np.pi)
+
+        misc_kernel = ((r_offsets[None, :]/r_misc[:, None]**2)
+                       * np.exp(-0.5*(r_offsets[None, :]/r_misc[:, None])**2))
+
+        dr_offsets = np.gradient(r_offsets)
+
+        r_offset_integral = _trapz(
+            theta_integral[..., None, :]*misc_kernel,
+            axis=-1,
+            dx=dr_offsets
+        )
+
+        return (cen_frac * self.sigma_of_mass(rs, mus, concentrations, units)[..., None, None]
+                + (1-cen_frac) * r_offset_integral[..., None, :])
 
     def delta_sigma_of_mass(self, rs, mus, concentrations, units=u.Msun/u.pc**2):
         """

@@ -40,6 +40,37 @@ def test_sigma_of_m():
     plt.gcf().clear()
 
 
+def test_misc_sigma_of_m():
+    stacked_model = StackedModel()
+
+    zs = stacked_model.zs
+
+    mus = np.array([15])
+    stacked_model.mus = mus
+    rs = np.logspace(-1, 1, 30)
+    cons = np.array([2])
+
+    frac = np.array([0.5])
+    r_misc = np.array([1e-1])
+
+    miscentered_sigmas = stacked_model.misc_sigma(rs,
+                                                  mus,
+                                                  cons,
+                                                  frac,
+                                                  r_misc,
+                                                  units=u.Msun/(u.Mpc * u.pc))[0, 0, :, 0, 0, 0]
+
+    plt.plot(rs, rs*miscentered_sigmas/1e6)
+    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
+    plt.xlabel(r'$ r $')
+    plt.ylabel(r'$ r \Sigma_{\mathrm{misc}} (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
+    plt.xscale('log')
+
+    plt.savefig('figs/test/sigma_r_m_misc.svg')
+    plt.gcf().clear()
+
+
+
 def test_delta_sigma_of_m():
     rs = np.logspace(-1, 2, 40)
     mus = np.array([15])
