@@ -70,7 +70,6 @@ def test_misc_sigma_of_m():
     plt.gcf().clear()
 
 
-
 def test_delta_sigma_of_m():
     rs = np.logspace(-1, 2, 40)
     mus = np.array([15])
@@ -102,7 +101,8 @@ def test_delta_sigma_of_m_from_sigma():
     delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
                                                      mus,
                                                      concentrations=cons,
-                                                     units=u.Msun/(u.Mpc * u.pc))
+                                                     units=u.Msun/(u.Mpc * u.pc),
+                                                     miscentered=False)
 
     delta_sigmas_check = stacked_model.delta_sigma_of_mass_nfw(rs,
                                                                mus,
@@ -130,6 +130,35 @@ def test_delta_sigma_of_m_from_sigma():
     plt.xscale('log')
 
     plt.savefig('figs/test/delta_sigma_r_m_from_sigma_ratio.svg')
+    plt.gcf().clear()
+
+
+def test_misc_delta_sigma_of_m():
+    rs = np.logspace(-1, 2, 40)
+    mus = np.array([15])
+    cons = np.array([2])
+    a_sz = np.array([0])
+    frac = np.array([0.8])
+    r_misc = np.array([1e-1])
+
+    stacked_model.set_coords((rs, cons, a_sz, frac, r_misc), miscenter=True)
+
+    delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
+                                                     mus,
+                                                     concentrations=cons,
+                                                     units=u.Msun/(u.Mpc * u.pc),
+                                                     miscentered=True)
+
+    delta_sigmas = delta_sigmas[0, 0, :, 0, 0, 0]
+
+    plt.plot(rs, rs*delta_sigmas/1e6, label=r'from $\Sigma$')
+    plt.legend(loc='best')
+    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
+    plt.xlabel(r'$ r $')
+    plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
+    plt.xscale('log')
+
+    plt.savefig('figs/test/delta_sigma_r_m_miscentered.svg')
     plt.gcf().clear()
 
 

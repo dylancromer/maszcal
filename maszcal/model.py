@@ -58,10 +58,14 @@ class StackedModel():
         self.constants = Constants()
         self._comoving_radii = True
 
-    def set_coords(self, coords):
+    def set_coords(self, coords, miscenter=False):
         self.radii = coords[0]
         self.concentrations = coords[1]
         self.a_sz = coords[2]
+
+        if miscenter:
+            self.centered_fraction = coords[3]
+            self.miscenter_radius = coords[4]
 
     @property
     def comoving_radii(self):
@@ -174,33 +178,53 @@ class StackedModel():
         return (cen_frac * self.sigma_of_mass(rs, mus, concentrations, units)[..., None, None]
                 + (1-cen_frac) * r_offset_integral[..., None, :])
 
-    def delta_sigma_of_mass(self, rs, mus, concentrations, units=u.Msun/u.pc**2):
+    def delta_sigma_of_mass(self, rs, mus, concentrations, units=u.Msun/u.pc**2, miscentered=True):
         """
         SHAPE mu, z, r, c
         """
-        sigmas = self.sigma_of_mass(rs, mus, concentrations, units)
+        if not isinstance(miscentered, bool):
+            raise ValueError("miscentered must be True or False")
+
+        if miscentered:
+            sigma_func = lambda rs, mus, cons, units: self.misc_sigma(
+                rs,
+                mus,
+                cons,
+                self.centered_fraction,
+                self.miscenter_radius,
+                units,
+            )
+        else:
+            sigma_func = self.sigma_of_mass
+
+        sigmas = sigma_func(rs, mus, concentrations, units)
 
         INNER_LEN = 20
         inner_rs = np.logspace(np.log10(rs[0]/1e2), np.log10(rs[0]), INNER_LEN)
 
-        inner_sigmas = self.sigma_of_mass(inner_rs, mus, concentrations, units)
+        inner_sigmas = sigma_func(inner_rs, mus, concentrations, units)
         extended_sigmas = np.concatenate((inner_sigmas, sigmas), axis=2)
 
         extended_rs = np.concatenate((inner_rs, rs))
-        #drs = np.gradient(extended_rs)
+
+        if miscentered:
+            extended_rs_ndim = extended_rs[None, None, :, None, None, None]
+        else:
+            extended_rs_ndim = extended_rs[None, None, :, None]
 
         sigmas_inside_r = integrate.cumtrapz(
-            extended_sigmas * extended_rs[None, None, :, None],
+            extended_sigmas * extended_rs_ndim,
             extended_rs,
             axis=2,
             initial=0
         ) / integrate.cumtrapz(
-            extended_rs[None, None, :, None],
+            extended_rs_ndim,
             extended_rs,
             axis=2,
             initial=0
         )
-        return sigmas_inside_r[:, :, INNER_LEN:, :] - sigmas
+        return sigmas_inside_r[:, :, INNER_LEN:, ...] - sigmas
+
 
     def delta_sigma_of_mass_nfw(self, rs, mus, concentrations=None, units=u.Msun/u.pc**2):
         """
