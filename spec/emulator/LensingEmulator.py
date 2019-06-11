@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from maszcal.emulator import LensingEmulator, LargeErrorWarning
+from maszcal.interpolate import SavedRbf
 
 
 
@@ -46,3 +47,29 @@ def describe_emulator():
 
             with pytest.raises(LargeErrorWarning):
                 emulator.check_errors(coords)
+
+    def describe_save_interpolation():
+
+        @pytest.fixture
+        def emulator():
+
+            saved_rbf = SavedRbf(dimension=1,
+                                 norm='euclidean',
+                                 function='multiquadric',
+                                 data=np.ones(10),
+                                 coords=np.linspace(0, 1, 10),
+                                 epsilon=1,
+                                 smoothness=0,
+                                 nodes=np.ones(10)),
+
+            lensing_emulator = LensingEmulator()
+            lensing_emulator.generate_grid = lambda coords: np.ones(tuple(c.size for c in coords))
+            return lensing_emulator
+
+        def it_creates_a_saved_file_with_the_interpolation(emulator):
+            rs = np.logspace(-1, 1, 10)
+            cons = np.linspace(2, 5, 5)
+            a_szs = np.linspace(-1, 1, 5)
+            coords = (rs, cons, a_szs)
+            emulator.emulate(coords)
+            emulator.save_interpolation()

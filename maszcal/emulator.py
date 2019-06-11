@@ -1,8 +1,10 @@
 import sys
+import json
 import numpy as np
 from maszcal.interpolate import RbfInterpolator
 from maszcal.model import StackedModel
 from maszcal.mathutils import atleast_kd
+from maszcal.ioutils import NumpyEncoder
 
 
 
@@ -78,6 +80,24 @@ class LensingEmulator:
 
         if rel_err_mean > 1e-2:
             raise LargeErrorWarning("Mean error of the interpolation exceeds 1%")
+
+    def save_interpolation(self):
+        saved_rbf = self.interpolator.get_rbf_solution()
+        self._dump_saved_rbf(saved_rbf)
+
+    def _dump_saved_rbf(self, saved_rbf):
+        rbf_dict = {
+            'norm':saved_rbf.norm,
+            'function':saved_rbf.function,
+            'data':saved_rbf.data,
+            'coords':saved_rbf.coords,
+            'epsilon':saved_rbf.epsilon,
+            'smoothness':saved_rbf.smoothness,
+            'nodes':saved_rbf.nodes,
+        }
+
+        json_dump = json.dumps(rbf_dict, cls=NumpyEncoder)
+        assert False, print(json_dump)
 
     def evaluate_on(self, coords):
         return self.interpolator.interp(coords)
