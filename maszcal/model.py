@@ -63,9 +63,11 @@ class StackedModel():
         self.concentrations = coords[1]
         self.a_sz = coords[2]
 
-        if miscenter:
+        try:
             self.centered_fraction = coords[3]
             self.miscenter_radius = coords[4]
+        except IndexError:
+            pass
 
     @property
     def comoving_radii(self):

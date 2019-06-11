@@ -141,7 +141,7 @@ def test_misc_delta_sigma_of_m():
     frac = np.array([0.8])
     r_misc = np.array([1e-1])
 
-    stacked_model.set_coords((rs, cons, a_sz, frac, r_misc), miscenter=True)
+    stacked_model.set_coords((rs, cons, a_sz, frac, r_misc))
 
     delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
                                                      mus,
@@ -176,6 +176,26 @@ def test_delta_sigma_of_r():
     plt.xscale('log')
 
     plt.savefig('figs/test/delta_sigma_r.svg')
+    plt.gcf().clear()
+
+
+def test_delta_sigma_of_r_miscentered():
+    rs = np.logspace(-1, 2, 40)
+    a_sz = 2*np.ones(1)
+    con = 2*np.ones(1)
+    frac = np.array([0.8])
+    r_misc = np.array([1e-1])
+
+    stacked_model.set_coords((rs, con, a_sz, frac, r_misc))
+
+    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc), miscentered=True)[:,0,0,0,0]
+
+    plt.plot(rs, rs * delta_sigmas/1e6)
+    plt.xlabel(r'$ r $')
+    plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
+    plt.xscale('log')
+
+    plt.savefig('figs/test/delta_sigma_r_miscentered.svg')
     plt.gcf().clear()
 
 
@@ -300,8 +320,8 @@ def test_tinker_mf():
                   * stacked_model.cosmo_params.omega_matter
                   / h**2)
 
-    stacked_model.mu_szs = np.linspace(10, 16, 20)
-    stacked_model.mus = np.linspace(10, 16, 20)
+    stacked_model.mu_szs = np.linspace(10, 16, 30)
+    stacked_model.mus = np.linspace(10, 16, 30)
 
     z = 0
     mink = 1e-4
