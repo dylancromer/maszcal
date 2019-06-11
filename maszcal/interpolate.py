@@ -1,5 +1,6 @@
+from dataclasses import dataclass
 import numpy as np
-import GPy as gpy
+#import GPy as gpy
 from scipy.interpolate import Rbf
 from maszcal.interp_utils import cartesian_prod, make_flat
 
@@ -64,5 +65,23 @@ class RbfInterpolator:
                                   trying to evaluate the interpolator.")
 
     def get_rbf_solution(self):
-        pass
+        return SavedRbf()
 
+
+class RbfMismatchError(Exception):
+    pass
+
+
+@dataclass
+class SavedRbf:
+    norm: str
+    function: str
+    data: np.ndarray
+    coords: np.ndarray
+    epsilon: float
+    smoothness: float
+    nodes: np.ndarray
+
+    def __post_init__(self):
+        if self.data.size != self.nodes.size:
+            raise RbfMismatchError("Node and data are not the same size")
