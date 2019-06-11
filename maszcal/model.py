@@ -420,6 +420,5 @@ class StackedModel():
 
         return z_integral/self.number_sz()[None, :]
 
-
     def stacked_profile(self, miscentered=False):
-            return self.delta_sigma(self.radii, miscentered=miscentered)
+        return self.delta_sigma(self.radii, miscentered=miscentered)
