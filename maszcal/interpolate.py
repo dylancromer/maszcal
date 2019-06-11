@@ -74,6 +74,7 @@ class RbfMismatchError(Exception):
 
 @dataclass
 class SavedRbf:
+    dimension: int
     norm: str
     function: str
     data: np.ndarray
@@ -85,3 +86,7 @@ class SavedRbf:
     def __post_init__(self):
         if self.data.size != self.nodes.size:
             raise RbfMismatchError("Node and data are not the same size")
+        if self.coords.size != self.data.size*self.dimension:
+            raise RbfMismatchError("Data, coords, and dimension are inconsistent")
+        if not isinstance(self.dimension, int):
+            raise TypeError("Dimension must be an integer")
