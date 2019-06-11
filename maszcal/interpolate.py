@@ -65,7 +65,16 @@ class RbfInterpolator:
                                   trying to evaluate the interpolator.")
 
     def get_rbf_solution(self):
-        return SavedRbf()
+        return SavedRbf(
+            len(self.interp_coords),
+            self.rbfi.norm,
+            self.rbfi.function,
+            self.rbfi.di,
+            self.rbfi.xi,
+            self.rbfi.epsilon,
+            self.rbfi.smooth,
+            self.rbfi.nodes,
+        )
 
 
 class RbfMismatchError(Exception):
