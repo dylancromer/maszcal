@@ -150,11 +150,11 @@ def describe_stacked_model():
         stacked_model.mus = mus
         rs = np.logspace(-1, 1, 20)
         cons = np.array([3])
-        frac = np.array([0.5])
-        r_misc = np.array([1e-2])
+        frac = np.array([0.5, 0.7])
+        r_misc = np.array([1e-2, 1e-1])
 
         stacked_model.sigma_of_mass = lambda rs,mus,cons,units: np.ones((mus.size, zs.size, rs.size, cons.size))
 
         miscentered_sigmas = stacked_model.misc_sigma(rs, mus, cons, frac, r_misc)
 
-        assert miscentered_sigmas.shape == (1, 20, 20, 1, 1, 1)
+        assert miscentered_sigmas.shape == (1, 20, 20, 1, 2, 2)

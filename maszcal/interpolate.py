@@ -63,3 +63,6 @@ class RbfInterpolator:
                                   You must run RbfInterpolator.process() before \
                                   trying to evaluate the interpolator.")
 
+    def get_rbf_solution(self):
+        pass
+

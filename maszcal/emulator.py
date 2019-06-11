@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 from maszcal.interpolate import RbfInterpolator
 from maszcal.model import StackedModel
@@ -17,8 +18,7 @@ class NoGrid:
 class LensingEmulator:
     def __init__(self, comoving=True):
         self.comoving = comoving
-        self.ERRCHECK_NUM = 5
-        assert self.ERRCHECK_NUM**3 < 1000
+        self.ERRCHECK_NUM = 2
         self.NORM = 1e12
 
     def init_stacked_model(self):
@@ -26,20 +26,25 @@ class LensingEmulator:
         self.stacked_model.comoving_radii = self.comoving
 
     def generate_grid(self, coords):
+        if len(coords) > 3:
+            miscentered = True
+        else:
+            miscentered = False
+
         try:
             self.stacked_model.set_coords(coords)
-            return (self.stacked_model.stacked_profile()
+            return (self.stacked_model.stacked_profile(miscentered=miscentered)
                     *atleast_kd(coords[0], len(coords))
                     /self.NORM)
 
         except AttributeError:
             self.init_stacked_model()
             self.stacked_model.set_coords(coords)
-            return (self.stacked_model.stacked_profile()
+            return (self.stacked_model.stacked_profile(miscentered=miscentered)
                     *atleast_kd(coords[0], len(coords))
                     /self.NORM)
 
-    def emulate(self, coords, grid=NoGrid(), check_errs=True):
+    def emulate(self, coords, grid=NoGrid(), check_errs=False):
         if isinstance(grid, NoGrid):
             grid = self.generate_grid(coords)
 
@@ -47,6 +52,12 @@ class LensingEmulator:
         self.interpolator.process()
 
         if check_errs:
+            errcheck_size = self.ERRCHECK_NUM**len(coords)
+            if errcheck_size >  1000:
+                raise ValueError("Error checking using too many samples: will"
+                                 f" result in {errcheck_size} total samples")
+                sys.exit()
+
             self.check_errors(coords)
 
     def check_errors(self, coords):

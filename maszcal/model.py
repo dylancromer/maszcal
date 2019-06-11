@@ -177,6 +177,8 @@ class StackedModel():
             dx=dr_offsets
         )
 
+        cen_frac = cen_frac[None, None, None, None, :, None]
+
         return (cen_frac * self.sigma_of_mass(rs, mus, concentrations, units)[..., None, None]
                 + (1-cen_frac) * r_offset_integral[..., None, :])
 

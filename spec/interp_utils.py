@@ -27,6 +27,3 @@ def test_orders_equal():
     flat_func_should_be = fs[coord_inds]
 
     assert np.all(flat_func == flat_func_should_be)
-
-
-#TODO: Consider cases of DataArray inputs, test for correct behavior

@@ -16,36 +16,33 @@ class FakeInterpolator:
         return np.ones(tuple(c.size for c in coords))
 
 
-def test_emulator_error_check_passing(mocker):
-    emulator = LensingEmulator()
+def describe_emulator():
 
-    rs = np.logspace(-1, 1, 10)
-    cons = np.linspace(2, 5, 5)
-    a_szs = np.linspace(-1, 1, 5)
-    coords = (rs, cons, a_szs)
+    def describe_error_check():
 
-    mocker.patch('maszcal.emulator.RbfInterpolator', new=FakeInterpolator)
+        @pytest.fixture
+        def emulator(mocker):
+            mocker.patch('maszcal.emulator.RbfInterpolator', new=FakeInterpolator)
+            lensing_emulator = LensingEmulator()
+            lensing_emulator.generate_grid = lambda coords: np.ones(tuple(c.size for c in coords))
+            return lensing_emulator
 
-    emulator.generate_grid = lambda coords: np.ones(tuple(c.size for c in coords))
+        def it_does_nothing_when_the_interpolation_is_good(emulator):
+            rs = np.logspace(-1, 1, 10)
+            cons = np.linspace(2, 5, 5)
+            a_szs = np.linspace(-1, 1, 5)
+            coords = (rs, cons, a_szs)
+            emulator.emulate(coords)
 
-    emulator.emulate(coords)
+        def it_complains_when_the_interpolation_is_bad(emulator):
+            rs = np.logspace(-1, 1, 10)
+            cons = np.linspace(2, 5, 5)
+            a_szs = np.linspace(-1, 1, 5)
+            coords = (rs, cons, a_szs)
 
+            emulator.generate_grid = lambda coords: np.ones(tuple(c.size for c in coords))
+            emulator.emulate(coords, check_errs=False)
+            emulator.generate_grid = lambda coords: 2*np.ones(tuple(c.size for c in coords))
 
-def test_emulator_error_check_failing(mocker):
-    emulator = LensingEmulator()
-
-    rs = np.logspace(-1, 1, 10)
-    cons = np.linspace(2, 5, 5)
-    a_szs = np.linspace(-1, 1, 5)
-    coords = (rs, cons, a_szs)
-
-    mocker.patch('maszcal.emulator.RbfInterpolator', new=FakeInterpolator)
-
-    emulator.generate_grid = lambda coords: np.ones(tuple(c.size for c in coords))
-
-    emulator.emulate(coords, check_errs=False)
-
-    emulator.generate_grid = lambda coords: 2*np.ones(tuple(c.size for c in coords))
-
-    with pytest.raises(LargeErrorWarning):
-        emulator.check_errors(coords)
+            with pytest.raises(LargeErrorWarning):
+                emulator.check_errors(coords)
