@@ -40,9 +40,13 @@ def describe_emulator():
                             nodes=np.ones(10))
 
         def it_can_accept_a_saved_interpolator(emulator, saved_rbf):
-            emulator.load_emulation(saved_rbf)
+            emulator.load_emulation(saved_rbf=saved_rbf)
             assert emulator.interpolator is not None
             assert emulator.interpolator.rbfi is not None
+
+        def it_fails_if_you_dont_give_it_a_file_or_saved_rbf(emulator):
+            with pytest.raises(TypeError):
+                emulator.load_emulation()
 
     def describe_error_check():
 
@@ -94,7 +98,7 @@ def describe_emulator():
 
             emulator.save_interpolation(SAVE_FILE)
 
-            saved_rbf = emulator.load_interpolation(SAVE_FILE, return_rbf=True)
+            saved_rbf = emulator.load_interpolation(SAVE_FILE)
 
             for original_val,json_val in zip(rbf.__dict__.values(),saved_rbf.__dict__.values()):
                 if isinstance(json_val, np.ndarray):

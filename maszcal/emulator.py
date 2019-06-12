@@ -5,7 +5,7 @@ from maszcal.interpolate import RbfInterpolator, SavedRbf
 from maszcal.model import StackedModel
 from maszcal.mathutils import atleast_kd
 from maszcal.ioutils import NumpyEncoder
-from maszcal.nothing import NoGrid, NoCoords
+from maszcal.nothing import NoGrid, NoCoords, NoSavedRbf, NoInterpFile
 
 
 
@@ -43,8 +43,15 @@ class LensingEmulator:
                     *atleast_kd(coords[0], len(coords))
                     /self.NORM)
 
-    def load_emulation(self, saved_interpolation):
-        self.interpolator = RbfInterpolator(NoCoords(), NoGrid(), saved_interpolation)
+    def load_emulation(self, interpolation_file=NoInterpFile(), saved_rbf=NoSavedRbf()):
+        if not isinstance(interpolation_file, NoInterpFile):
+            saved_rbf = self.load_interpolation(interpolation_file)
+            self.interpolator = RbfInterpolator(NoCoords(), NoGrid(), saved_rbf)
+        elif not isinstance(saved_rbf, NoSavedRbf):
+            self.interpolator = RbfInterpolator(NoCoords(), NoGrid(), saved_rbf)
+        else:
+            raise TypeError("load_emulation requires either an "
+                            "interpolation file or a SavedRbf object")
 
     def emulate(self, coords, grid=NoGrid(), check_errs=False):
         if isinstance(grid, NoGrid):
@@ -81,7 +88,7 @@ class LensingEmulator:
         if rel_err_mean > 1e-2:
             raise LargeErrorWarning("Mean error of the interpolation exceeds 1%")
 
-    def load_interpolation(self, interp_file, return_rbf=False):
+    def load_interpolation(self, interp_file):
         with open(interp_file, 'r') as json_file:
             rbf_dict = json.load(json_file)
 
@@ -89,9 +96,7 @@ class LensingEmulator:
             if isinstance(val, list):
                 rbf_dict[key] = np.asarray(val)
 
-        saved_rbf = SavedRbf(**rbf_dict)
-        if return_rbf:
-            return saved_rbf
+        return SavedRbf(**rbf_dict)
 
     def save_interpolation(self, interp_file=None):
         saved_rbf = self.interpolator.get_rbf_solution()
