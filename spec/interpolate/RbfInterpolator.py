@@ -13,7 +13,7 @@ def describe_rbf_interpolator():
 
         def correct_args_case():
             grid = stub()
-            coords = stub()
+            coords = (stub(),)
             RbfInterpolator(coords, grid)
 
         def incorrect_args_case():

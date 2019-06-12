@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
 #import GPy as gpy
-from scipy.interpolate import Rbf
+from .rbf import Rbf
 from maszcal.interp_utils import cartesian_prod, make_flat
 from maszcal.nothing import NoKernel, NoSavedRbf
 
@@ -46,8 +46,13 @@ class RbfInterpolator:
         self.interp_coords = coords
         self.interp_grid = grid
 
+        try:
+            self.ndim = len(coords)
+        except TypeError:
+            self.ndim = saved_rbf.dimension
+
         if not isinstance(saved_rbf, NoSavedRbf):
-            pass
+            self.rbfi = Rbf(saved_rbf=saved_rbf)
 
     def process(self, function='multiquadric'):
         point_coords = cartesian_prod(*self.interp_coords).T
@@ -66,7 +71,7 @@ class RbfInterpolator:
 
     def get_rbf_solution(self):
         return SavedRbf(
-            len(self.interp_coords),
+            self.ndim,
             self.rbfi.norm,
             self.rbfi.function,
             self.rbfi.di,
