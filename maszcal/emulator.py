@@ -1,19 +1,16 @@
 import sys
 import json
 import numpy as np
-from maszcal.interpolate import RbfInterpolator
+from maszcal.interpolate import RbfInterpolator, SavedRbf
 from maszcal.model import StackedModel
 from maszcal.mathutils import atleast_kd
 from maszcal.ioutils import NumpyEncoder
+from maszcal.nothing import NoGrid, NoCoords
 
 
 
 
 class LargeErrorWarning(Warning):
-    pass
-
-
-class NoGrid:
     pass
 
 
@@ -45,6 +42,9 @@ class LensingEmulator:
             return (self.stacked_model.stacked_profile(miscentered=miscentered)
                     *atleast_kd(coords[0], len(coords))
                     /self.NORM)
+
+    def load_emulation(self, saved_interpolation):
+        self.interpolator = RbfInterpolator(NoCoords(), NoGrid(), saved_interpolation)
 
     def emulate(self, coords, grid=NoGrid(), check_errs=False):
         if isinstance(grid, NoGrid):
@@ -81,23 +81,30 @@ class LensingEmulator:
         if rel_err_mean > 1e-2:
             raise LargeErrorWarning("Mean error of the interpolation exceeds 1%")
 
-    def save_interpolation(self):
+    def load_interpolation(self, interp_file, return_rbf=False):
+        with open(interp_file, 'r') as json_file:
+            rbf_dict = json.load(json_file)
+
+        for key,val in rbf_dict.items():
+            if isinstance(val, list):
+                rbf_dict[key] = np.asarray(val)
+
+        saved_rbf = SavedRbf(**rbf_dict)
+        if return_rbf:
+            return saved_rbf
+
+    def save_interpolation(self, interp_file=None):
         saved_rbf = self.interpolator.get_rbf_solution()
-        self._dump_saved_rbf(saved_rbf)
 
-    def _dump_saved_rbf(self, saved_rbf):
-        rbf_dict = {
-            'norm':saved_rbf.norm,
-            'function':saved_rbf.function,
-            'data':saved_rbf.data,
-            'coords':saved_rbf.coords,
-            'epsilon':saved_rbf.epsilon,
-            'smoothness':saved_rbf.smoothness,
-            'nodes':saved_rbf.nodes,
-        }
+        if interp_file is None:
+            return saved_rbf
+        else:
+            self._dump_saved_rbf(saved_rbf, interp_file)
 
-        json_dump = json.dumps(rbf_dict, cls=NumpyEncoder)
-        assert False, print(json_dump)
+    def _dump_saved_rbf(self, saved_rbf, rbf_file):
+        rbf_dict = saved_rbf.__dict__
+        with open(rbf_file, 'w') as outfile:
+            json.dump(rbf_dict, outfile, cls=NumpyEncoder, ensure_ascii=False)
 
     def evaluate_on(self, coords):
         return self.interpolator.interp(coords)

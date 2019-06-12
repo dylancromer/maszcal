@@ -3,12 +3,9 @@ import numpy as np
 #import GPy as gpy
 from scipy.interpolate import Rbf
 from maszcal.interp_utils import cartesian_prod, make_flat
+from maszcal.nothing import NoKernel, NoSavedRbf
 
 
-
-
-class NoKernel:
-    pass
 
 
 class GaussInterpolator:
@@ -45,9 +42,12 @@ class GaussInterpolator:
 
 
 class RbfInterpolator:
-    def __init__(self, coords, grid):
+    def __init__(self, coords, grid, saved_rbf=NoSavedRbf()):
         self.interp_coords = coords
         self.interp_grid = grid
+
+        if not isinstance(saved_rbf, NoSavedRbf):
+            pass
 
     def process(self, function='multiquadric'):
         point_coords = cartesian_prod(*self.interp_coords).T
