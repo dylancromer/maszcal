@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 from pretend import stub
 from maszcal.interpolate import RbfInterpolator, SavedRbf
+from maszcal.nothing import NoCoords, NoGrid
 
 
 
@@ -18,6 +19,21 @@ def describe_rbf_interpolator():
         def incorrect_args_case():
             with pytest.raises(TypeError):
                 RbfInterpolator()
+
+        @pytest.fixture
+        def saved_rbf():
+            return SavedRbf(dimension=1,
+                            norm='euclidean',
+                            function='multiquadric',
+                            data=np.ones(10),
+                            coords=np.linspace(0, 1, 10),
+                            epsilon=1,
+                            smoothness=0,
+                            nodes=np.ones(10))
+
+        def it_can_accept_a_saved_interpolation(saved_rbf):
+            interpolator = RbfInterpolator(NoCoords(), NoGrid(), saved_rbf)
+            assert interpolator.rbfi is not None
 
     def describe_process():
 
