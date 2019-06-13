@@ -3,7 +3,7 @@ import json
 import numpy as np
 import pandas as pd
 import scipy.integrate as integrate
-from scipy.interpolate import interp2d
+from scipy.interpolate import interp1d, interp2d
 ### MID LEVEL DEPENDCIES ###
 import camb
 from astropy import units as u
@@ -26,6 +26,10 @@ class DefaultSelectionFunc:
     pass
 
 
+class DefaultLensingWeights:
+    pass
+
+
 class StackedModel:
     """
     Canonical variable order:
@@ -34,6 +38,7 @@ class StackedModel:
     def __init__(
             self,
             selection_func_file=DefaultSelectionFunc(),
+            lensing_weights_file=DefaultLensingWeights(),
             cosmo_params=DefaultCosmology(),
             max_redshift=2,
     ):
@@ -66,6 +71,12 @@ class StackedModel:
             self.selection_func = self._default_selection_func
         else:
             self.selection_func = self._get_selection_func_interpolator(selection_func_file)
+
+        ### LENSING WEIGHTS ###
+        if isinstance(lensing_weights_file, DefaultLensingWeights):
+            self.lensing_weights = self._default_lensing_weights
+        else:
+            self.lensing_weights = self._get_lensing_weights_interpolator(lensing_weights_file)
 
         ### MISC ###
         self.constants = Constants()
@@ -299,7 +310,16 @@ class StackedModel:
 
         return dn_dlogms.T
 
-    def lensing_weights(self):
+    def _get_lensing_weights_interpolator(self, lensing_weights_file):
+        with open(lensing_weights_file, 'r') as json_file:
+            weights_dict = json.load(json_file)
+
+        zs = np.asarray(weights_dict['zs'])
+        weights = np.asarray(weights_dict['weights'])
+
+        return interp1d(zs, weights, kind='cubic')
+
+    def _default_lensing_weights(self):
         """
         SHAPE z
         """

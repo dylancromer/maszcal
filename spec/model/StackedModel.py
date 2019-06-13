@@ -32,6 +32,23 @@ def describe_stacked_model():
 
             os.remove(SAVED_SELFUNC)
 
+        def it_can_load_lensing_weights():
+            zs = np.linspace(0.1, 2, 5)
+            weights = 1/zs**2
+
+            weight_dict = {'zs':zs,
+                           'weights':weights}
+
+            SAVED_WEIGHTS = 'data/test/test_lensing_weights.json'
+            with open(SAVED_WEIGHTS, 'w') as outfile:
+                json.dump(weight_dict, outfile, cls=NumpyEncoder, ensure_ascii=False)
+
+            stacked_model = StackedModel(lensing_weights_file=SAVED_WEIGHTS)
+
+            os.remove(SAVED_WEIGHTS)
+
+            assert np.allclose(stacked_model.lensing_weights(zs), weights)
+
     def describe_math_functions():
 
         @pytest.fixture
