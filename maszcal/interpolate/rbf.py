@@ -10,6 +10,9 @@ from maszcal.nothing import NoSavedRbf
 __all__ = ['Rbf']
 
 
+
+
+
 class Rbf(object):
     """
     Taken from scipy v1.3.0
@@ -144,6 +147,7 @@ class Rbf(object):
     def A(self):
         # this only exists for backwards compatibility: self.A was available
         # and, at least technically, public.
+
         r = squareform(pdist(self.xi.T, self.norm))  # Pairwise norm
         return self._init_function(r) - np.eye(self.N)*self.smooth
 

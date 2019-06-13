@@ -7,9 +7,8 @@ from scipy.interpolate import interp2d
 ### MID LEVEL DEPENDCIES ###
 import camb
 from astropy import units as u
-### LOW LEVEL DEPENDENCIES ###
-from maszcal.offset_nfw.nfw import NFWModel
 ### IN-MODULE DEPENDCIES ###
+from maszcal.offset_nfw.nfw import NFWModel
 from maszcal.tinker import dn_dlogM
 from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
@@ -36,6 +35,7 @@ class StackedModel:
             self,
             selection_func_file=DefaultSelectionFunc(),
             cosmo_params=DefaultCosmology(),
+            max_redshift=2,
     ):
 
         ### FITTING PARAMETERS AND LIKELIHOOD ###
@@ -43,7 +43,7 @@ class StackedModel:
         self.b_sz = 1
 
         ### SPATIAL QUANTITIES AND MATTER POWER ###
-        self.zs =  np.linspace(0, 2, 20)
+        self.zs =  np.linspace(0, max_redshift, 20)
         self.max_k = 10
         self.min_k = 1e-4
         self.number_ks = 400
@@ -131,8 +131,7 @@ class StackedModel:
         mus = np.asarray(selec_func_dict['mus'])
         zs = np.asarray(selec_func_dict['zs'])
         selection_fs = np.asarray(selec_func_dict['selection_fs'])
-
-        interpolator = interp2d(zs, mus, selection_fs, kind='cubic')
+        interpolator = interp2d(zs, mus, selection_fs, kind='linear')
 
         return lambda mu,z: interpolator(z, mu)
 
