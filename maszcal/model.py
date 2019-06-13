@@ -1,7 +1,9 @@
 ### HIGH LEVEL DEPENDENCIES ###
+import json
 import numpy as np
 import pandas as pd
 import scipy.integrate as integrate
+from scipy.interpolate import interp2d
 ### MID LEVEL DEPENDCIES ###
 import camb
 from astropy import units as u
@@ -17,18 +19,23 @@ from maszcal.mathutils import atleast_kd, _trapz
 
 
 
-class DefaultCosmology():
+class DefaultCosmology:
     pass
 
 
-class StackedModel():
+class DefaultSelectionFunc:
+    pass
+
+
+class StackedModel:
     """
     Canonical variable order:
     mu_sz, mu, z, r, c, a_sz
     """
     def __init__(
             self,
-            cosmo_params=DefaultCosmology()
+            selection_func_file=DefaultSelectionFunc(),
+            cosmo_params=DefaultCosmology(),
     ):
 
         ### FITTING PARAMETERS AND LIKELIHOOD ###
@@ -53,6 +60,12 @@ class StackedModel():
         ### CLUSTER MASSES AND RELATED ###
         self.mu_szs = np.linspace(12, 16, 20)
         self.mus = np.linspace(12, 16, 20)
+
+        ### SELECTION FUNCTION ###
+        if isinstance(selection_func_file, DefaultSelectionFunc):
+            self.selection_func = self._default_selection_func
+        else:
+            self.selection_func = self._get_selection_func_interpolator(selection_func_file)
 
         ### MISC ###
         self.constants = Constants()
@@ -111,11 +124,23 @@ class StackedModel():
     def mass(self, mus):
         return 10**mus
 
-    def selection_func(self, mu_szs):
+    def _get_selection_func_interpolator(self, selection_func_file):
+        with open(selection_func_file, 'r') as json_file:
+            selec_func_dict = json.load(json_file)
+
+        mus = np.asarray(selec_func_dict['mus'])
+        zs = np.asarray(selec_func_dict['zs'])
+        selection_fs = np.asarray(selec_func_dict['selection_fs'])
+
+        interpolator = interp2d(zs, mus, selection_fs, kind='cubic')
+
+        return lambda mu,z: interpolator(z, mu)
+
+    def _default_selection_func(self, mu_szs, zs):
         """
         SHAPE mu_sz, z
         """
-        sel_func = np.ones((mu_szs.size, self.zs.size))
+        sel_func = np.ones((mu_szs.size, zs.size))
 
         low_mass_indices = np.where(mu_szs < np.log10(3e14))
         sel_func[:, low_mass_indices] = 0
@@ -296,7 +321,7 @@ class StackedModel():
         SHAPE mu_sz, mu, z, a_sz
         """
         return (self.mass_sz(self.mu_szs)[:, None, None, None]
-                * self.selection_func(self.mu_szs)[:, None, :, None]
+                * self.selection_func(self.mu_szs, self.zs)[:, None, :, None]
                 * self.prob_musz_given_mu(self.mu_szs, self.mus)[:, :, None, :])
 
     def number_sz(self):

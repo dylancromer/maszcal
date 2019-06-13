@@ -1,160 +1,113 @@
+import os
+import json
+import pytest
 import numpy as np
 from maszcal.model import StackedModel
+from maszcal.ioutils import NumpyEncoder
+
 
 
 
 def describe_stacked_model():
 
-    def computes_mu_sz():
-        stacked_model = StackedModel()
+    def describe_data_handling():
 
-        mus = np.linspace(1, 10)
-        stacked_model.b_sz = np.linspace(-5,5)
+        def it_can_load_a_selection_function():
+            mus = np.linspace(1, 3, 10)
+            zs = np.linspace(0, 2, 5)
 
-        a_sz = np.ones(1)
-        con = None
-        radius = None
+            selection_function = lambda m,z: m[:, None]*z[None, :]
+            sel_funcs = selection_function(mus, zs)
+            sel_func_dict = {'zs':zs,
+                             'mus':mus,
+                             'selection_fs':sel_funcs}
 
-        stacked_model.set_coords((radius, con, a_sz))
+            SAVED_SELFUNC = 'data/test/test_sel_func.json'
+            with open(SAVED_SELFUNC, 'w') as outfile:
+                json.dump(sel_func_dict, outfile, cls=NumpyEncoder, ensure_ascii=False)
 
-        mu_szs = stacked_model.mu_sz(mus)
+            stacked_model = StackedModel(selection_func_file=SAVED_SELFUNC)
 
-        precomp_mu_szs = np.array(
-            [-4.        , -4.67680133, -5.2786339 , -5.80549771, -6.25739275,
-             -6.63431903, -6.93627655, -7.16326531, -7.3152853 , -7.39233653,
-             -7.39441899, -7.32153269, -7.17367763, -6.95085381, -6.65306122,
-             -6.28029988, -5.83256976, -5.30987089, -4.71220325, -4.03956685,
-             -3.29196168, -2.46938776, -1.57184506, -0.59933361,  0.44814661,
-              1.57059559,  2.76801333,  4.04039983,  5.3877551 ,  6.81007913,
-              8.30737193,  9.87963349, 11.52686381, 13.24906289, 15.04623074,
-             16.91836735, 18.86547272, 20.88754686, 22.98458975, 25.15660142,
-             27.40358184, 29.72553103, 32.12244898, 34.59433569, 37.14119117,
-             39.76301541, 42.45980841, 45.23157018, 48.07830071, 51.        ]
-        )
+            assert np.allclose(stacked_model.selection_func(mus, zs), sel_funcs)
 
-        np.testing.assert_allclose(mu_szs, precomp_mu_szs)
+            os.remove(SAVED_SELFUNC)
 
+    def describe_math_functions():
 
-    def prob_musz_given_mu_is_not_negative():
-        stacked_model = StackedModel()
+        @pytest.fixture
+        def stacked_model():
+            model = StackedModel()
 
-        mus = np.random.rand(5)
-        mu_szs = np.random.rand(5)
-        stacked_model.b_sz = np.random.rand(1)
+            model.mu_szs = np.linspace(12, 16, 10)
+            model.mus = np.linspace(12, 16, 20)
+            model.zs = np.linspace(0, 2, 8)
 
-        a_sz = np.random.rand(1)
-        con = 2*np.ones(1)
-        radius = None
+            a_sz = 2*np.ones(1)
+            con = 2*np.ones(1)
+            rs = np.logspace(-1, 1, 40)
+            model.set_coords((rs, con, a_sz))
+            return model
 
-        stacked_model.set_coords((radius, con, a_sz))
+        def prob_musz_given_mu_is_not_negative(stacked_model):
+            mu_szs = np.linspace(12, 16, 10)
+            mus = np.linspace(12, 16, 20)
 
-        prob_sz = stacked_model.prob_musz_given_mu(mu_szs, mus)
-
-        assert np.all(prob_sz > 0)
+            prob_sz = stacked_model.prob_musz_given_mu(mu_szs, mus)
+            assert np.all(prob_sz > 0)
 
 
-    def computes_prob_musz_given_mu():
-        stacked_model = StackedModel()
+        def delta_sigma_of_r_divided_by_nsz_always_one(stacked_model):
+            """
+            This test functions by setting delta_sigma_of_mass to be constant,
+            resulting in it being identical to the normalization. Thus this test should
+            always return 1s, rather than a true precomputed value
+            """
+            zs = np.linspace(0, 2, 8)
 
-        mus = np.linspace(2, 3, num=5)
-        mu_szs = np.linspace(2, 3, num=5)
-        stacked_model.b_sz = np.linspace(-5, 5, num=5)
+            stacked_model.dnumber_dlogmass = lambda : np.ones(
+                (stacked_model.mus.size, stacked_model.zs.size)
+            )
 
-        a_sz = np.ones(1)
-        con = 2*np.ones(1)
-        radius = None
+            rs = np.logspace(-1, 1, 40)
 
-        stacked_model.set_coords((radius, con, a_sz))
+            stacked_model.delta_sigma_of_mass = lambda rs,mus,cons,units,miscentered: np.ones(
+                (stacked_model.mus.size, zs.size, rs.size, stacked_model.concentrations.size)
+            )
 
-        prob_sz = stacked_model.prob_musz_given_mu(mu_szs, mus)
+            delta_sigmas = stacked_model.delta_sigma(rs)
 
-        precomp_prob_sz = np.array(
-            [[7.43359757e-06, 1.76297841e-03, 8.76415025e-02, 9.13245427e-01, 1.99471140e+00],
-             [6.57000909e-09, 7.43359757e-06, 1.76297841e-03, 8.76415025e-02, 9.13245427e-01],
-             [1.21716027e-12, 6.57000909e-09, 7.43359757e-06, 1.76297841e-03, 8.76415025e-02],
-             [4.72655194e-17, 1.21716027e-12, 6.57000909e-09, 7.43359757e-06, 1.76297841e-03],
-             [3.84729931e-22, 4.72655194e-17, 1.21716027e-12, 6.57000909e-09, 7.43359757e-06]]
-        ).T[..., None]
+            precomp_delta_sigmas = np.ones((rs.size, 1, 1))
 
-        np.testing.assert_allclose(prob_sz, precomp_prob_sz)
-
-
-    def delta_sigma_of_r_divided_by_nsz_always_one():
-        """
-        This test functions by setting delta_sigma_of_mass to be constant,
-        resulting in it being identical to the normalization. Thus this test should
-        always return 1s, rather than a true precomputed value
-        """
-
-        stacked_model = StackedModel()
-
-        stacked_model.mu_szs = np.linspace(12, 16, 10)
-        mus = np.linspace(12, 16, 20)
-        stacked_model.mus = mus
-        zs = np.linspace(0, 2, 8)
-        stacked_model.zs = zs
-
-        stacked_model.dnumber_dlogmass = lambda : np.ones(
-            (stacked_model.mus.size, stacked_model.zs.size)
-        )
-
-        a_sz = np.ones(1)
-        con = 2*np.ones(1)
-        rs = np.logspace(-1, 1, 40)
-
-        stacked_model.set_coords((rs, con, a_sz))
+            np.testing.assert_allclose(delta_sigmas, precomp_delta_sigmas)
 
 
-        stacked_model.delta_sigma_of_mass = lambda rs,mus,cons,units,miscentered: np.ones(
-            (stacked_model.mus.size, zs.size, rs.size, stacked_model.concentrations.size)
-        )
+        def it_computes_weak_lensing_avg_mass(stacked_model):
 
-        delta_sigmas = stacked_model.delta_sigma(rs)
+            stacked_model.dnumber_dlogmass = lambda : np.ones(
+                (stacked_model.mus.size, stacked_model.zs.size)
+            )
 
-        precomp_delta_sigmas = np.ones((rs.size, 1, 1))
+            stacked_model.delta_sigma_of_mass = lambda rs,mus,cons,units,miscentered: np.ones(
+                (stacked_model.mus.size, rs.size)
+            )
 
-        np.testing.assert_allclose(delta_sigmas, precomp_delta_sigmas)
+            avg_wl_mass = stacked_model.weak_lensing_avg_mass()
 
-
-    def computes_weak_lensing_avg_mass():
-        stacked_model = StackedModel()
-
-        stacked_model.mu_szs = np.linspace(12, 16, 10)
-        stacked_model.mus = np.linspace(12, 16, 20)
-        stacked_model.zs = np.linspace(0, 2, 8)
-
-        a_sz = 2*np.ones(1)
-        con = 2*np.ones(1)
-        rs = np.logspace(-1, 1, 40)
-        stacked_model.set_coords((rs, con, a_sz))
-
-        stacked_model.dnumber_dlogmass = lambda : np.ones(
-            (stacked_model.mus.size, stacked_model.zs.size)
-        )
-
-        stacked_model.delta_sigma_of_mass = lambda rs,mus,cons,units,miscentered: np.ones(
-            (stacked_model.mus.size, rs.size)
-        )
-
-        avg_wl_mass = stacked_model.weak_lensing_avg_mass()
-
-        assert not np.isnan(avg_wl_mass)
+            assert not np.isnan(avg_wl_mass)
 
 
-    def computes_miscentered_delta_sigma():
-        stacked_model = StackedModel()
+        def it_computes_miscentered_delta_sigma(stacked_model):
+            stacked_model.mu_szs = np.linspace(12, 16, 10)
+            zs = stacked_model.zs
+            mus = np.array([15])
+            stacked_model.mus = mus
+            rs = np.logspace(-1, 1, 20)
+            cons = np.array([3])
+            frac = np.array([0.5, 0.7])
+            r_misc = np.array([1e-2, 1e-1])
 
-        stacked_model.mu_szs = np.linspace(12, 16, 10)
-        zs = stacked_model.zs
-        mus = np.array([15])
-        stacked_model.mus = mus
-        rs = np.logspace(-1, 1, 20)
-        cons = np.array([3])
-        frac = np.array([0.5, 0.7])
-        r_misc = np.array([1e-2, 1e-1])
+            stacked_model.sigma_of_mass = lambda rs,mus,cons,units: np.ones((mus.size, zs.size, rs.size, cons.size))
 
-        stacked_model.sigma_of_mass = lambda rs,mus,cons,units: np.ones((mus.size, zs.size, rs.size, cons.size))
+            miscentered_sigmas = stacked_model.misc_sigma(rs, mus, cons, frac, r_misc)
 
-        miscentered_sigmas = stacked_model.misc_sigma(rs, mus, cons, frac, r_misc)
-
-        assert miscentered_sigmas.shape == (1, 20, 20, 1, 2, 2)
+            assert miscentered_sigmas.shape == (1, 8, 20, 1, 2, 2)
