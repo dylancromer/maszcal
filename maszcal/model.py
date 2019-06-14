@@ -144,6 +144,8 @@ class StackedModel:
         selection_fs = np.asarray(selec_func_dict['selection_fs'])
         interpolator = interp2d(zs, mus, selection_fs, kind='linear')
 
+        self.zs = np.linspace(zs[0], zs[-1], 20)
+
         return lambda mu,z: interpolator(z, mu)
 
     def _default_selection_func(self, mu_szs, zs):
@@ -319,11 +321,11 @@ class StackedModel:
 
         return interp1d(zs, weights, kind='cubic')
 
-    def _default_lensing_weights(self):
+    def _default_lensing_weights(self, zs):
         """
         SHAPE z
         """
-        return np.ones(self.zs.shape)
+        return np.ones(zs.shape)
 
     def comoving_vol(self):
         """
@@ -355,7 +357,7 @@ class StackedModel:
 
         dzs = np.gradient(self.zs)
         z_integral = _trapz(
-            ((self.lensing_weights() * self.comoving_vol())[:, None]
+            ((self.lensing_weights(self.zs) * self.comoving_vol())[:, None]
              * mu_integral),
             axis=0,
             dx=dzs
@@ -390,7 +392,7 @@ class StackedModel:
 
         dzs = np.gradient(self.zs)
         z_integral = _trapz(
-            ((self.lensing_weights() * self.comoving_vol())[:, None, None, None, None, None]
+            ((self.lensing_weights(self.zs) * self.comoving_vol())[:, None, None, None, None, None]
              * mu_integral),
             axis=0,
             dx=dzs
@@ -425,7 +427,7 @@ class StackedModel:
 
         dzs = np.gradient(self.zs)
         z_integral = _trapz(
-            ((self.lensing_weights() * self.comoving_vol())[:, None, None, None]
+            ((self.lensing_weights(self.zs) * self.comoving_vol())[:, None, None, None]
              * mu_integral),
             axis=0,
             dx=dzs
@@ -458,7 +460,7 @@ class StackedModel:
 
         dzs = np.gradient(self.zs)
         z_integral = _trapz(
-            ((self.lensing_weights() * self.comoving_vol())[:, None]
+            ((self.lensing_weights(self.zs) * self.comoving_vol())[:, None]
              * mu_integral),
             axis=0,
             dx=dzs
@@ -466,5 +468,5 @@ class StackedModel:
 
         return z_integral/self.number_sz()[None, :]
 
-    def stacked_profile(self, miscentered=False):
-        return self.delta_sigma(self.radii, miscentered=miscentered)
+    def stacked_profile(self, miscentered=False, units=u.Msun/u.Mpc**2):
+        return self.delta_sigma(self.radii, miscentered=miscentered, units=units)

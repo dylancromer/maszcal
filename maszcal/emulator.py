@@ -1,6 +1,7 @@
 import sys
 import json
 import numpy as np
+import astropy.units as u
 from maszcal.interpolate import RbfInterpolator, SavedRbf
 from maszcal.model import StackedModel
 from maszcal.mathutils import atleast_kd
@@ -15,8 +16,9 @@ class LargeErrorWarning(Warning):
 
 
 class LensingEmulator:
-    def __init__(self, comoving=True):
+    def __init__(self, comoving=True, units=u.Msun/u.Mpc**2):
         self.comoving = comoving
+        self.units = units
         self.ERRCHECK_NUM = 2
         self.NORM = 1e12
 
@@ -24,7 +26,7 @@ class LensingEmulator:
         self.stacked_model = StackedModel()
         self.stacked_model.comoving_radii = self.comoving
 
-    def generate_grid(self, coords):
+    def generate_grid(self, coords, units=u.Msun/u.Mpc**2):
         if len(coords) > 3:
             miscentered = True
         else:
@@ -32,14 +34,13 @@ class LensingEmulator:
 
         try:
             self.stacked_model.set_coords(coords)
-            return (self.stacked_model.stacked_profile(miscentered=miscentered)
+            return (self.stacked_model.stacked_profile(miscentered=miscentered, units=self.units)
                     *atleast_kd(coords[0], len(coords))
                     /self.NORM)
-
         except AttributeError:
             self.init_stacked_model()
             self.stacked_model.set_coords(coords)
-            return (self.stacked_model.stacked_profile(miscentered=miscentered)
+            return (self.stacked_model.stacked_profile(miscentered=miscentered, units=self.units)
                     *atleast_kd(coords[0], len(coords))
                     /self.NORM)
 
