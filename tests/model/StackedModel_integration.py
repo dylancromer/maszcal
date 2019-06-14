@@ -334,7 +334,7 @@ def test_tinker_mf():
 
         masses = stacked_model.mass(stacked_model.mus)
         dn_dlnms = stacked_model.dnumber_dlogmass() #masses, zs
-        dn_dms = dn_dlnms[0, :]/masses
+        dn_dms = dn_dlnms[:, 0]/masses
 
 
         plotlabel = rf'$k_{{\mathrm{{max}}}}={maxk}$'

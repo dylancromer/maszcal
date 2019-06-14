@@ -63,8 +63,8 @@ class StackedModel:
 
 
         ### CLUSTER MASSES AND RELATED ###
-        self.mu_szs = np.linspace(12, 16, 20)
-        self.mus = np.linspace(12, 16, 20)
+        self.mu_szs = np.linspace(14, 16, 20)
+        self.mus = np.linspace(14, 16, 20)
 
         ### SELECTION FUNCTION ###
         if isinstance(selection_func_file, DefaultSelectionFunc):
@@ -310,7 +310,7 @@ class StackedModel:
             comoving=True
         )
 
-        return dn_dlogms.T
+        return dn_dlogms
 
     def _get_lensing_weights_interpolator(self, lensing_weights_file):
         with open(lensing_weights_file, 'r') as json_file:
