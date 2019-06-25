@@ -114,17 +114,17 @@ def describe_stacked_model():
 
 
         def it_computes_miscentered_delta_sigma(stacked_model):
-            stacked_model.mu_szs = np.linspace(12, 16, 10)
+            stacked_model.mu_szs = np.linspace(12, 16, 13)
             zs = stacked_model.zs
             mus = np.array([15])
             stacked_model.mus = mus
-            rs = np.logspace(-1, 1, 20)
+            rs = np.logspace(-1, 1, 21)
             cons = np.array([3])
-            frac = np.array([0.5, 0.7])
+            frac = np.array([0.5, 0.7, 0.9])
             r_misc = np.array([1e-2, 1e-1])
 
             stacked_model.sigma_of_mass = lambda rs,mus,cons,units: np.ones((mus.size, zs.size, rs.size, cons.size))
 
             miscentered_sigmas = stacked_model.misc_sigma(rs, mus, cons, frac, r_misc)
 
-            assert miscentered_sigmas.shape == (1, 8, 20, 1, 2, 2)
+            assert miscentered_sigmas.shape == (1, 8, 21, 1, 3, 2)
