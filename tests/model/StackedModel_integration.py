@@ -58,7 +58,7 @@ def test_misc_sigma_of_m():
                                                   cons,
                                                   frac,
                                                   r_misc,
-                                                  units=u.Msun/(u.Mpc * u.pc))[0, 0, :, 0, 0, 0]
+                                                  units=u.Msun/(u.Mpc * u.pc))[0, 0, :, 0]
 
     plt.plot(rs, rs*miscentered_sigmas/1e6)
     plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
@@ -137,11 +137,10 @@ def test_misc_delta_sigma_of_m():
     rs = np.logspace(-1, 2, 40)
     mus = np.array([15])
     cons = np.array([2])
-    a_sz = np.array([0])
-    frac = np.array([0.8])
-    r_misc = np.array([1e-1])
 
-    stacked_model.set_coords((rs, cons, a_sz, frac, r_misc))
+    params = np.array([[2, 0, 0.8, 1e-1]])
+
+    stacked_model.params = params
 
     delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
                                                      mus,
@@ -149,7 +148,7 @@ def test_misc_delta_sigma_of_m():
                                                      units=u.Msun/(u.Mpc * u.pc),
                                                      miscentered=True)
 
-    delta_sigmas = delta_sigmas[0, 0, :, 0, 0, 0]
+    delta_sigmas = delta_sigmas[0, 0, :, 0]
 
     plt.plot(rs, rs*delta_sigmas/1e6, label=r'from $\Sigma$')
     plt.legend(loc='best')
@@ -164,11 +163,12 @@ def test_misc_delta_sigma_of_m():
 
 def test_delta_sigma_of_r():
     rs = np.logspace(-1, 2, 40)
-    a_sz = 2*np.ones(1)
-    con = 2*np.ones(1)
-    stacked_model.set_coords((rs, con, a_sz))
 
-    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc))[:,0,0]
+    params = np.array([[2, 2]])
+
+    stacked_model.params = params
+
+    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc))[:,0]
 
     plt.plot(rs, rs * delta_sigmas/1e6)
     plt.xlabel(r'$ r $')
@@ -181,14 +181,11 @@ def test_delta_sigma_of_r():
 
 def test_delta_sigma_of_r_miscentered():
     rs = np.logspace(-1, 2, 40)
-    a_sz = 2*np.ones(1)
-    con = 2*np.ones(1)
-    frac = np.array([0.8])
-    r_misc = np.array([1e-1])
 
-    stacked_model.set_coords((rs, con, a_sz, frac, r_misc))
+    params = np.array([[2, 2, 0.8, 1e-1]])
+    stacked_model.params = params
 
-    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc), miscentered=True)[:,0,0,0,0]
+    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc), miscentered=True)[:,0]
 
     plt.plot(rs, rs * delta_sigmas/1e6)
     plt.xlabel(r'$ r $')
@@ -253,11 +250,11 @@ def test_delta_sigma_of_r_nocomoving():
     stacked_model.comoving_radii = False
 
     rs = np.logspace(-1, 2, 40)
-    a_sz = 2*np.ones(1)
-    con = 2*np.ones(1)
-    stacked_model.set_coords((rs, con, a_sz))
 
-    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc))[:,0,0]
+    params = np.array([[2, 2]])
+    stacked_model.params = params
+
+    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc))[:,0]
 
     plt.plot(rs, rs * delta_sigmas/1e6)
     plt.xlabel(r'$ r $')
