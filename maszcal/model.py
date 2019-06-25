@@ -474,6 +474,3 @@ class StackedModel:
         )
 
         return z_integral/self.number_sz()
-
-    def stacked_profile(self, miscentered=False, units=u.Msun/u.Mpc**2):
-        return self.delta_sigma(self.radii, miscentered=miscentered, units=units)
