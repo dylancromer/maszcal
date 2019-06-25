@@ -53,16 +53,14 @@ def describe_stacked_model():
 
         @pytest.fixture
         def stacked_model():
-            model = StackedModel()
+            params = 2*np.ones((1,2))
+            model = StackedModel(params=params)
 
             model.mu_szs = np.linspace(12, 16, 10)
             model.mus = np.linspace(12, 16, 20)
             model.zs = np.linspace(0, 2, 8)
 
-            a_sz = 2*np.ones(1)
-            con = 2*np.ones(1)
             rs = np.logspace(-1, 1, 40)
-            model.set_coords((rs, con, a_sz))
             return model
 
         def prob_musz_given_mu_is_not_negative(stacked_model):
@@ -93,7 +91,7 @@ def describe_stacked_model():
 
             delta_sigmas = stacked_model.delta_sigma(rs)
 
-            precomp_delta_sigmas = np.ones((rs.size, 1, 1))
+            precomp_delta_sigmas = np.ones((rs.size, 1))
 
             np.testing.assert_allclose(delta_sigmas, precomp_delta_sigmas)
 
@@ -110,21 +108,64 @@ def describe_stacked_model():
 
             avg_wl_mass = stacked_model.weak_lensing_avg_mass()
 
-            assert not np.isnan(avg_wl_mass)
+            assert avg_wl_mass.shape == (1,)
 
 
         def it_computes_miscentered_delta_sigma(stacked_model):
-            stacked_model.mu_szs = np.linspace(12, 16, 13)
             zs = stacked_model.zs
             mus = np.array([15])
             stacked_model.mus = mus
             rs = np.logspace(-1, 1, 21)
-            cons = np.array([3])
-            frac = np.array([0.5, 0.7, 0.9])
-            r_misc = np.array([1e-2, 1e-1])
+
+            params = np.array([[2, 3, 0.5, 1e-2],
+                               [2, 3, 0.7, 1e-1]])
+
+            cons = params[:, 1]
+            frac = params[:, 2]
+            r_misc = params[:, 3]
+
+            stacked_model.params = params
 
             stacked_model.sigma_of_mass = lambda rs,mus,cons,units: np.ones((mus.size, zs.size, rs.size, cons.size))
 
             miscentered_sigmas = stacked_model.misc_sigma(rs, mus, cons, frac, r_misc)
 
-            assert miscentered_sigmas.shape == (1, 8, 21, 1, 3, 2)
+            assert miscentered_sigmas.shape == (1, 8, 21, 2)
+
+        def it_computes_stacked_miscentered_delta_sigma(stacked_model):
+            zs = stacked_model.zs
+            mus = stacked_model.mus
+            rs = np.logspace(-1, 1, 21)
+
+            params = np.array([[2, 3, 0.5, 1e-2],
+                               [2, 3, 0.7, 1e-1],
+                               [2, 3, 0.8, 2e-2]])
+
+            cons = params[:, 1]
+            frac = params[:, 2]
+            r_misc = params[:, 3]
+
+            stacked_model.params = params
+
+            stacked_model.sigma_of_mass = lambda rs,mus,cons,units: np.ones((mus.size, zs.size, rs.size, cons.size))
+            delta_sigmas = stacked_model.delta_sigma(rs, miscentered=True)
+
+            assert delta_sigmas.shape == (21, 3)
+
+        def it_computes_stacked_delta_sigma(stacked_model):
+            zs = stacked_model.zs
+            mus = stacked_model.mus
+            rs = np.logspace(-1, 1, 21)
+
+            params = np.array([[2, 3.0],
+                               [2, 3.1],
+                               [2, 3.2]])
+
+            cons = params[:, 1]
+
+            stacked_model.params = params
+
+            stacked_model.sigma_of_mass = lambda rs,mus,cons,units: np.ones((mus.size, zs.size, rs.size, cons.size))
+            delta_sigmas = stacked_model.delta_sigma(rs, miscentered=False)
+
+            assert delta_sigmas.shape == (21, 3)
