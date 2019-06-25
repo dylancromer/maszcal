@@ -42,9 +42,10 @@ class GaussInterpolator:
 
 
 class RbfInterpolator:
-    def __init__(self, coords, grid, saved_rbf=NoSavedRbf()):
+    def __init__(self, coords, grid, coords_separated=True, saved_rbf=NoSavedRbf()):
         self.interp_coords = coords
         self.interp_grid = grid
+        self.coords_separated = coords_separated
 
         try:
             self.ndim = len(coords)
@@ -55,12 +56,25 @@ class RbfInterpolator:
             self.rbfi = Rbf(saved_rbf=saved_rbf)
 
     def process(self, function='multiquadric'):
-        point_coords = cartesian_prod(*self.interp_coords).T
+        if self.coords_separated:
+            point_coords = cartesian_prod(*self.interp_coords).T
+        else:
+            rs = self.interp_coords[0]
+            params = self.interp_coords[1:]
+            point_coords = cartesian_prod(rs, params).T
+
         point_vals = make_flat(self.interp_grid)
+
         self.rbfi = Rbf(*point_coords, point_vals, function=function)
 
-    def interp(self, coords):
-        point_coords = cartesian_prod(*coords).T
+    def interp(self, coords, coords_separated=True):
+        if self.coords_separated:
+            point_coords = cartesian_prod(*self.interp_coords).T
+        else:
+            rs = self.interp_coords[0]
+            params = self.interp_coords[1:]
+            point_coords = cartesian_prod(rs, params).T
+
         try:
             return self.rbfi(*point_coords).reshape(*(coord.size for coord in coords))
 
