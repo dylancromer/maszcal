@@ -8,13 +8,13 @@ from maszcal.interpolate import SavedRbf
 
 
 class FakeInterpolator:
-    def __init__(self, coords, grid):
+    def __init__(self, coords, grid, coords_separated=True):
         pass
 
     def process(self):
         pass
 
-    def interp(self, coords):
+    def interp(self, coords, coords_separated=True):
         return np.ones(tuple(c.size for c in coords))
 
 
@@ -48,36 +48,7 @@ def describe_emulator():
             with pytest.raises(TypeError):
                 emulator.load_emulation()
 
-    def describe_error_check():
-
-        @pytest.fixture
-        def emulator(mocker):
-            mocker.patch('maszcal.emulator.RbfInterpolator', new=FakeInterpolator)
-            lensing_emulator = LensingEmulator()
-            lensing_emulator.generate_grid = lambda coords: np.ones(tuple(c.size for c in coords))
-            return lensing_emulator
-
-        def it_does_nothing_when_the_interpolation_is_good(emulator):
-            rs = np.logspace(-1, 1, 10)
-            cons = np.linspace(2, 5, 5)
-            a_szs = np.linspace(-1, 1, 5)
-            coords = (rs, cons, a_szs)
-            emulator.emulate(coords)
-
-        def it_complains_when_the_interpolation_is_bad(emulator):
-            rs = np.logspace(-1, 1, 10)
-            cons = np.linspace(2, 5, 5)
-            a_szs = np.linspace(-1, 1, 5)
-            coords = (rs, cons, a_szs)
-
-            emulator.generate_grid = lambda coords: np.ones(tuple(c.size for c in coords))
-            emulator.emulate(coords, check_errs=False)
-            emulator.generate_grid = lambda coords: 2*np.ones(tuple(c.size for c in coords))
-
-            with pytest.raises(LargeErrorWarning):
-                emulator.check_errors(coords)
-
-    def describe_save_interpolation():
+    def describe_save_emulation():
 
         @pytest.fixture
         def emulator():
@@ -90,15 +61,17 @@ def describe_emulator():
             cons = np.linspace(2, 5, 5)
             a_szs = np.linspace(-1, 1, 5)
             coords = (rs, cons, a_szs)
-            emulator.emulate(coords)
+            grid = np.ones((10, 5, 5))
 
-            rbf = emulator.save_interpolation()
+            emulator.emulate(coords, grid)
+
+            rbf = emulator.save_emulation()
 
             SAVE_FILE = 'data/test/saved_rbf_test.json'
 
-            emulator.save_interpolation(SAVE_FILE)
+            emulator.save_emulation(SAVE_FILE)
 
-            saved_rbf = emulator.load_interpolation(SAVE_FILE)
+            saved_rbf = emulator._load_interpolation(SAVE_FILE)
 
             for original_val,json_val in zip(rbf.__dict__.values(),saved_rbf.__dict__.values()):
                 if isinstance(json_val, np.ndarray):
