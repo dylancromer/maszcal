@@ -47,6 +47,18 @@ def describe_rbf_interpolator():
 
             assert isinstance(interpolator.rbfi.nodes, np.ndarray)
 
+        def it_works_with_unseparated_coords():
+            rs = np.linspace(0, 1, 5)
+            params = np.ones((10, 2))
+            coords = (rs, params)
+            grid = np.ones((5, 10))
+
+            interpolator = RbfInterpolator(coords, grid, coords_separated=False)
+
+            interpolator.process()
+
+            assert isinstance(interpolator.rbfi.node, np.ndarray)
+
     def describe_interp():
 
         def it_interpolates_a_constant_correctly():

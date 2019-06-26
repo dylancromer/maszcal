@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import numpy as np
 #import GPy as gpy
 from .rbf import Rbf
-from maszcal.interp_utils import cartesian_prod, make_flat
+from maszcal.interp_utils import cartesian_prod, make_flat, combine_radii_with_params
 from maszcal.nothing import NoKernel, NoSavedRbf
 
 
@@ -43,6 +43,16 @@ class GaussInterpolator:
 
 class RbfInterpolator:
     def __init__(self, coords, grid, coords_separated=True, saved_rbf=NoSavedRbf()):
+        """
+        coords_separated - if true, coords arg takes form (x1s, ..., xns).
+            If false, coords take the form (rs, params) where params is an
+            ndarray of sample coordinates [[a1, b1, ...],
+                                                 .
+                                                 .
+                                                 .
+                                           [an, bn, ...]]
+            where n is the total number of samples.
+        """
         self.interp_coords = coords
         self.interp_grid = grid
         self.coords_separated = coords_separated
@@ -60,8 +70,8 @@ class RbfInterpolator:
             point_coords = cartesian_prod(*self.interp_coords).T
         else:
             rs = self.interp_coords[0]
-            params = self.interp_coords[1:]
-            point_coords = cartesian_prod(rs, params).T
+            params = self.interp_coords[1]
+            point_coords = combine_radii_with_params(rs, params).T
 
         point_vals = make_flat(self.interp_grid)
 
@@ -72,8 +82,8 @@ class RbfInterpolator:
             point_coords = cartesian_prod(*self.interp_coords).T
         else:
             rs = self.interp_coords[0]
-            params = self.interp_coords[1:]
-            point_coords = cartesian_prod(rs, params).T
+            params = self.interp_coords[1]
+            point_coords = combine_radii_with_params(rs, params).T
 
         try:
             return self.rbfi(*point_coords).reshape(*(coord.size for coord in coords))
