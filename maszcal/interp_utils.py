@@ -16,8 +16,8 @@ def combine_radii_with_params(rs, params):
     n_rs = rs.size
     n_params = params.shape[0]
 
-    rs_to_concat = np.repeat(rs, n_params, axis=0)[None, :]
-    params_to_concat = np.repeat(params, n_rs, axis=0).T
+    rs_to_concat = np.tile(rs, n_params)[None, :]
+    params_to_concat = np.tile(params, n_rs)
 
     return np.concatenate((rs_to_concat, params_to_concat), axis=0).T
 
