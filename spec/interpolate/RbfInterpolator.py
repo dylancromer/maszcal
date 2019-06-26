@@ -32,7 +32,7 @@ def describe_rbf_interpolator():
                             nodes=np.ones(10))
 
         def it_can_accept_a_saved_interpolation(saved_rbf):
-            interpolator = RbfInterpolator(NoCoords(), NoGrid(), saved_rbf)
+            interpolator = RbfInterpolator(NoCoords(), NoGrid(), saved_rbf=saved_rbf)
             assert interpolator.rbfi is not None
 
     def describe_process():
