@@ -47,9 +47,9 @@ class LensingEmulator:
     def load_emulation(self, interpolation_file=NoInterpFile(), saved_rbf=NoSavedRbf()):
         if not isinstance(interpolation_file, NoInterpFile):
             saved_rbf = self.load_interpolation(interpolation_file)
-            self.interpolator = RbfInterpolator(NoCoords(), NoGrid(), saved_rbf)
+            self.interpolator = RbfInterpolator(NoCoords(), NoGrid(), saved_rbf=saved_rbf)
         elif not isinstance(saved_rbf, NoSavedRbf):
-            self.interpolator = RbfInterpolator(NoCoords(), NoGrid(), saved_rbf)
+            self.interpolator = RbfInterpolator(NoCoords(), NoGrid(), saved_rbf=saved_rbf)
         else:
             raise TypeError("load_emulation requires either an "
                             "interpolation file or a SavedRbf object")
