@@ -23,15 +23,15 @@ class LensingEmulator:
     def load_emulation(self, interpolation_file=NoInterpFile(), saved_rbf=NoSavedRbf()):
         if not isinstance(interpolation_file, NoInterpFile):
             saved_rbf = self._load_interpolation(interpolation_file)
-            self.interpolator = RbfInterpolator(NoCoords(), NoGrid(), saved_rbf=saved_rbf)
+            self.interpolator = RbfInterpolator(NoCoords(), NoCoords(), NoGrid(), saved_rbf=saved_rbf)
         elif not isinstance(saved_rbf, NoSavedRbf):
-            self.interpolator = RbfInterpolator(NoCoords(), NoGrid(), saved_rbf=saved_rbf)
+            self.interpolator = RbfInterpolator(NoCoords(), NoCoords(), NoGrid(), saved_rbf=saved_rbf)
         else:
             raise TypeError("load_emulation requires either an "
                             "interpolation file or a SavedRbf object")
 
-    def emulate(self, coords, grid):
-        self.interpolator = RbfInterpolator(coords, grid)
+    def emulate(self, rs, params, grid):
+        self.interpolator = RbfInterpolator(rs, params, grid)
         self.interpolator.process()
 
     def _load_interpolation(self, interp_file):
@@ -57,5 +57,5 @@ class LensingEmulator:
         with open(rbf_file, 'w') as outfile:
             json.dump(rbf_dict, outfile, cls=NumpyEncoder, ensure_ascii=False)
 
-    def evaluate_on(self, coords):
-        return self.interpolator.interp(coords)
+    def evaluate_on(self, rs, params):
+        return self.interpolator.interp(rs, params)
