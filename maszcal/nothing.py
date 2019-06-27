@@ -17,5 +17,6 @@ class NoSavedRbf:
 class NoInterpFile:
     pass
 
+
 class NoParams:
     pass
