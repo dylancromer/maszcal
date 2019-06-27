@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 import numpy as np
-#import GPy as gpy
 from .rbf import Rbf
 from maszcal.interp_utils import cartesian_prod, make_flat, combine_radii_with_params
 from maszcal.nothing import NoKernel, NoSavedRbf
@@ -8,64 +7,28 @@ from maszcal.nothing import NoKernel, NoSavedRbf
 
 
 
-class GaussInterpolator:
-    def __init__(self, coords, grid, kernel=NoKernel()):
-        self.interp_coords = coords
-        self.interp_grid = grid
-
-        dim = len(coords)
-        if isinstance(kernel, NoKernel):
-            self.kernel = gpy.kern.RBF(dim)
-        else:
-            self.kernel = kernel
-
-    def process(self):
-        X = cartesian_prod(*self.interp_coords)
-        Y = make_flat(self.interp_grid)[:, np.newaxis]
-
-        self.model = gpy.models.GPRegression(X, Y, self.kernel)
-        self.model.optimize()
-
-    def interp(self, coords):
-        x = cartesian_prod(*coords)
-
-        try:
-            y,y_err = self.model.predict(x)
-            y = y.reshape(*(coord.size for coord in coords))
-            y_err = y_err.reshape(*(coord.size for coord in coords))
-            return y,y_err
-
-        except AttributeError as err:
-            raise AttributeError(str(err) + "\nGaussian process interpolation not yet optimized.\
-                                  You must run GaussInterpolator.process() before \
-                                  trying to evaluate the interpolator.")
-
-
 class RbfInterpolator:
-    def __init__(self, coords, grid, saved_rbf=NoSavedRbf()):
-        self.interp_coords = coords
+    def __init__(self, rs, params, grid, saved_rbf=NoSavedRbf()):
+        self.rs = rs
+        self.params = params
         self.interp_grid = grid
 
         try:
-            self.ndim = 1 + coords[1].shape[1]
-        except TypeError:
+            self.ndim = 1 + params.shape[1]
+        except AttributeError:
             self.ndim = saved_rbf.dimension
 
         if not isinstance(saved_rbf, NoSavedRbf):
             self.rbfi = Rbf(saved_rbf=saved_rbf)
 
     def process(self, function='multiquadric'):
-        rs = self.interp_coords[0]
-        params = self.interp_coords[1]
-        point_coords = combine_radii_with_params(rs, params).T
+        point_coords = combine_radii_with_params(self.rs, self.params).T
 
         point_vals = make_flat(self.interp_grid)
 
         self.rbfi = Rbf(*point_coords, point_vals, function=function)
 
-    def interp(self, coords):
-        rs = coords[0]
-        params = coords[1]
+    def interp(self, rs, params):
         point_coords = combine_radii_with_params(rs, params).T
 
         n_rs = rs.size
