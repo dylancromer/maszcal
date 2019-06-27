@@ -3,18 +3,19 @@ import numpy as np
 import pytest
 from maszcal.emulator import LensingEmulator
 from maszcal.interpolate import SavedRbf
+from maszcal.interp_utils import cartesian_prod
 
 
 
 
 class FakeInterpolator:
-    def __init__(self, coords, grid, coords_separated=True):
+    def __init__(self, coords, grid):
         pass
 
     def process(self):
         pass
 
-    def interp(self, coords, coords_separated=True):
+    def interp(self, coords):
         return np.ones(tuple(c.size for c in coords))
 
 
@@ -60,8 +61,9 @@ def describe_emulator():
             rs = np.logspace(-1, 1, 10)
             cons = np.linspace(2, 5, 5)
             a_szs = np.linspace(-1, 1, 5)
-            coords = (rs, cons, a_szs)
-            grid = np.ones((10, 5, 5))
+            params = cartesian_prod(cons, a_szs)
+            coords = (rs, params)
+            grid = np.ones((10, 25))
 
             emulator.emulate(coords, grid)
 

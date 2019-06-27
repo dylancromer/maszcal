@@ -43,16 +43,6 @@ class GaussInterpolator:
 
 class RbfInterpolator:
     def __init__(self, coords, grid, saved_rbf=NoSavedRbf()):
-        """
-        coords_separated - if true, coords arg takes form (x1s, ..., xns).
-            If false, coords take the form (rs, params) where params is an
-            ndarray of sample coordinates [[a1, b1, ...],
-                                                 .
-                                                 .
-                                                 .
-                                           [an, bn, ...]]
-            where n is the total number of samples.
-        """
         self.interp_coords = coords
         self.interp_grid = grid
 
@@ -73,7 +63,7 @@ class RbfInterpolator:
 
         self.rbfi = Rbf(*point_coords, point_vals, function=function)
 
-    def interp(self, coords, coords_separated=True):
+    def interp(self, coords):
         rs = coords[0]
         params = coords[1]
         point_coords = combine_radii_with_params(rs, params).T
