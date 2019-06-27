@@ -81,8 +81,8 @@ class RbfInterpolator:
         if coords_separated:
             point_coords = cartesian_prod(*coords).T
         else:
-            rs = self.interp_coords[0]
-            params = self.interp_coords[1]
+            rs = coords[0]
+            params = coords[1]
             point_coords = combine_radii_with_params(rs, params).T
 
         try:
