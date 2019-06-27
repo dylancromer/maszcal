@@ -11,10 +11,6 @@ from maszcal.nothing import NoGrid, NoCoords, NoSavedRbf, NoInterpFile
 
 
 
-class LargeErrorWarning(Warning):
-    pass
-
-
 class LensingEmulator:
     def __init__(self, comoving=True, units=u.Msun/u.Mpc**2):
         self.comoving = comoving
