@@ -94,8 +94,8 @@ class StackedModel:
     @params.setter
     def params(self, new_parameters):
         self._params = new_parameters
-        self.a_sz = self.params[:, 0]
-        self.concentrations = self.params[:, 1]
+        self.concentrations = self.params[:, 0]
+        self.a_sz = self.params[:, 1]
         try:
             self.centered_fraction = self.params[:, 2]
             self.miscenter_radius = self.params[:, 3]

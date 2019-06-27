@@ -117,10 +117,10 @@ def describe_stacked_model():
             stacked_model.mus = mus
             rs = np.logspace(-1, 1, 21)
 
-            params = np.array([[2, 3, 0.5, 1e-2],
-                               [2, 3, 0.7, 1e-1]])
+            params = np.array([[3, 2, 0.5, 1e-2],
+                               [3, 2, 0.7, 1e-1]])
 
-            cons = params[:, 1]
+            cons = params[:, 0]
             frac = params[:, 2]
             r_misc = params[:, 3]
 
