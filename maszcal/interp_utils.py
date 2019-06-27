@@ -18,9 +18,11 @@ def combine_radii_with_params(rs, params):
     dim = params.shape[1]
 
     rs_to_concat = np.tile(rs, n_params)[None, :]
-    params_to_concat = np.tile(params, n_rs).reshape(n_rs*n_params, dim).T
+    rs_to_concat = rs_to_concat.reshape(n_rs, n_params, order='F').reshape(n_rs*n_params, 1)
 
-    return np.concatenate((rs_to_concat, params_to_concat), axis=0).T
+    params_to_concat = np.tile(params.T, n_rs).T
+
+    return np.concatenate((rs_to_concat, params_to_concat), axis=1)
 
 
 def make_flat(array):
