@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import pytest
-from maszcal.emulator import LensingEmulator, LargeErrorWarning
+from maszcal.emulator import LensingEmulator
 from maszcal.interpolate import SavedRbf
 
 

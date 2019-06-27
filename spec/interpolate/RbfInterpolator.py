@@ -13,7 +13,9 @@ def describe_rbf_interpolator():
 
         def correct_args_case():
             grid = stub()
-            coords = (stub(),)
+            rs = np.ones(1)
+            params = np.ones((1,1))
+            coords = (rs, params)
             RbfInterpolator(coords, grid)
 
         def incorrect_args_case():
@@ -38,25 +40,14 @@ def describe_rbf_interpolator():
     def describe_process():
 
         def it_creates_an_rbfi():
-            coords = (np.linspace(0, 1, 5),)
-            grid = np.ones(5)
-
-            interpolator = RbfInterpolator(coords, grid)
-
-            interpolator.process()
-
-            assert isinstance(interpolator.rbfi.nodes, np.ndarray)
-
-        def it_works_with_unseparated_coords():
-            rs = np.linspace(0.1, 1, 5)
-
-            params = np.array([[0.1, 0.2],
-                               [1.0, 2.0]])
+            rs = np.linspace(0, 2, 4)
+            p = np.linspace(1, 3, 5)
+            params = np.stack((p,p)).T
 
             coords = (rs, params)
-            grid = np.ones((5, 2))
+            grid = np.ones((4, 5))
 
-            interpolator = RbfInterpolator(coords, grid, coords_separated=False)
+            interpolator = RbfInterpolator(coords, grid)
 
             interpolator.process()
 
@@ -65,20 +56,26 @@ def describe_rbf_interpolator():
     def describe_interp():
 
         def it_interpolates_a_constant_correctly():
-            coords = (np.linspace(0, 1, 10),)
-            grid = np.ones(10)
+            rs = np.linspace(0, 1, 10)
+            params = np.ones((1, 2))
+            coords = (rs, params)
+
+            grid = np.ones((10, 1))
 
             interpolator = RbfInterpolator(coords, grid)
             interpolator.process()
 
-            coords_to_eval = (np.linspace(0.2, 0.3, 10),)
+            coords_to_eval = (np.linspace(0.2, 0.3, 10), params)
             result = interpolator.interp(coords_to_eval)
 
             assert np.allclose(result, 1, rtol=1e-2)
 
         def it_can_handle_lots_of_coords():
-            coords = tuple(np.linspace(0, 1, 2) for i in range(10))
-            grid = np.ones(tuple(2 for i in range(10)))
+            rs = np.linspace(0, 1, 5)
+            p = np.arange(1, 5)
+            params = np.stack((p, p, p, p, p, p)).T
+            coords = (rs, params)
+            grid = np.ones((5, 4))
 
             interpolator = RbfInterpolator(coords, grid)
             interpolator.process()
@@ -87,8 +84,11 @@ def describe_rbf_interpolator():
 
         @pytest.fixture
         def rbf():
-            coords = (np.linspace(0, 1, 10),)
-            grid = np.ones(10)
+            rs = np.linspace(0, 1, 10)
+            params = np.ones((1, 2))
+            coords = (rs, params)
+
+            grid = np.ones((10, 1))
             interpolator = RbfInterpolator(coords, grid)
             interpolator.process()
             return interpolator
