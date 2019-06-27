@@ -196,6 +196,23 @@ def test_delta_sigma_of_r_miscentered():
     plt.gcf().clear()
 
 
+def test_delta_sigma_of_r_miscentered_negative_bias():
+    rs = np.logspace(-1, 2, 40)
+
+    params = np.array([[2, -0.6, 0.8, 1e-1]])
+    stacked_model.params = params
+
+    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc), miscentered=True)[:,0]
+
+    plt.plot(rs, rs * delta_sigmas/1e6)
+    plt.xlabel(r'$ r $')
+    plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
+    plt.xscale('log')
+
+    plt.savefig('figs/test/delta_sigma_r_miscentered_negative_bias.svg')
+    plt.gcf().clear()
+
+
 def test_sigma_of_m_nocomoving():
     stacked_model.comoving_radii = False
     rs = np.logspace(-1, 2, 40)
