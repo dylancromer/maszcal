@@ -1,7 +1,6 @@
 ### HIGH LEVEL DEPENDENCIES ###
 import json
 import numpy as np
-import pandas as pd
 import scipy.integrate as integrate
 from scipy.interpolate import interp1d, interp2d
 ### MID LEVEL DEPENDCIES ###
@@ -12,8 +11,7 @@ from maszcal.offset_nfw.nfw import NFWModel
 from maszcal.tinker import dn_dlogM
 from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
-from maszcal.nfw import SimpleDeltaSigma
-from maszcal.mathutils import atleast_kd, _trapz
+from maszcal.mathutils import _trapz
 from maszcal.nothing import NoParams
 
 

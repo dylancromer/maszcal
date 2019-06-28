@@ -1,10 +1,8 @@
-import sys
 import json
 import numpy as np
 import astropy.units as u
 from maszcal.interpolate import RbfInterpolator, SavedRbf
 from maszcal.model import StackedModel
-from maszcal.mathutils import atleast_kd
 from maszcal.ioutils import NumpyEncoder
 from maszcal.nothing import NoGrid, NoCoords, NoSavedRbf, NoInterpFile
 

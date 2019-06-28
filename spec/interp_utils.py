@@ -36,14 +36,15 @@ def describe_combine_radii_with_params():
         rs = np.linspace(1, 10, 10)
         a = np.arange(1, 11)
         b = np.arange(2, 12)
-        params = np.stack((a,b)).T
+        c = np.arange(3, 13)
+        params = np.stack((a,b,c)).T
 
-        fs = rs[:, None] * (params[None, :, 1] + params[None, :, 0])
+        fs = rs[:, None] * (params[None, :, 2] + params[None, :, 1] + params[None, :, 0])
 
         flat_func = make_flat(fs)
 
         coords = combine_radii_with_params(rs, params)
 
-        what_flat_func_should_be = coords.T[0] * (coords.T[1] + coords.T[2])
+        what_flat_func_should_be = coords.T[0] * (coords.T[1] + coords.T[2] + coords.T[3])
 
         assert np.all(flat_func == what_flat_func_should_be)

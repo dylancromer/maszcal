@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 import numpy as np
 from .rbf import Rbf
-from maszcal.interp_utils import cartesian_prod, make_flat, combine_radii_with_params
-from maszcal.nothing import NoKernel, NoSavedRbf
+from maszcal.interp_utils import make_flat, combine_radii_with_params
+from maszcal.nothing import NoSavedRbf
 
 
 
