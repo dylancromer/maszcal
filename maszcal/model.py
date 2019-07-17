@@ -66,8 +66,8 @@ class StackedModel:
 
 
         ### CLUSTER MASSES AND RELATED ###
-        self.mu_szs = np.linspace(14, 16, 20)
-        self.mus = np.linspace(14, 16, 20)
+        self.mu_szs = np.linspace(np.log(1e14), np.log(1e16), 20)
+        self.mus = np.linspace(np.log(1e14), np.log(1e16), 20)
 
         ### SELECTION FUNCTION ###
         if isinstance(selection_func_file, DefaultSelectionFunc):
@@ -134,10 +134,10 @@ class StackedModel:
         return pref*exps
 
     def mass_sz(self, mu_szs):
-        return 10**mu_szs
+        return np.exp(mu_szs)
 
     def mass(self, mus):
-        return 10**mus
+        return np.exp(mus)
 
     def _get_selection_func_interpolator(self, selection_func_file):
         with open(selection_func_file, 'r') as json_file:

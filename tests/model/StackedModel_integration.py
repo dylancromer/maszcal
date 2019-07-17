@@ -20,7 +20,7 @@ stacked_model = StackedModel()
 
 def test_sigma_of_m():
     rs = np.logspace(-1, 2, 40)
-    mus = np.array([15])
+    mus = np.array([np.log(1e15)])
     cons = np.array([2])
 
     sigmas = stacked_model.delta_sigma_of_mass(rs,
@@ -45,7 +45,7 @@ def test_misc_sigma_of_m():
 
     zs = stacked_model.zs
 
-    mus = np.array([15])
+    mus = np.array([np.log(1e15)])
     stacked_model.mus = mus
     rs = np.logspace(-1, 1, 30)
     cons = np.array([2])
@@ -72,7 +72,7 @@ def test_misc_sigma_of_m():
 
 def test_delta_sigma_of_m():
     rs = np.logspace(-1, 2, 40)
-    mus = np.array([15])
+    mus = np.array([np.log(1e15)])
     cons = np.array([2])
 
     delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
@@ -84,7 +84,7 @@ def test_delta_sigma_of_m():
 
 
     plt.plot(rs, rs[:, None]*delta_sigmas.T/1e6)
-    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
+    plt.title(rf'$ M = {np.exp(mus[0])} \; M_{{\odot}}$')
     plt.xlabel(r'$ r $')
     plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
     plt.xscale('log')
@@ -95,7 +95,7 @@ def test_delta_sigma_of_m():
 
 def test_delta_sigma_of_m_from_sigma():
     rs = np.logspace(-1, 2, 40)
-    mus = np.array([15])
+    mus = np.array([np.log(1e15)])
     cons = np.array([2])
 
     delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
@@ -135,7 +135,7 @@ def test_delta_sigma_of_m_from_sigma():
 
 def test_misc_delta_sigma_of_m():
     rs = np.logspace(-1, 2, 40)
-    mus = np.array([15])
+    mus = np.array([np.log(1e15)])
     cons = np.array([2])
 
     params = np.array([[2, 0, 0.8, 1e-1]])
@@ -216,7 +216,7 @@ def test_delta_sigma_of_r_miscentered_negative_bias():
 def test_sigma_of_m_nocomoving():
     stacked_model.comoving_radii = False
     rs = np.logspace(-1, 2, 40)
-    mus = np.array([15])
+    mus = np.array([np.log(1e15)])
     cons = np.array([2])
 
     sigmas = stacked_model.delta_sigma_of_mass(rs,
@@ -241,7 +241,7 @@ def test_delta_sigma_of_m_nocomoving():
     stacked_model.comoving_radii = False
 
     rs = np.logspace(-1, 2, 40)
-    mus = np.array([15])
+    mus = np.array([np.log(1e15)])
     cons = np.array([2])
 
     delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
@@ -334,8 +334,8 @@ def test_tinker_mf():
                   * stacked_model.cosmo_params.omega_matter
                   / h**2)
 
-    stacked_model.mu_szs = np.linspace(10, 16, 30)
-    stacked_model.mus = np.linspace(10, 16, 30)
+    stacked_model.mu_szs = np.linspace(np.log(1e10), np.log(1e16), 30)
+    stacked_model.mus = np.linspace(np.log(1e10), np.log(1e16), 30)
 
     z = 0
     mink = 1e-4
