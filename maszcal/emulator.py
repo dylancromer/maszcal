@@ -4,7 +4,7 @@ import astropy.units as u
 from maszcal.interpolate import RbfInterpolator, SavedRbf
 from maszcal.model import StackedModel
 from maszcal.ioutils import NumpyEncoder
-from maszcal.nothing import NoGrid, NoCoords, NoSavedRbf, NoInterpFile
+from maszcal.nothing import NoFuncVals, NoCoords, NoSavedRbf, NoInterpFile
 
 
 
@@ -21,15 +21,15 @@ class LensingEmulator:
     def load_emulation(self, interpolation_file=NoInterpFile(), saved_rbf=NoSavedRbf()):
         if not isinstance(interpolation_file, NoInterpFile):
             saved_rbf = self._load_interpolation(interpolation_file)
-            self.interpolator = RbfInterpolator(NoCoords(), NoCoords(), NoGrid(), saved_rbf=saved_rbf)
+            self.interpolator = RbfInterpolator(NoCoords(), NoFuncVals(), saved_rbf=saved_rbf)
         elif not isinstance(saved_rbf, NoSavedRbf):
-            self.interpolator = RbfInterpolator(NoCoords(), NoCoords(), NoGrid(), saved_rbf=saved_rbf)
+            self.interpolator = RbfInterpolator(NoCoords(), NoFuncVals(), saved_rbf=saved_rbf)
         else:
             raise TypeError("load_emulation requires either an "
                             "interpolation file or a SavedRbf object")
 
-    def emulate(self, rs, params, grid):
-        self.interpolator = RbfInterpolator(rs, params, grid)
+    def emulate(self, params, func_vals):
+        self.interpolator = RbfInterpolator(params, func_vals)
         self.interpolator.process()
 
     def _load_interpolation(self, interp_file):
@@ -55,5 +55,5 @@ class LensingEmulator:
         with open(rbf_file, 'w') as outfile:
             json.dump(rbf_dict, outfile, cls=NumpyEncoder, ensure_ascii=False)
 
-    def evaluate_on(self, rs, params):
-        return self.interpolator.interp(rs, params)
+    def evaluate_on(self, params):
+        return self.interpolator.interp(params)

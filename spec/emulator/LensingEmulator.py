@@ -9,14 +9,14 @@ from maszcal.interp_utils import cartesian_prod
 
 
 class FakeInterpolator:
-    def __init__(self, rs, params, grid):
+    def __init__(self, params, func_vals):
         pass
 
     def process(self):
         pass
 
-    def interp(self, rs, params):
-        return np.ones((rs.size, params.shape[0]))
+    def interp(self, params):
+        return np.ones(params.shape[0])
 
 
 def describe_emulator():
@@ -26,7 +26,7 @@ def describe_emulator():
         @pytest.fixture
         def emulator():
             lensing_emulator = LensingEmulator()
-            lensing_emulator.generate_grid = lambda rs,params: np.ones((rs.size, params.shape[0]))
+            lensing_emulator.generate_func_vals = lambda params: np.ones(params.shape[0])
             return lensing_emulator
 
         @pytest.fixture
@@ -54,17 +54,16 @@ def describe_emulator():
         @pytest.fixture
         def emulator():
             lensing_emulator = LensingEmulator()
-            lensing_emulator.generate_grid = lambda rs,params: np.ones((rs.size, params.shape[0]))
+            lensing_emulator.generate_func_vals = lambda params: np.ones(params.shape[0])
             return lensing_emulator
 
         def it_creates_a_saved_file_with_the_interpolation(emulator):
-            rs = np.logspace(-1, 1, 10)
             cons = np.linspace(2, 5, 5)
             a_szs = np.linspace(-1, 1, 5)
             params = cartesian_prod(cons, a_szs)
-            grid = np.ones((10, 25))
+            func_vals = np.ones(25)
 
-            emulator.emulate(rs, params, grid)
+            emulator.emulate(params, func_vals)
 
             rbf = emulator.save_emulation()
 
