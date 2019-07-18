@@ -8,13 +8,12 @@ from maszcal.nothing import NoSavedRbf
 
 
 class RbfInterpolator:
-    def __init__(self, rs, params, grid, saved_rbf=NoSavedRbf()):
-        self.rs = rs
+    def __init__(self, params, func_vals, saved_rbf=NoSavedRbf()):
         self.params = params
-        self.interp_grid = grid
+        self.interp_func_vals = func_vals
 
         try:
-            self.ndim = 1 + params.shape[1]
+            self.ndim = params.shape[1]
         except AttributeError:
             self.ndim = saved_rbf.dimension
 
@@ -22,20 +21,13 @@ class RbfInterpolator:
             self.rbfi = Rbf(saved_rbf=saved_rbf)
 
     def process(self, function='multiquadric'):
-        point_coords = combine_radii_with_params(self.rs, self.params).T
+        point_vals = make_flat(self.interp_func_vals)
 
-        point_vals = make_flat(self.interp_grid)
+        self.rbfi = Rbf(*self.params.T, point_vals, function=function)
 
-        self.rbfi = Rbf(*point_coords, point_vals, function=function)
-
-    def interp(self, rs, params):
-        point_coords = combine_radii_with_params(rs, params).T
-
-        n_rs = rs.size
-        n_params = params.shape[0]
-
+    def interp(self, params):
         try:
-            return self.rbfi(*point_coords).reshape(n_rs, n_params)
+            return self.rbfi(*params.T)
 
         except AttributeError as err:
             raise AttributeError(str(err) + "\nRBF interpolation not yet calculated.\
