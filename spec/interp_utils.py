@@ -1,29 +1,50 @@
 import numpy as np
-from maszcal.interp_utils import cartesian_prod, make_flat
+from maszcal.interp_utils import cartesian_prod, make_flat, combine_radii_with_params
 
 
 
 
-"""
-    - The order of make_flat's output should always align with the ordering given
-    by cartesian product, when the product is interpreted as coordinates for the
-    values of the flattened array
-"""
-def test_orders_equal():
-    xs = np.linspace(1, 10, 10)
-    ys = np.linspace(1, 10, 10)
-    zs = np.linspace(1, 10, 10)
+def describe_cartesian_prod():
 
-    fs = np.random.rand(10, 10, 10)
+    def it_should_give_the_same_order_as_flattening():
+        """
+        The order of make_flat's output should always align with the ordering given
+        by cartesian product, when the product is interpreted as coordinates for the
+        values of the flattened array
+        """
+        xs = np.linspace(1, 10, 10)
+        ys = np.linspace(1, 10, 10)
+        zs = np.linspace(1, 10, 10)
 
-    coords = cartesian_prod(xs, ys, zs)
-    flat_func = make_flat(fs)
+        fs = np.random.rand(10, 10, 10)
 
-    coord_inds = []
-    for x in (xs, ys, zs):
-        coord_inds.append(np.linspace(0, x.size - 1, x.size, dtype=int))
+        flat_func = make_flat(fs)
 
-    coord_inds = tuple(cartesian_prod(*coord_inds).T)
-    flat_func_should_be = fs[coord_inds]
+        coord_inds = []
+        for x in (xs, ys, zs):
+            coord_inds.append(np.linspace(0, x.size - 1, x.size, dtype=int))
 
-    assert np.all(flat_func == flat_func_should_be)
+        coord_inds = tuple(cartesian_prod(*coord_inds).T)
+        what_flat_func_should_be = fs[coord_inds]
+
+        assert np.all(flat_func == what_flat_func_should_be)
+
+
+def describe_combine_radii_with_params():
+
+    def it_should_give_the_same_order_as_flattening():
+        rs = np.linspace(1, 10, 10)
+        a = np.arange(1, 11)
+        b = np.arange(2, 12)
+        c = np.arange(3, 13)
+        params = np.stack((a,b,c)).T
+
+        fs = rs[:, None] * (params[None, :, 2] + params[None, :, 1] + params[None, :, 0])
+
+        flat_func = make_flat(fs)
+
+        coords = combine_radii_with_params(rs, params)
+
+        what_flat_func_should_be = coords.T[0] * (coords.T[1] + coords.T[2] + coords.T[3])
+
+        assert np.all(flat_func == what_flat_func_should_be)

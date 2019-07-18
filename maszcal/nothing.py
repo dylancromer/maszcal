@@ -12,3 +12,11 @@ class NoKernel:
 
 class NoSavedRbf:
     pass
+
+
+class NoInterpFile:
+    pass
+
+
+class NoParams:
+    pass

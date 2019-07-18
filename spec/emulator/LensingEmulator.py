@@ -1,21 +1,22 @@
 import os
 import numpy as np
 import pytest
-from maszcal.emulator import LensingEmulator, LargeErrorWarning
+from maszcal.emulator import LensingEmulator
 from maszcal.interpolate import SavedRbf
+from maszcal.interp_utils import cartesian_prod
 
 
 
 
 class FakeInterpolator:
-    def __init__(self, coords, grid):
+    def __init__(self, rs, params, grid):
         pass
 
     def process(self):
         pass
 
-    def interp(self, coords):
-        return np.ones(tuple(c.size for c in coords))
+    def interp(self, rs, params):
+        return np.ones((rs.size, params.shape[0]))
 
 
 def describe_emulator():
@@ -25,7 +26,7 @@ def describe_emulator():
         @pytest.fixture
         def emulator():
             lensing_emulator = LensingEmulator()
-            lensing_emulator.generate_grid = lambda coords: np.ones(tuple(c.size for c in coords))
+            lensing_emulator.generate_grid = lambda rs,params: np.ones((rs.size, params.shape[0]))
             return lensing_emulator
 
         @pytest.fixture
@@ -40,61 +41,38 @@ def describe_emulator():
                             nodes=np.ones(10))
 
         def it_can_accept_a_saved_interpolator(emulator, saved_rbf):
-            emulator.load_emulation(saved_rbf)
+            emulator.load_emulation(saved_rbf=saved_rbf)
             assert emulator.interpolator is not None
             assert emulator.interpolator.rbfi is not None
 
-    def describe_error_check():
+        def it_fails_if_you_dont_give_it_a_file_or_saved_rbf(emulator):
+            with pytest.raises(TypeError):
+                emulator.load_emulation()
 
-        @pytest.fixture
-        def emulator(mocker):
-            mocker.patch('maszcal.emulator.RbfInterpolator', new=FakeInterpolator)
-            lensing_emulator = LensingEmulator()
-            lensing_emulator.generate_grid = lambda coords: np.ones(tuple(c.size for c in coords))
-            return lensing_emulator
-
-        def it_does_nothing_when_the_interpolation_is_good(emulator):
-            rs = np.logspace(-1, 1, 10)
-            cons = np.linspace(2, 5, 5)
-            a_szs = np.linspace(-1, 1, 5)
-            coords = (rs, cons, a_szs)
-            emulator.emulate(coords)
-
-        def it_complains_when_the_interpolation_is_bad(emulator):
-            rs = np.logspace(-1, 1, 10)
-            cons = np.linspace(2, 5, 5)
-            a_szs = np.linspace(-1, 1, 5)
-            coords = (rs, cons, a_szs)
-
-            emulator.generate_grid = lambda coords: np.ones(tuple(c.size for c in coords))
-            emulator.emulate(coords, check_errs=False)
-            emulator.generate_grid = lambda coords: 2*np.ones(tuple(c.size for c in coords))
-
-            with pytest.raises(LargeErrorWarning):
-                emulator.check_errors(coords)
-
-    def describe_save_interpolation():
+    def describe_save_emulation():
 
         @pytest.fixture
         def emulator():
             lensing_emulator = LensingEmulator()
-            lensing_emulator.generate_grid = lambda coords: np.ones(tuple(c.size for c in coords))
+            lensing_emulator.generate_grid = lambda rs,params: np.ones((rs.size, params.shape[0]))
             return lensing_emulator
 
         def it_creates_a_saved_file_with_the_interpolation(emulator):
             rs = np.logspace(-1, 1, 10)
             cons = np.linspace(2, 5, 5)
             a_szs = np.linspace(-1, 1, 5)
-            coords = (rs, cons, a_szs)
-            emulator.emulate(coords)
+            params = cartesian_prod(cons, a_szs)
+            grid = np.ones((10, 25))
 
-            rbf = emulator.save_interpolation()
+            emulator.emulate(rs, params, grid)
+
+            rbf = emulator.save_emulation()
 
             SAVE_FILE = 'data/test/saved_rbf_test.json'
 
-            emulator.save_interpolation(SAVE_FILE)
+            emulator.save_emulation(SAVE_FILE)
 
-            saved_rbf = emulator.load_interpolation(SAVE_FILE, return_rbf=True)
+            saved_rbf = emulator._load_interpolation(SAVE_FILE)
 
             for original_val,json_val in zip(rbf.__dict__.values(),saved_rbf.__dict__.values()):
                 if isinstance(json_val, np.ndarray):

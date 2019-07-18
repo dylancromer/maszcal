@@ -1,42 +1,57 @@
 ### HIGH LEVEL DEPENDENCIES ###
+import json
 import numpy as np
-import pandas as pd
 import scipy.integrate as integrate
+from scipy.interpolate import interp1d, interp2d
 ### MID LEVEL DEPENDCIES ###
 import camb
 from astropy import units as u
-### LOW LEVEL DEPENDENCIES ###
-from maszcal.offset_nfw.nfw import NFWModel
 ### IN-MODULE DEPENDCIES ###
+from maszcal.offset_nfw.nfw import NFWModel
 from maszcal.tinker import dn_dlogM
 from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
-from maszcal.nfw import SimpleDeltaSigma
-from maszcal.mathutils import atleast_kd, _trapz
+from maszcal.mathutils import _trapz
+from maszcal.nothing import NoParams
 
 
 
 
-class DefaultCosmology():
+class DefaultCosmology:
     pass
 
 
-class StackedModel():
+class DefaultSelectionFunc:
+    pass
+
+
+class DefaultLensingWeights:
+    pass
+
+
+class StackedModel:
     """
     Canonical variable order:
-    mu_sz, mu, z, r, c, a_sz
+    mu_sz, mu, z, r, params
     """
     def __init__(
             self,
-            cosmo_params=DefaultCosmology()
+            params=NoParams(),
+            selection_func_file=DefaultSelectionFunc(),
+            lensing_weights_file=DefaultLensingWeights(),
+            cosmo_params=DefaultCosmology(),
+            max_redshift=2,
     ):
 
         ### FITTING PARAMETERS AND LIKELIHOOD ###
         self.sigma_muszmu = 0.2
         self.b_sz = 1
 
+        if not isinstance(params, NoParams):
+            self.params = params
+
         ### SPATIAL QUANTITIES AND MATTER POWER ###
-        self.zs =  np.linspace(0, 2, 20)
+        self.zs =  np.linspace(0, max_redshift, 20)
         self.max_k = 10
         self.min_k = 1e-4
         self.number_ks = 400
@@ -51,21 +66,37 @@ class StackedModel():
 
 
         ### CLUSTER MASSES AND RELATED ###
-        self.mu_szs = np.linspace(12, 16, 20)
-        self.mus = np.linspace(12, 16, 20)
+        self.mu_szs = np.linspace(np.log(1e14), np.log(1e16), 20)
+        self.mus = np.linspace(np.log(1e14), np.log(1e16), 20)
+
+        ### SELECTION FUNCTION ###
+        if isinstance(selection_func_file, DefaultSelectionFunc):
+            self.selection_func = self._default_selection_func
+        else:
+            self.selection_func = self._get_selection_func_interpolator(selection_func_file)
+
+        ### LENSING WEIGHTS ###
+        if isinstance(lensing_weights_file, DefaultLensingWeights):
+            self.lensing_weights = self._default_lensing_weights
+        else:
+            self.lensing_weights = self._get_lensing_weights_interpolator(lensing_weights_file)
 
         ### MISC ###
         self.constants = Constants()
         self._comoving_radii = True
 
-    def set_coords(self, coords, miscenter=False):
-        self.radii = coords[0]
-        self.concentrations = coords[1]
-        self.a_sz = coords[2]
+    @property
+    def params(self):
+        return self._params
 
+    @params.setter
+    def params(self, new_parameters):
+        self._params = new_parameters
+        self.concentrations = self.params[:, 0]
+        self.a_sz = self.params[:, 1]
         try:
-            self.centered_fraction = coords[3]
-            self.miscenter_radius = coords[4]
+            self.centered_fraction = self.params[:, 2]
+            self.miscenter_radius = self.params[:, 3]
         except IndexError:
             pass
 
@@ -90,12 +121,9 @@ class StackedModel():
     def init_onfw(self):
         self.onfw_model = NFWModel(self.astropy_cosmology, comoving=self.comoving_radii)
 
-    def mu_sz(self, mus):
-        return self.b_sz*mus + self.a_sz
-
     def prob_musz_given_mu(self, mu_szs, mus):
         """
-        SHAPE mu_sz, mu, a_sz
+        SHAPE mu_sz, mu, params
         """
         pref = 1/(np.sqrt(2*np.pi) * self.sigma_muszmu)
 
@@ -106,16 +134,29 @@ class StackedModel():
         return pref*exps
 
     def mass_sz(self, mu_szs):
-        return 10**mu_szs
+        return np.exp(mu_szs)
 
     def mass(self, mus):
-        return 10**mus
+        return np.exp(mus)
 
-    def selection_func(self, mu_szs):
+    def _get_selection_func_interpolator(self, selection_func_file):
+        with open(selection_func_file, 'r') as json_file:
+            selec_func_dict = json.load(json_file)
+
+        mus = np.asarray(selec_func_dict['mus'])
+        zs = np.asarray(selec_func_dict['zs'])
+        selection_fs = np.asarray(selec_func_dict['selection_fs'])
+        interpolator = interp2d(zs, mus, selection_fs, kind='linear')
+
+        self.zs = np.linspace(zs[0], zs[-1], 20)
+
+        return lambda mu,z: interpolator(z, mu)
+
+    def _default_selection_func(self, mu_szs, zs):
         """
         SHAPE mu_sz, z
         """
-        sel_func = np.ones((mu_szs.size, self.zs.size))
+        sel_func = np.ones((mu_szs.size, zs.size))
 
         low_mass_indices = np.where(mu_szs < np.log10(3e14))
         sel_func[:, low_mass_indices] = 0
@@ -156,7 +197,7 @@ class StackedModel():
 
     def misc_sigma(self, rs, mus, concentrations, cen_frac, r_misc, units=u.Msun/u.pc**2):
         """
-        SHAPE mu, z, r, c, cen_frac, r_misc
+        SHAPE mu, z, r, params
         """
         r_offsets = np.linspace(r_misc.min()/1e3, 10*r_misc.max(), 30)
         thetas = np.linspace(0, 2*np.pi, 10)
@@ -172,19 +213,19 @@ class StackedModel():
         dr_offsets = np.gradient(r_offsets)
 
         r_offset_integral = _trapz(
-            theta_integral[..., None, :]*misc_kernel,
+            theta_integral*misc_kernel,
             axis=-1,
             dx=dr_offsets
         )
 
-        cen_frac = cen_frac[None, None, None, None, :, None]
+        cen_frac = cen_frac[None, None, None, :]
 
-        return (cen_frac * self.sigma_of_mass(rs, mus, concentrations, units)[..., None, None]
-                + (1-cen_frac) * r_offset_integral[..., None, :])
+        return (cen_frac * self.sigma_of_mass(rs, mus, concentrations, units)
+                + (1-cen_frac) * r_offset_integral)
 
     def delta_sigma_of_mass(self, rs, mus, concentrations, units=u.Msun/u.pc**2, miscentered=False):
         """
-        SHAPE mu, z, r, c
+        SHAPE mu, z, r, params
         """
         if not isinstance(miscentered, bool):
             raise ValueError("miscentered must be True or False")
@@ -211,10 +252,7 @@ class StackedModel():
 
         extended_rs = np.concatenate((inner_rs, rs))
 
-        if miscentered:
-            extended_rs_ndim = extended_rs[None, None, :, None, None, None]
-        else:
-            extended_rs_ndim = extended_rs[None, None, :, None]
+        extended_rs_ndim = extended_rs[None, None, :, None]
 
         sigmas_inside_r = integrate.cumtrapz(
             extended_sigmas * extended_rs_ndim,
@@ -232,7 +270,7 @@ class StackedModel():
 
     def delta_sigma_of_mass_nfw(self, rs, mus, concentrations=None, units=u.Msun/u.pc**2):
         """
-        SHAPE mu, z, r, c
+        SHAPE mu, z, r, params
         """
         masses = self.mass(mus)
 
@@ -273,13 +311,22 @@ class StackedModel():
             comoving=True
         )
 
-        return dn_dlogms.T
+        return dn_dlogms
 
-    def lensing_weights(self):
+    def _get_lensing_weights_interpolator(self, lensing_weights_file):
+        with open(lensing_weights_file, 'r') as json_file:
+            weights_dict = json.load(json_file)
+
+        zs = np.asarray(weights_dict['zs'])
+        weights = np.asarray(weights_dict['weights'])
+
+        return interp1d(zs, weights, kind='cubic')
+
+    def _default_lensing_weights(self, zs):
         """
-        SHAPE z
+        SHAPE mu, z
         """
-        return np.ones(self.zs.shape)
+        return np.ones(zs.shape)
 
     def comoving_vol(self):
         """
@@ -293,15 +340,15 @@ class StackedModel():
 
     def _sz_measure(self):
         """
-        SHAPE mu_sz, mu, z, a_sz
+        SHAPE mu_sz, mu, z, params
         """
         return (self.mass_sz(self.mu_szs)[:, None, None, None]
-                * self.selection_func(self.mu_szs)[:, None, :, None]
+                * self.selection_func(self.mu_szs, self.zs)[:, None, :, None]
                 * self.prob_musz_given_mu(self.mu_szs, self.mus)[:, :, None, :])
 
     def number_sz(self):
         """
-        SHAPE a_sz
+        SHAPE params
         """
         dmu_szs = np.gradient(self.mu_szs)
         mu_sz_integral = _trapz(self._sz_measure(), axis=0, dx=dmu_szs)
@@ -311,8 +358,9 @@ class StackedModel():
 
         dzs = np.gradient(self.zs)
         z_integral = _trapz(
-            ((self.lensing_weights() * self.comoving_vol())[:, None]
-             * mu_integral),
+            ((
+                self.lensing_weights(self.zs) * self.comoving_vol()
+            )[:, None] * mu_integral),
             axis=0,
             dx=dzs
         )
@@ -321,38 +369,39 @@ class StackedModel():
 
     def _delta_sigma_miscentered(self, rs, units):
         """
-        SHAPE R, c, a_sz, centered_frac, miscenter_radius
+        SHAPE R, params
         """
         dmu_szs = np.gradient(self.mu_szs)
         mu_sz_integral = _trapz(
-            (self._sz_measure()[:, :, :, None, None, :, None, None]
+            (self._sz_measure()[:, :, :, None, :]
              * self.delta_sigma_of_mass(
                  rs,
                  self.mus,
                  self.concentrations,
                  units=units,
                  miscentered=True,
-             )[None, ..., None, :, :]),
+             )[None, ...]),
             axis=0,
             dx=dmu_szs,
         )
 
         dmus = np.gradient(self.mus)
         mu_integral = _trapz(
-            self.dnumber_dlogmass()[..., None, None, None, None, None] * mu_sz_integral,
+            self.dnumber_dlogmass()[..., None, None] * mu_sz_integral,
             axis=0,
             dx=dmus
         )
 
         dzs = np.gradient(self.zs)
         z_integral = _trapz(
-            ((self.lensing_weights() * self.comoving_vol())[:, None, None, None, None, None]
-             * mu_integral),
+            ((
+                self.lensing_weights(self.zs) * self.comoving_vol()
+            )[:, None, None] * mu_integral),
             axis=0,
             dx=dzs
         )
 
-        return z_integral/self.number_sz()[None, None, :, None, None]
+        return z_integral/self.number_sz()[None, :]
 
     def _delta_sigma(self, rs, units):
         """
@@ -360,34 +409,35 @@ class StackedModel():
         """
         dmu_szs = np.gradient(self.mu_szs)
         mu_sz_integral = _trapz(
-            (self._sz_measure()[:, :, :, None, None, :]
+            (self._sz_measure()[:, :, :, None, :]
              * self.delta_sigma_of_mass(
                  rs,
                  self.mus,
                  self.concentrations,
                  units=units,
                  miscentered=False,
-             )[None, ..., None]),
+             )[None, ...]),
             axis=0,
             dx=dmu_szs,
         )
 
         dmus = np.gradient(self.mus)
         mu_integral = _trapz(
-            self.dnumber_dlogmass()[..., None, None, None] * mu_sz_integral,
+            self.dnumber_dlogmass()[..., None, None] * mu_sz_integral,
             axis=0,
             dx=dmus
         )
 
         dzs = np.gradient(self.zs)
         z_integral = _trapz(
-            ((self.lensing_weights() * self.comoving_vol())[:, None, None, None]
-             * mu_integral),
+            ((
+                self.lensing_weights(self.zs) * self.comoving_vol()
+             )[:, None, None] * mu_integral),
             axis=0,
             dx=dzs
         )
 
-        return z_integral/self.number_sz()[None, None, :]
+        return z_integral/self.number_sz()[None, :]
 
     def delta_sigma(self, rs, units=u.Msun/u.Mpc**2, miscentered=False):
         if not miscentered:
@@ -414,13 +464,11 @@ class StackedModel():
 
         dzs = np.gradient(self.zs)
         z_integral = _trapz(
-            ((self.lensing_weights() * self.comoving_vol())[:, None]
-             * mu_integral),
+            ((
+                self.lensing_weights(self.zs) * self.comoving_vol()
+            )[:, None] * mu_integral),
             axis=0,
             dx=dzs
         )
 
-        return z_integral/self.number_sz()[None, :]
-
-    def stacked_profile(self, miscentered=False):
-        return self.delta_sigma(self.radii, miscentered=miscentered)
+        return z_integral/self.number_sz()

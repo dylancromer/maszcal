@@ -20,7 +20,7 @@ stacked_model = StackedModel()
 
 def test_sigma_of_m():
     rs = np.logspace(-1, 2, 40)
-    mus = np.array([15])
+    mus = np.array([np.log(1e15)])
     cons = np.array([2])
 
     sigmas = stacked_model.delta_sigma_of_mass(rs,
@@ -45,7 +45,7 @@ def test_misc_sigma_of_m():
 
     zs = stacked_model.zs
 
-    mus = np.array([15])
+    mus = np.array([np.log(1e15)])
     stacked_model.mus = mus
     rs = np.logspace(-1, 1, 30)
     cons = np.array([2])
@@ -58,7 +58,7 @@ def test_misc_sigma_of_m():
                                                   cons,
                                                   frac,
                                                   r_misc,
-                                                  units=u.Msun/(u.Mpc * u.pc))[0, 0, :, 0, 0, 0]
+                                                  units=u.Msun/(u.Mpc * u.pc))[0, 0, :, 0]
 
     plt.plot(rs, rs*miscentered_sigmas/1e6)
     plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
@@ -72,7 +72,7 @@ def test_misc_sigma_of_m():
 
 def test_delta_sigma_of_m():
     rs = np.logspace(-1, 2, 40)
-    mus = np.array([15])
+    mus = np.array([np.log(1e15)])
     cons = np.array([2])
 
     delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
@@ -84,7 +84,7 @@ def test_delta_sigma_of_m():
 
 
     plt.plot(rs, rs[:, None]*delta_sigmas.T/1e6)
-    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
+    plt.title(rf'$ M = {np.exp(mus[0])} \; M_{{\odot}}$')
     plt.xlabel(r'$ r $')
     plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
     plt.xscale('log')
@@ -95,7 +95,7 @@ def test_delta_sigma_of_m():
 
 def test_delta_sigma_of_m_from_sigma():
     rs = np.logspace(-1, 2, 40)
-    mus = np.array([15])
+    mus = np.array([np.log(1e15)])
     cons = np.array([2])
 
     delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
@@ -135,13 +135,12 @@ def test_delta_sigma_of_m_from_sigma():
 
 def test_misc_delta_sigma_of_m():
     rs = np.logspace(-1, 2, 40)
-    mus = np.array([15])
+    mus = np.array([np.log(1e15)])
     cons = np.array([2])
-    a_sz = np.array([0])
-    frac = np.array([0.8])
-    r_misc = np.array([1e-1])
 
-    stacked_model.set_coords((rs, cons, a_sz, frac, r_misc))
+    params = np.array([[2, 0, 0.8, 1e-1]])
+
+    stacked_model.params = params
 
     delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
                                                      mus,
@@ -149,7 +148,7 @@ def test_misc_delta_sigma_of_m():
                                                      units=u.Msun/(u.Mpc * u.pc),
                                                      miscentered=True)
 
-    delta_sigmas = delta_sigmas[0, 0, :, 0, 0, 0]
+    delta_sigmas = delta_sigmas[0, 0, :, 0]
 
     plt.plot(rs, rs*delta_sigmas/1e6, label=r'from $\Sigma$')
     plt.legend(loc='best')
@@ -164,11 +163,12 @@ def test_misc_delta_sigma_of_m():
 
 def test_delta_sigma_of_r():
     rs = np.logspace(-1, 2, 40)
-    a_sz = 2*np.ones(1)
-    con = 2*np.ones(1)
-    stacked_model.set_coords((rs, con, a_sz))
 
-    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc))[:,0,0]
+    params = np.array([[2, 2]])
+
+    stacked_model.params = params
+
+    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc))[:,0]
 
     plt.plot(rs, rs * delta_sigmas/1e6)
     plt.xlabel(r'$ r $')
@@ -181,14 +181,11 @@ def test_delta_sigma_of_r():
 
 def test_delta_sigma_of_r_miscentered():
     rs = np.logspace(-1, 2, 40)
-    a_sz = 2*np.ones(1)
-    con = 2*np.ones(1)
-    frac = np.array([0.8])
-    r_misc = np.array([1e-1])
 
-    stacked_model.set_coords((rs, con, a_sz, frac, r_misc))
+    params = np.array([[2, 2, 0.8, 1e-1]])
+    stacked_model.params = params
 
-    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc), miscentered=True)[:,0,0,0,0]
+    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc), miscentered=True)[:,0]
 
     plt.plot(rs, rs * delta_sigmas/1e6)
     plt.xlabel(r'$ r $')
@@ -199,10 +196,27 @@ def test_delta_sigma_of_r_miscentered():
     plt.gcf().clear()
 
 
+def test_delta_sigma_of_r_miscentered_negative_bias():
+    rs = np.logspace(-1, 2, 40)
+
+    params = np.array([[2, -0.6, 0.8, 1e-1]])
+    stacked_model.params = params
+
+    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc), miscentered=True)[:,0]
+
+    plt.plot(rs, rs * delta_sigmas/1e6)
+    plt.xlabel(r'$ r $')
+    plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
+    plt.xscale('log')
+
+    plt.savefig('figs/test/delta_sigma_r_miscentered_negative_bias.svg')
+    plt.gcf().clear()
+
+
 def test_sigma_of_m_nocomoving():
     stacked_model.comoving_radii = False
     rs = np.logspace(-1, 2, 40)
-    mus = np.array([15])
+    mus = np.array([np.log(1e15)])
     cons = np.array([2])
 
     sigmas = stacked_model.delta_sigma_of_mass(rs,
@@ -227,7 +241,7 @@ def test_delta_sigma_of_m_nocomoving():
     stacked_model.comoving_radii = False
 
     rs = np.logspace(-1, 2, 40)
-    mus = np.array([15])
+    mus = np.array([np.log(1e15)])
     cons = np.array([2])
 
     delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
@@ -253,11 +267,11 @@ def test_delta_sigma_of_r_nocomoving():
     stacked_model.comoving_radii = False
 
     rs = np.logspace(-1, 2, 40)
-    a_sz = 2*np.ones(1)
-    con = 2*np.ones(1)
-    stacked_model.set_coords((rs, con, a_sz))
 
-    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc))[:,0,0]
+    params = np.array([[2, 2]])
+    stacked_model.params = params
+
+    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc))[:,0]
 
     plt.plot(rs, rs * delta_sigmas/1e6)
     plt.xlabel(r'$ r $')
@@ -320,8 +334,8 @@ def test_tinker_mf():
                   * stacked_model.cosmo_params.omega_matter
                   / h**2)
 
-    stacked_model.mu_szs = np.linspace(10, 16, 30)
-    stacked_model.mus = np.linspace(10, 16, 30)
+    stacked_model.mu_szs = np.linspace(np.log(1e10), np.log(1e16), 30)
+    stacked_model.mus = np.linspace(np.log(1e10), np.log(1e16), 30)
 
     z = 0
     mink = 1e-4
@@ -334,7 +348,7 @@ def test_tinker_mf():
 
         masses = stacked_model.mass(stacked_model.mus)
         dn_dlnms = stacked_model.dnumber_dlogmass() #masses, zs
-        dn_dms = dn_dlnms[0, :]/masses
+        dn_dms = dn_dlnms[:, 0]/masses
 
 
         plotlabel = rf'$k_{{\mathrm{{max}}}}={maxk}$'
