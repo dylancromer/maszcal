@@ -1,29 +1,23 @@
 import json
 import numpy as np
-import astropy.units as u
 from maszcal.interpolate import RbfInterpolator, SavedRbf
 from maszcal.model import StackedModel
 from maszcal.ioutils import NumpyEncoder
-from maszcal.nothing import NoFuncVals, NoCoords, NoSavedRbf, NoInterpFile
+import maszcal.nothing as nothing
 
 
 
 
 class LensingEmulator:
-    def __init__(self, comoving=True, units=u.Msun/u.Mpc**2):
-        self.comoving = comoving
-        self.units = units
+    def load_emulation(self, interpolation_file=nothing.NoInterpFile(), saved_rbf=nothing.NoSavedRbf()):
 
-    def init_stacked_model(self):
-        self.stacked_model = StackedModel()
-        self.stacked_model.comoving_radii = self.comoving
-
-    def load_emulation(self, interpolation_file=NoInterpFile(), saved_rbf=NoSavedRbf()):
-        if not isinstance(interpolation_file, NoInterpFile):
+        if not isinstance(interpolation_file, nothing.NoInterpFile):
             saved_rbf = self._load_interpolation(interpolation_file)
-            self.interpolator = RbfInterpolator(NoCoords(), NoFuncVals(), saved_rbf=saved_rbf)
-        elif not isinstance(saved_rbf, NoSavedRbf):
-            self.interpolator = RbfInterpolator(NoCoords(), NoFuncVals(), saved_rbf=saved_rbf)
+            self.interpolator = RbfInterpolator(nothing.NoCoords(), nothing.NoFuncVals(), saved_rbf=saved_rbf)
+
+        elif not isinstance(saved_rbf, nothing.NoSavedRbf):
+            self.interpolator = RbfInterpolator(nothing.NoCoords(), nothing.NoFuncVals(), saved_rbf=saved_rbf)
+
         else:
             raise TypeError("load_emulation requires either an "
                             "interpolation file or a SavedRbf object")

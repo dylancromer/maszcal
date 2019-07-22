@@ -26,7 +26,6 @@ def describe_emulator():
         @pytest.fixture
         def emulator():
             lensing_emulator = LensingEmulator()
-            lensing_emulator.generate_func_vals = lambda params: np.ones(params.shape[0])
             return lensing_emulator
 
         @pytest.fixture
@@ -54,7 +53,6 @@ def describe_emulator():
         @pytest.fixture
         def emulator():
             lensing_emulator = LensingEmulator()
-            lensing_emulator.generate_func_vals = lambda params: np.ones(params.shape[0])
             return lensing_emulator
 
         def it_creates_a_saved_file_with_the_interpolation(emulator):
