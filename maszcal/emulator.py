@@ -1,53 +1,100 @@
 import json
+from dataclasses import dataclass
 import numpy as np
 from maszcal.interpolate import RbfInterpolator, SavedRbf
 from maszcal.model import StackedModel
-from maszcal.ioutils import NumpyEncoder
+import maszcal.ioutils as ioutils
 import maszcal.nothing as nothing
 
 
 
 
 class LensingEmulator:
-    def load_emulation(self, interpolation_file=nothing.NoInterpFile(), saved_rbf=nothing.NoSavedRbf()):
+    def load_emulation(
+            self,
+            emulation_file=nothing.NoFile(),
+            saved_emulation=nothing.NoEmulation()
+    ):
 
-        if not isinstance(interpolation_file, nothing.NoInterpFile):
-            saved_rbf = self._load_interpolation(interpolation_file)
-            self.interpolator = RbfInterpolator(nothing.NoCoords(), nothing.NoFuncVals(), saved_rbf=saved_rbf)
+        if not isinstance(emulation_file, nothing.NoFile):
+            saved_emulation = Emulation.load(interpolation_file)
+            self.radii = saved_emulation.radii
+            self.interpolators = self._init_saved_rbfs(saved_emulation.saved_rbfs)
 
-        elif not isinstance(saved_rbf, nothing.NoSavedRbf):
-            self.interpolator = RbfInterpolator(nothing.NoCoords(), nothing.NoFuncVals(), saved_rbf=saved_rbf)
+        elif not isinstance(saved_emulation, nothing.NoEmulation):
+            self.radii = saved_emulation.radii
+            self.interpolators = self._init_saved_rbfs(saved_emulation.saved_rbfs)
 
         else:
             raise TypeError("load_emulation requires either an "
                             "interpolation file or a SavedRbf object")
 
-    def emulate(self, params, func_vals):
-        self.interpolator = RbfInterpolator(params, func_vals)
-        self.interpolator.process()
+    def _init_saved_rbfs(self, saved_rbfs):
+        return [RbfInterpolator.from_saved_rbf(saved_rbf) for saved_rbf in saved_rbfs]
 
-    def _load_interpolation(self, interp_file):
-        with open(interp_file, 'r') as json_file:
-            rbf_dict = json.load(json_file)
+    def _get_saved_rbfs(self):
+        return [interp.get_rbf_solution() for interp in self.interpolators]
 
+    def save_emulation(self, emulation_file=None):
+        emulation = Emulation(
+            radii=self.radii,
+            saved_rbfs=self._get_saved_rbfs(),
+        )
+
+        if emulation_file is None:
+            return emulation
+        else:
+            emulation.save(emulation_file)
+
+    def emulate(self, rs, params, func_vals):
+        self.radii = rs
+        self.interpolators = [self._emulate_single_radius(params, val) for val in func_vals]
+
+    def _emulate_single_radius(self, params, func_vals):
+        interpolator = RbfInterpolator(params, func_vals)
+        interpolator.process()
+        return interpolator
+
+    def evaluate_on(self, rs, params):
+        interpolated_values = np.empty((rs.size, params.shape[0]))
+        for i,_ in enumerate(rs):
+            interpolated_values[i, :] = self.interpolators[i].interp(params)
+
+        return interpolated_values
+
+
+@dataclass
+class Emulation:
+    radii: np.ndarray
+    saved_rbfs: list
+
+    def __post_init__(self):
+        if self.radii.ndim > 1:
+            raise TypeError("radii must be a 1-dimensional array")
+        if self.radii.size != len(self.saved_rbfs):
+            raise ValueError("radii and saved_rbfs must have equal length")
+
+    def save(self, save_location):
+        emulation_dict = self.__dict__
+        with open(save_location, 'w') as outfile:
+            json.dump(emulation_dict, outfile, cls=ioutils.EmulationEncoder, ensure_ascii=False)
+
+    @staticmethod
+    def _init_saved_rbf(rbf_dict):
         for key,val in rbf_dict.items():
             if isinstance(val, list):
                 rbf_dict[key] = np.asarray(val)
 
         return SavedRbf(**rbf_dict)
 
-    def save_emulation(self, interp_file=None):
-        saved_rbf = self.interpolator.get_rbf_solution()
+    @classmethod
+    def load(cls, saved_emulation):
+        with open(saved_emulation, 'r') as json_file:
+            emulation_dict = json.load(json_file)
 
-        if interp_file is None:
-            return saved_rbf
-        else:
-            self._dump_saved_rbf(saved_rbf, interp_file)
+        saved_rbf_dicts = emulation_dict['saved_rbfs']
+        emulation_dict['saved_rbfs'] = [cls._init_saved_rbf(rbf_dict) for rbf_dict in saved_rbf_dicts]
 
-    def _dump_saved_rbf(self, saved_rbf, rbf_file):
-        rbf_dict = saved_rbf.__dict__
-        with open(rbf_file, 'w') as outfile:
-            json.dump(rbf_dict, outfile, cls=NumpyEncoder, ensure_ascii=False)
+        emulation_dict['radii'] = np.asarray(emulation_dict['radii'])
 
-    def evaluate_on(self, params):
-        return self.interpolator.interp(params)
+        return cls(**emulation_dict)

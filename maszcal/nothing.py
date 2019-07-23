@@ -14,9 +14,13 @@ class NoSavedRbf:
     pass
 
 
-class NoInterpFile:
+class NoFile:
     pass
 
 
 class NoParams:
+    pass
+
+
+class NoEmulation:
     pass
