@@ -2,13 +2,13 @@ from dataclasses import dataclass
 import numpy as np
 from .rbf import Rbf
 from maszcal.interp_utils import make_flat, combine_radii_with_params
-from maszcal.nothing import NoSavedRbf
+import maszcal.nothing as nothing
 
 
 
 
 class RbfInterpolator:
-    def __init__(self, params, func_vals, saved_rbf=NoSavedRbf()):
+    def __init__(self, params, func_vals, saved_rbf=nothing.NoSavedRbf()):
         self.params = params
         self.interp_func_vals = func_vals
 
@@ -17,8 +17,12 @@ class RbfInterpolator:
         except AttributeError:
             self.ndim = saved_rbf.dimension
 
-        if not isinstance(saved_rbf, NoSavedRbf):
+        if not isinstance(saved_rbf, nothing.NoSavedRbf):
             self.rbfi = Rbf(saved_rbf=saved_rbf)
+
+    @classmethod
+    def from_saved_rbf(cls, saved_rbf):
+        return cls(nothing.NoCoords(), nothing.NoFuncVals(), saved_rbf=saved_rbf)
 
     def process(self, function='multiquadric'):
         point_vals = make_flat(self.interp_func_vals)
@@ -36,14 +40,14 @@ class RbfInterpolator:
 
     def get_rbf_solution(self):
         return SavedRbf(
-            self.ndim,
-            self.rbfi.norm,
-            self.rbfi.function,
-            self.rbfi.di,
-            self.rbfi.xi,
-            self.rbfi.epsilon,
-            self.rbfi.smooth,
-            self.rbfi.nodes,
+            dimension=self.ndim,
+            norm=self.rbfi.norm,
+            function=self.rbfi.function,
+            data=self.rbfi.di,
+            coords=self.rbfi.xi,
+            epsilon=self.rbfi.epsilon,
+            smoothness=self.rbfi.smooth,
+            nodes=self.rbfi.nodes,
         )
 
 
