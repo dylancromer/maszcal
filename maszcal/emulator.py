@@ -1,9 +1,7 @@
 import json
 from dataclasses import dataclass
-from multiprocessing import Pool
 import numpy as np
 from maszcal.interpolate import RbfInterpolator, SavedRbf
-from maszcal.model import StackedModel
 import maszcal.ioutils as ioutils
 import maszcal.nothing as nothing
 
@@ -16,7 +14,7 @@ class LensingEmulator:
     ):
 
         if not isinstance(emulation_file, nothing.NoFile):
-            saved_emulation = Emulation.load(interpolation_file)
+            saved_emulation = Emulation.load(emulation_file)
             self.radii = saved_emulation.radii
             self.interpolators = self._init_saved_rbfs(saved_emulation.saved_rbfs)
 
@@ -76,7 +74,7 @@ class Emulation:
 
     @staticmethod
     def _init_saved_rbf(rbf_dict):
-        for key,val in rbf_dict.items():
+        for key, val in rbf_dict.items():
             if isinstance(val, list):
                 rbf_dict[key] = np.asarray(val)
         return SavedRbf(**rbf_dict)

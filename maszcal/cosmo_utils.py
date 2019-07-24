@@ -7,12 +7,12 @@ def get_camb_params(cosmology_params, max_k, zs):
     params = camb.model.CAMBparams()
 
     params.set_cosmology(
-        H0 = cosmology_params.hubble_constant,
-        ombh2 = cosmology_params.omega_bary_hsqr,
-        omch2 = cosmology_params.omega_cdm_hsqr,
-        omk = 0,
-        mnu = cosmology_params.neutrino_mass_sum,
-        tau = cosmology_params.tau_reion,
+        H0=cosmology_params.hubble_constant,
+        ombh2=cosmology_params.omega_bary_hsqr,
+        omch2=cosmology_params.omega_cdm_hsqr,
+        omk=0,
+        mnu=cosmology_params.neutrino_mass_sum,
+        tau=cosmology_params.tau_reion,
     )
 
     if cosmology_params.use_ppf:
@@ -21,10 +21,10 @@ def get_camb_params(cosmology_params, max_k, zs):
         de_model = 'fluid'
 
     params.set_dark_energy(
-        w = cosmology_params.w0,
-        cs2 = 1.0,
-        wa = cosmology_params.wa,
-        dark_energy_model = de_model
+        w=cosmology_params.w0,
+        cs2=1.0,
+        wa=cosmology_params.wa,
+        dark_energy_model=de_model
     )
 
     params.InitPower.set_params(
@@ -49,13 +49,13 @@ def get_astropy_cosmology(cosmology_params):
     mass_per_neutrino = cosmology_params.neutrino_mass_sum/3 * u.eV
 
     astropy_cosmology = Flatw0waCDM(
-        H0 = cosmology_params.hubble_constant,
-        Om0 = cosmology_params.omega_matter,
-        w0 = cosmology_params.w0,
-        wa = cosmology_params.wa,
-        Tcmb0 = cosmology_params.cmb_temp,
-        m_nu = mass_per_neutrino,
-        Ob0 = omega_bary
+        H0=cosmology_params.hubble_constant,
+        Om0=cosmology_params.omega_matter,
+        w0=cosmology_params.w0,
+        wa=cosmology_params.wa,
+        Tcmb0=cosmology_params.cmb_temp,
+        m_nu=mass_per_neutrino,
+        Ob0=omega_bary
     )
 
     return astropy_cosmology

@@ -62,7 +62,6 @@ class StackedModel:
 
         self.astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
 
-
         ### CLUSTER MASSES AND REDSHIFTS###
         self.mu_szs = mu_bins
         self.mus = mu_bins
@@ -113,9 +112,9 @@ class StackedModel:
 
         results = camb.get_results(params)
 
-        self.ks, _, self.power_spect = results.get_matter_power_spectrum(minkh = self.min_k,
-                                                                         maxkh = self.max_k,
-                                                                         npoints = self.number_ks)
+        self.ks, _, self.power_spect = results.get_matter_power_spectrum(minkh=self.min_k,
+                                                                         maxkh=self.max_k,
+                                                                         npoints=self.number_ks)
 
     def init_onfw(self):
         self.onfw_model = NFWModel(self.astropy_cosmology, comoving=self.comoving_radii)
@@ -147,7 +146,7 @@ class StackedModel:
         selection_fs = np.asarray(selec_func_dict['selection_fs'])
         interpolator = interp2d(zs, mus, selection_fs, kind='linear')
 
-        return lambda mu,z: interpolator(z, mu)
+        return lambda mu, z: interpolator(z, mu)
 
     def _default_selection_func(self, mu_szs, zs):
         """
@@ -263,7 +262,6 @@ class StackedModel:
             initial=0
         )
         return sigmas_inside_r[:, :, INNER_LEN:, ...] - sigmas
-
 
     def delta_sigma_of_mass_nfw(self, rs, mus, concentrations=None, units=u.Msun/u.pc**2):
         """

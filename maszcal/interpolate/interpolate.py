@@ -1,10 +1,8 @@
 from dataclasses import dataclass
 import numpy as np
 from .rbf import Rbf
-from maszcal.interp_utils import make_flat, combine_radii_with_params
+from maszcal.interp_utils import make_flat
 import maszcal.nothing as nothing
-
-
 
 
 class RbfInterpolator:

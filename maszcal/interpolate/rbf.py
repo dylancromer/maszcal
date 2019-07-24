@@ -109,7 +109,6 @@ class Rbf(object):
             self._function = getattr(self, func_name)
             return
 
-
         self.xi = np.asarray([np.asarray(a, dtype=np.float_).flatten()
                               for a in args[:-1]])
         self.N = self.xi.shape[-1]

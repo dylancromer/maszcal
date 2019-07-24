@@ -11,7 +11,7 @@ class CosmoParams:
     tau_reion: float = 0.06
     omega_matter: float = 0.3089
     omega_lambda: float = 0.6911
-    rho_crit: float = 1.274e11 #8.62e-27 from wiki
+    rho_crit: float = 1.274e11  # 8.62e-27 from wiki
 
     h: float = hubble_constant/100
     cmb_temp: float = 2.725
@@ -25,4 +25,4 @@ class CosmoParams:
 
 @dataclass
 class Constants:
-    speed_of_light: float = 2.99792e5 # km/s
+    speed_of_light: float = 2.99792e5  # km/s
