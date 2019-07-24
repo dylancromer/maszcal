@@ -81,7 +81,6 @@ class Emulation:
         for key,val in rbf_dict.items():
             if isinstance(val, list):
                 rbf_dict[key] = np.asarray(val)
-
         return SavedRbf(**rbf_dict)
 
     @classmethod
