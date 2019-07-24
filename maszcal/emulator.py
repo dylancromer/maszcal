@@ -56,11 +56,7 @@ class LensingEmulator:
         return interpolator
 
     def evaluate_on(self, rs, params):
-        interpolated_values = np.empty((rs.size, params.shape[0]))
-        for i,_ in enumerate(rs):
-            interpolated_values[i, :] = self.interpolators[i].interp(params)
-
-        return interpolated_values
+        return np.array([self.interpolators[i].interp(params) for i in range(rs.size)])
 
 
 @dataclass
