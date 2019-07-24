@@ -2,8 +2,6 @@ import numpy as np
 from maszcal.interp_utils import cartesian_prod, make_flat, combine_radii_with_params
 
 
-
-
 def describe_cartesian_prod():
 
     def it_should_give_the_same_order_as_flattening():

@@ -7,8 +7,6 @@ from maszcal.interpolate import SavedRbf
 from maszcal.interp_utils import cartesian_prod
 
 
-
-
 class FakeInterpolator:
     def __init__(self, params, func_vals):
         pass

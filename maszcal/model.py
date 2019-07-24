@@ -15,8 +15,6 @@ from maszcal.mathutils import _trapz
 from maszcal.nothing import NoParams
 
 
-
-
 class DefaultCosmology:
     pass
 

@@ -1,8 +1,6 @@
 import numpy as np
 
 
-
-
 class SimpleDeltaSigma:
     #TODO: fix shapes via broadcasting
     def __init__(self, cosmo_params, zs, rhocrit_of_z_func):

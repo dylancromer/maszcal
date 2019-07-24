@@ -1,8 +1,6 @@
 import numpy as np
 
 
-
-
 def cartesian_prod(*arrays):
     la = len(arrays)
     dtype = np.result_type(*arrays)

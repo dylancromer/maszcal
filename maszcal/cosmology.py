@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 
 
-
-
 @dataclass
 class CosmoParams:
     hubble_constant: float = 67

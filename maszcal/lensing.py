@@ -2,8 +2,6 @@ import astropy.units as u
 from maszcal.model import StackedModel
 
 
-
-
 class LensingSignal:
     def __init__(self, mu_bins, redshift_bins, comoving=False):
         self.stacked_model = StackedModel(mu_bins, redshift_bins)

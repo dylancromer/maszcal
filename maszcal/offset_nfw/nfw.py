@@ -9,8 +9,8 @@ try:
 except ImportError:
     use_multiprocessing = False
 from functools import partial
-
 import astropy.units as u
+
 
 class NFWModel(object):
     """

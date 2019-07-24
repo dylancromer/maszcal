@@ -1,6 +1,5 @@
 import sys
 import numpy as np
-
 from scipy import linalg
 from scipy._lib.six import callable, get_method_function, get_function_code
 from scipy.special import xlogy
@@ -8,9 +7,6 @@ from scipy.spatial.distance import cdist, pdist, squareform
 from maszcal.nothing import NoSavedRbf
 
 __all__ = ['Rbf']
-
-
-
 
 
 class Rbf(object):

@@ -1,8 +1,6 @@
 import numpy as np
 
 
-
-
 class GaussianLikelihood:
     def get_theory(self):
         pass

@@ -8,8 +8,6 @@ import maszcal.ioutils as ioutils
 import maszcal.nothing as nothing
 
 
-
-
 class LensingEmulator:
     def load_emulation(
             self,

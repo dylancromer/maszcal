@@ -3,8 +3,6 @@ import numpy as np
 from maszcal.interpolate import SavedRbf
 
 
-
-
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):

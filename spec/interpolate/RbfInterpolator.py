@@ -5,8 +5,6 @@ from maszcal.interpolate import RbfInterpolator, SavedRbf
 from maszcal.nothing import NoCoords, NoFuncVals
 
 
-
-
 def describe_rbf_interpolator():
 
     def describe_init():

@@ -3,8 +3,6 @@ from astropy.cosmology import Flatw0waCDM
 import astropy.units as u
 
 
-
-
 def get_camb_params(cosmology_params, max_k, zs):
     params = camb.model.CAMBparams()
 

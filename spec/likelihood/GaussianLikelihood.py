@@ -2,8 +2,6 @@ import numpy as np
 from maszcal.likelihood import GaussianLikelihood
 
 
-
-
 def describe_gaussian_likelihood():
 
     def it_has_a_gaussian_full_likelihood():

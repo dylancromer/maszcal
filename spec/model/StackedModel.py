@@ -6,8 +6,6 @@ from maszcal.model import StackedModel
 from maszcal.ioutils import NumpyEncoder
 
 
-
-
 def describe_stacked_model():
 
     def describe_init():

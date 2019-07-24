@@ -3,8 +3,6 @@ import numpy as np
 from maszcal.interpolate import Rbf, SavedRbf
 
 
-
-
 def describe_rbf():
 
     @pytest.fixture

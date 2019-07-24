@@ -3,8 +3,6 @@ import pytest
 from maszcal.lensing import LensingSignal
 
 
-
-
 class FakeStackedModel:
     def __init__(self, mu_bins, redshift_bins):
         pass
