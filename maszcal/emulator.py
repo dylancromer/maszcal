@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from multiprocessing import Pool
 import numpy as np
 from maszcal.interpolate import RbfInterpolator, SavedRbf
 from maszcal.model import StackedModel
@@ -55,8 +56,8 @@ class LensingEmulator:
         interpolator.process()
         return interpolator
 
-    def evaluate_on(self, rs, params):
-        return np.array([self.interpolators[i].interp(params) for i in range(rs.size)])
+    def evaluate_on(self, params):
+        return np.array([self.interpolators[i].interp(params) for i in range(self.radii.size)])
 
 
 @dataclass

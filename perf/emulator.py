@@ -61,8 +61,8 @@ def describe_lensing_signal():
         emulator.emulate(rs, params, esd)
         return emulator
 
-    def its_fast_for_20_radial_bins(radii_20, params, emulator_20, benchmark):
-        benchmark(emulator_20.evaluate_on, radii_20, params)
+    def its_fast_for_20_radial_bins(params, emulator_20, benchmark):
+        benchmark(emulator_20.evaluate_on, params)
 
-    def its_fast_for_5_radial_bins(radii_5, params, emulator_5, benchmark):
-        benchmark(emulator_5.evaluate_on, radii_5, params)
+    def its_fast_for_5_radial_bins(params, emulator_5, benchmark):
+        benchmark(emulator_5.evaluate_on, params)

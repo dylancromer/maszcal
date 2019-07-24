@@ -95,7 +95,7 @@ def describe_emulator():
 
             test_params = np.array([[3, 0]])
 
-            test_value = lensing_emulator.evaluate_on(rs, test_params)
+            test_value = lensing_emulator.evaluate_on(test_params)
 
             assert np.allclose(test_value, np.ones(10), rtol=1e-2)
             assert test_value.shape == (10, 1)
