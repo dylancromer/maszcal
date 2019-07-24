@@ -36,11 +36,12 @@ class StackedModel:
     """
     def __init__(
             self,
+            mu_bins,
+            redshift_bins,
             params=NoParams(),
             selection_func_file=DefaultSelectionFunc(),
             lensing_weights_file=DefaultLensingWeights(),
             cosmo_params=DefaultCosmology(),
-            max_redshift=2,
     ):
 
         ### FITTING PARAMETERS AND LIKELIHOOD ###
@@ -51,7 +52,6 @@ class StackedModel:
             self.params = params
 
         ### SPATIAL QUANTITIES AND MATTER POWER ###
-        self.zs =  np.linspace(0, max_redshift, 20)
         self.max_k = 10
         self.min_k = 1e-4
         self.number_ks = 400
@@ -65,9 +65,10 @@ class StackedModel:
         self.astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
 
 
-        ### CLUSTER MASSES AND RELATED ###
-        self.mu_szs = np.linspace(np.log(1e14), np.log(1e16), 20)
-        self.mus = np.linspace(np.log(1e14), np.log(1e16), 20)
+        ### CLUSTER MASSES AND REDSHIFTS###
+        self.mu_szs = mu_bins
+        self.mus = mu_bins
+        self.zs = redshift_bins
 
         ### SELECTION FUNCTION ###
         if isinstance(selection_func_file, DefaultSelectionFunc):
@@ -148,8 +149,6 @@ class StackedModel:
         selection_fs = np.asarray(selec_func_dict['selection_fs'])
         interpolator = interp2d(zs, mus, selection_fs, kind='linear')
 
-        self.zs = np.linspace(zs[0], zs[-1], 20)
-
         return lambda mu,z: interpolator(z, mu)
 
     def _default_selection_func(self, mu_szs, zs):
@@ -158,8 +157,8 @@ class StackedModel:
         """
         sel_func = np.ones((mu_szs.size, zs.size))
 
-        low_mass_indices = np.where(mu_szs < np.log10(3e14))
-        sel_func[:, low_mass_indices] = 0
+        low_mass_indices = np.where(mu_szs < np.log(3e14))
+        sel_func[low_mass_indices, :] = 0
 
         return sel_func
 

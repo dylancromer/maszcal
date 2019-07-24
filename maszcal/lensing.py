@@ -5,8 +5,8 @@ from maszcal.model import StackedModel
 
 
 class LensingSignal:
-    def __init__(self, comoving=False):
-        self.stacked_model = StackedModel()
+    def __init__(self, mu_sz_bins, mu_bins, redshift_bins, comoving=False):
+        self.stacked_model = StackedModel(mu_sz_bins, mu_bins, redshift_bins)
         self.stacked_model.comoving_radii = comoving
 
     def stacked_esd(self, rs, params, miscentered=False, units=u.Msun/u.Mpc**2):

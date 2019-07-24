@@ -10,6 +10,12 @@ from maszcal.ioutils import NumpyEncoder
 
 def describe_stacked_model():
 
+    def describe_init():
+
+        def it_requires_you_to_provide_mass_and_redshift():
+            with pytest.raises(TypeError):
+                StackedModel()
+
     def describe_data_handling():
 
         def it_can_load_a_selection_function():
@@ -26,14 +32,16 @@ def describe_stacked_model():
             with open(SAVED_SELFUNC, 'w') as outfile:
                 json.dump(sel_func_dict, outfile, cls=NumpyEncoder, ensure_ascii=False)
 
-            stacked_model = StackedModel(selection_func_file=SAVED_SELFUNC)
+            stacked_model = StackedModel(mus, zs, selection_func_file=SAVED_SELFUNC)
 
             assert np.allclose(stacked_model.selection_func(mus, zs), sel_funcs)
 
             os.remove(SAVED_SELFUNC)
 
         def it_can_load_lensing_weights():
+            mus = np.linspace(1, 3, 10)
             zs = np.linspace(0.1, 2, 5)
+
             weights = 1/zs**2
 
             weight_dict = {'zs':zs,
@@ -43,7 +51,7 @@ def describe_stacked_model():
             with open(SAVED_WEIGHTS, 'w') as outfile:
                 json.dump(weight_dict, outfile, cls=NumpyEncoder, ensure_ascii=False)
 
-            stacked_model = StackedModel(lensing_weights_file=SAVED_WEIGHTS)
+            stacked_model = StackedModel(mus, zs, lensing_weights_file=SAVED_WEIGHTS)
 
             os.remove(SAVED_WEIGHTS)
 
@@ -54,22 +62,28 @@ def describe_stacked_model():
         @pytest.fixture
         def stacked_model():
             params = 2*np.ones((1,2))
-            model = StackedModel(params=params)
 
-            model.mu_szs = np.linspace(12, 16, 10)
-            model.mus = np.linspace(12, 16, 20)
-            model.zs = np.linspace(0, 2, 8)
+            mus = np.linspace(np.log(1e12), np.log(1e16), 20)
+            zs = np.linspace(0, 2, 8)
 
-            rs = np.logspace(-1, 1, 40)
+            model = StackedModel(mus, zs, params=params)
+
             return model
 
         def prob_musz_given_mu_is_not_negative(stacked_model):
-            mu_szs = np.linspace(12, 16, 10)
-            mus = np.linspace(12, 16, 20)
+            mu_szs = np.linspace(np.log(1e12), np.log(1e16), 10)
+            mus = np.linspace(np.log(1e12), np.log(1e16), 20)
 
             prob_sz = stacked_model.prob_musz_given_mu(mu_szs, mus)
-            assert np.all(prob_sz > 0)
+            assert np.all(prob_sz >= 0)
 
+        def prob_musz_given_mu_integrates_to_1(stacked_model):
+            mu_szs = np.linspace(np.log(1e11), np.log(1e17), 100)
+            mus = np.array([np.log(1e15)])
+
+            prob_sz = stacked_model.prob_musz_given_mu(mu_szs, mus)
+            integ = np.trapz(prob_sz, x=mu_szs, axis=0)
+            assert np.allclose(integ, 1)
 
         def delta_sigma_of_r_divided_by_nsz_always_one(stacked_model):
             """
