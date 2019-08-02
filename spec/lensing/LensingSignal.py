@@ -1,10 +1,17 @@
 import numpy as np
 import pytest
 from maszcal.lensing import LensingSignal
+import maszcal.defaults as defaults
 
 
 class FakeStackedModel:
-    def __init__(self, mu_bins, redshift_bins):
+    def __init__(
+            self,
+            mu_bins,
+            redshift_bins,
+            selection_func_file=defaults.DefaultSelectionFunc,
+            lensing_weights_file=defaults.DefaultLensingWeights,
+    ):
         pass
 
     def delta_sigma(self, rs, miscentered=False, units=1):
@@ -23,6 +30,21 @@ def describe_lensing_signal():
             zs = np.ones(5)
 
             LensingSignal(mus, zs)
+
+        def it_accepts_a_selection_func_file(mocker):
+            mus = np.ones(10)
+            zs = np.ones(5)
+            mocker.patch('maszcal.lensing.StackedModel', new=FakeStackedModel)
+            sel_func_file = 'test/file/here'
+            LensingSignal(mus, zs, selection_func_file=sel_func_file)
+
+        def it_accepts_a_weights_file(mocker):
+            mus = np.ones(10)
+            zs = np.ones(5)
+            mocker.patch('maszcal.lensing.StackedModel', new=FakeStackedModel)
+            weights_file = 'test/file/here'
+            LensingSignal(mus, zs, lensing_weights_file=weights_file)
+
 
     def describe_stacked_esd():
 

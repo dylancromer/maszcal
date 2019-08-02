@@ -13,18 +13,7 @@ from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
 from maszcal.mathutils import _trapz
 from maszcal.nothing import NoParams
-
-
-class DefaultCosmology:
-    pass
-
-
-class DefaultSelectionFunc:
-    pass
-
-
-class DefaultLensingWeights:
-    pass
+import maszcal.defaults as defaults
 
 
 class StackedModel:
@@ -37,9 +26,9 @@ class StackedModel:
             mu_bins,
             redshift_bins,
             params=NoParams(),
-            selection_func_file=DefaultSelectionFunc(),
-            lensing_weights_file=DefaultLensingWeights(),
-            cosmo_params=DefaultCosmology(),
+            selection_func_file=defaults.DefaultSelectionFunc(),
+            lensing_weights_file=defaults.DefaultLensingWeights(),
+            cosmo_params=defaults.DefaultCosmology(),
     ):
 
         ### FITTING PARAMETERS AND LIKELIHOOD ###
@@ -55,7 +44,7 @@ class StackedModel:
         self.number_ks = 400
 
         ### COSMOLOGICAL PARAMETERS ###
-        if isinstance(cosmo_params, DefaultCosmology):
+        if isinstance(cosmo_params, defaults.DefaultCosmology):
             self.cosmo_params = CosmoParams()
         else:
             self.cosmo_params = cosmo_params
@@ -68,13 +57,13 @@ class StackedModel:
         self.zs = redshift_bins
 
         ### SELECTION FUNCTION ###
-        if isinstance(selection_func_file, DefaultSelectionFunc):
+        if isinstance(selection_func_file, defaults.DefaultSelectionFunc):
             self.selection_func = self._default_selection_func
         else:
             self.selection_func = self._get_selection_func_interpolator(selection_func_file)
 
         ### LENSING WEIGHTS ###
-        if isinstance(lensing_weights_file, DefaultLensingWeights):
+        if isinstance(lensing_weights_file, defaults.DefaultLensingWeights):
             self.lensing_weights = self._default_lensing_weights
         else:
             self.lensing_weights = self._get_lensing_weights_interpolator(lensing_weights_file)
