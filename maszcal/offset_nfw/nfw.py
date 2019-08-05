@@ -256,6 +256,9 @@ class NFWModel(object):
     def sigma_theory(self, r, M, c, z):
         """Return an NFW sigma from theory.
 
+        CANONICAL SHAPE:
+        M, z, r, c
+
         Parameters
         ----------
         r : float or iterable
