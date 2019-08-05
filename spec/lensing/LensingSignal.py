@@ -65,3 +65,10 @@ def describe_lensing_signal():
 
             assert np.all(esd == np.ones(12))
 
+        def it_allows_miscentered_profiles(lensing_signal):
+            rs = np.logspace(-1, 1, 10)
+            params = np.array([[0, 3.01],
+                               [0, 3.02]])
+
+            esd = lensing_signal.stacked_esd(rs, params, miscentered=True)
+            assert np.all(esd == np.ones(12))
