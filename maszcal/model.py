@@ -391,7 +391,7 @@ class StackedModel:
 
     def _delta_sigma(self, rs, units):
         """
-        SHAPE r, c, a_sz
+        SHAPE r, params
         """
         dmu_szs = np.gradient(self.mu_szs)
         mu_sz_integral = _trapz(
