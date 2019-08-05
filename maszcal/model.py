@@ -70,6 +70,8 @@ class StackedModel:
 
         ### MISC ###
         self.constants = Constants()
+        self.NUM_OFFSET_THETAS = 10
+        self.NUM_OFFSET_RADII = 30
         self._comoving_radii = True
 
     @property
@@ -184,8 +186,8 @@ class StackedModel:
         """
         SHAPE mu, z, r, params
         """
-        r_offsets = np.linspace(r_misc.min()/1e3, 10*r_misc.max(), 30)
-        thetas = np.linspace(0, 2*np.pi, 10)
+        r_offsets = np.linspace(r_misc.min()/1e3, 10*r_misc.max(), self.NUM_OFFSET_RADII)
+        thetas = np.linspace(0, 2*np.pi, self.NUM_OFFSET_THETAS, endpoint=False)
 
         offset_sigmas = self._offset_sigma_of_mass(rs, r_offsets, thetas, mus, concentrations, units)
 
