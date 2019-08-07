@@ -8,7 +8,7 @@ class LensingSignal:
             self,
             mu_bins,
             redshift_bins,
-            comoving=False,
+            comoving=True,
             selection_func_file=defaults.DefaultSelectionFunc(),
             lensing_weights_file=defaults.DefaultLensingWeights(),
     ):
