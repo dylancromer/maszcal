@@ -23,7 +23,9 @@ def describe_lensing_signal():
 
     @pytest.fixture
     def lsignal():
-        return LensingSignal()
+        mus = np.linspace(np.log(1e14), np.log(1e16), 25)
+        zs = np.linspace(0, 2, 25)
+        return LensingSignal(mu_bins=mus, redshift_bins=zs)
 
     def its_fast_for_20_radial_bins(radii_20, params, lsignal, benchmark):
         benchmark(lsignal.stacked_esd, radii_20, params)
