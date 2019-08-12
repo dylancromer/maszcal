@@ -70,7 +70,7 @@ class StackedModel:
 
         ### MISC ###
         self.constants = Constants()
-        self.NUM_OFFSET_THETAS = 30
+        self.NUM_OFFSET_THETAS = 10
         self.NUM_OFFSET_RADII = 30
         self._comoving_radii = True
 
@@ -189,26 +189,21 @@ class StackedModel:
         r_offsets = np.linspace(r_misc.min()/1e3, 10*r_misc.max(), self.NUM_OFFSET_RADII)
         thetas = np.linspace(0, 2*np.pi, self.NUM_OFFSET_THETAS, endpoint=False)
 
-        r_offset_integral = np.empty((mus.size, self.zs.size, rs.size, concentrations.size))
+        offset_sigmas = self._offset_sigma_of_mass(rs, r_offsets, thetas, mus, concentrations, units)
 
-        for ic, c in enumerate(concentrations):
-            offset_sigmas = self._offset_sigma_of_mass(rs, r_offsets, thetas, mus, np.array([c]), units)
+        dthetas = np.gradient(thetas)
+        theta_integral = _trapz(offset_sigmas, axis=-1, dx=dthetas)/(2*np.pi)
 
-            dthetas = np.gradient(thetas)
-            theta_integral = _trapz(offset_sigmas, axis=-1, dx=dthetas)/(2*np.pi)
+        misc_kernel = ((r_offsets[None, :]/r_misc[:, None]**2)
+                       * np.exp(-0.5*(r_offsets[None, :]/r_misc[:, None])**2))
 
-            misc_kernel = ((r_offsets[None, :]/r_misc[:, None]**2)
-                           * np.exp(-0.5*(r_offsets[None, :]/r_misc[:, None])**2))
+        dr_offsets = np.gradient(r_offsets)
 
-            dr_offsets = np.gradient(r_offsets)
-
-            _r_offset_integral = _trapz(
-                theta_integral*misc_kernel,
-                axis=-1,
-                dx=dr_offsets
-            )
-
-            r_offset_integral[:, :, :, ic] = _r_offset_integral[:, :, :, 0]
+        r_offset_integral = _trapz(
+            theta_integral*misc_kernel,
+            axis=-1,
+            dx=dr_offsets
+        )
 
         cen_frac = cen_frac[None, None, None, :]
 
