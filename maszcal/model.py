@@ -276,6 +276,8 @@ class StackedModel:
     def dnumber_dlogmass(self):
         """
         SHAPE mu, z
+
+        UNITS h/Mpc
         """
         masses = self.mass(self.mus)
         overdensity = 200
@@ -425,7 +427,7 @@ class StackedModel:
 
         return z_integral/self.number_sz()[None, :]
 
-    def delta_sigma(self, rs, units=u.Msun/u.Mpc**2, miscentered=False):
+    def delta_sigma(self, rs, units=u.Msun/u.pc**2, miscentered=False):
         if not miscentered:
             return self._delta_sigma(rs, units)
         else:
@@ -458,3 +460,40 @@ class StackedModel:
         )
 
         return z_integral/self.number_sz()
+
+
+class SingleMassModel:
+    def __init__(
+            self,
+            redshift,
+            comoving_radii=True,
+            cosmo_params=defaults.DefaultCosmology(),
+    ):
+
+        self.redshift = np.array([redshift])
+        self.comoving_radii = comoving_radii
+
+        if isinstance(cosmo_params, defaults.DefaultCosmology):
+            self.cosmo_params = CosmoParams()
+        else:
+            self.cosmo_params = cosmo_params
+
+        self.astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
+
+    def init_onfw(self):
+        self.onfw_model = NFWModel(self.astropy_cosmology, comoving=self.comoving_radii)
+
+    def delta_sigma(self, rs, params, units=u.Msun/u.pc**2):
+        masses = params[0:]
+        concentrations = params[:1]
+
+        try:
+            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.redshift)
+            result = result * (u.Msun/u.Mpc**2).to(units)
+            return result
+        except AttributeError:
+            self.init_onfw()
+            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.redshift)
+            result = result * (u.Msun/u.Mpc**2).to(units)
+            return result
+
