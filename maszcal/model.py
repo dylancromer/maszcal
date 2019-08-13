@@ -484,8 +484,8 @@ class SingleMassModel:
         self.onfw_model = NFWModel(self.astropy_cosmology, comoving=self.comoving_radii)
 
     def delta_sigma(self, rs, params, units=u.Msun/u.pc**2):
-        masses = params[0:]
-        concentrations = params[:1]
+        masses = params[:1]
+        concentrations = params[1:]
 
         try:
             result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.redshift)
