@@ -483,17 +483,15 @@ class SingleMassModel:
     def init_onfw(self):
         self.onfw_model = NFWModel(self.astropy_cosmology, comoving=self.comoving_radii)
 
-    def delta_sigma(self, rs, params, units=u.Msun/u.pc**2):
-        masses = params[:, 0]
-        concentrations = params[:, 1]
+    def delta_sigma(self, rs, mus, concentrations, units=u.Msun/u.pc**2):
 
         try:
-            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.redshift)
+            result = self.onfw_model.deltasigma_theory(rs, mus, concentrations, self.redshift)
             result = result * (u.Msun/u.Mpc**2).to(units)
             return result
         except AttributeError:
             self.init_onfw()
-            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.redshift)
+            result = self.onfw_model.deltasigma_theory(rs, mus, concentrations, self.redshift)
             result = result * (u.Msun/u.Mpc**2).to(units)
             return result
 
