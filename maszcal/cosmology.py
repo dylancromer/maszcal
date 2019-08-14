@@ -5,7 +5,7 @@ import astropy.units as u
 
 @dataclass
 class CosmoParams:
-    hubble_constant: float = Planck15.H0
+    hubble_constant: float = Planck15.H0.value
     omega_bary_hsqr: float = Planck15.Ob0*Planck15.h**2
     omega_cdm_hsqr: float = Planck15.Odm0*Planck15.h**2
     spectral_index: float = 0.9667
