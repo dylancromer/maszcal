@@ -10,7 +10,7 @@ def describe_single_mass_model():
 
         @pytest.fixture
         def single_mass_model():
-            redshift = 0.4
+            redshift = 0.4*np.ones(1)
             model = SingleMassModel(redshift=redshift)
             return model
 
@@ -31,3 +31,23 @@ def describe_single_mass_model():
             delta_sigs = single_mass_model.delta_sigma(rs, mu, con, units=u.Msun/u.Mpc**2)/1e12
 
             assert np.all(rs*delta_sigs < 1e6)
+
+        def it_can_use_different_mass_definitions():
+            mu = np.array([np.log(1e15)])
+            con = np.array([3])
+            rs = np.logspace(-1, 1, 5)
+
+            redshift = 0.4*np.ones(1)
+            delta = 500
+            mass_def = 'crit'
+            model = SingleMassModel(redshift=redshift, delta=delta, mass_definition=mass_def)
+
+            delta_sigs_500c = model.delta_sigma(rs, mu, con)
+
+            delta = 200
+            kind = 'mean'
+            model = SingleMassModel(redshift=redshift, delta=delta, mass_definition=mass_def)
+
+            delta_sigs_200m = model.delta_sigma(rs, mu, con)
+
+            assert np.all(delta_sigs_200m < delta_sigs_500c)

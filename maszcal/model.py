@@ -70,6 +70,7 @@ class StackedModel:
 
         ### MISC ###
         self.constants = Constants()
+        self.DELTA = 200
         self.NUM_OFFSET_THETAS = 10
         self.NUM_OFFSET_RADII = 30
         self._comoving_radii = True
@@ -280,7 +281,7 @@ class StackedModel:
         UNITS h/Mpc
         """
         masses = self.mass(self.mus)
-        overdensity = 200
+        overdensity = self.DELTA
         rho_matter = self.cosmo_params.rho_crit * self.cosmo_params.omega_matter / self.cosmo_params.h**2
 
         try:
@@ -467,11 +468,15 @@ class SingleMassModel:
             self,
             redshift,
             comoving_radii=True,
+            delta=200,
+            mass_definition='mean',
             cosmo_params=defaults.DefaultCosmology(),
     ):
 
         self.redshift = np.array([redshift])
         self.comoving_radii = comoving_radii
+        self.delta = delta
+        self.mass_definition = mass_definition
 
         if isinstance(cosmo_params, defaults.DefaultCosmology):
             self.cosmo_params = CosmoParams()
@@ -481,17 +486,29 @@ class SingleMassModel:
         self.astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
 
     def init_onfw(self):
-        self.onfw_model = NFWModel(self.astropy_cosmology, comoving=self.comoving_radii)
+        rho_dict = {'mean':'rho_m', 'crit':'rho_c'}
+
+        self.onfw_model = NFWModel(
+            self.astropy_cosmology,
+            comoving=self.comoving_radii,
+            delta=self.delta,
+            rho=rho_dict[self.mass_definition],
+        )
+
+    def mass(self, mu):
+        return np.exp(mu)
 
     def delta_sigma(self, rs, mus, concentrations, units=u.Msun/u.pc**2):
 
+        masses = self.mass(mus)
+
         try:
-            result = self.onfw_model.deltasigma_theory(rs, mus, concentrations, self.redshift)
+            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.redshift)
             result = result * (u.Msun/u.Mpc**2).to(units)
             return result
         except AttributeError:
             self.init_onfw()
-            result = self.onfw_model.deltasigma_theory(rs, mus, concentrations, self.redshift)
+            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.redshift)
             result = result * (u.Msun/u.Mpc**2).to(units)
             return result
 
