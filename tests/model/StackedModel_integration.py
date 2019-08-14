@@ -15,7 +15,9 @@ from maszcal.model import StackedModel
 
 
 
-stacked_model = StackedModel()
+mus = np.array([np.log(1e15)])
+zs = np.linspace(0, 2, 20)
+stacked_model = StackedModel(mus, zs)
 
 
 def test_sigma_of_m():
@@ -41,12 +43,8 @@ def test_sigma_of_m():
 
 
 def test_misc_sigma_of_m():
-    stacked_model = StackedModel()
-
     zs = stacked_model.zs
 
-    mus = np.array([np.log(1e15)])
-    stacked_model.mus = mus
     rs = np.logspace(-1, 1, 30)
     cons = np.array([2])
 
@@ -162,6 +160,11 @@ def test_misc_delta_sigma_of_m():
 
 
 def test_delta_sigma_of_r():
+    mubins = np.linspace(np.log(1e14), np.log(1e16), 30)
+    zbins = np.linspace(0, 2, 30)
+
+    stacked_model = StackedModel(mubins, zbins)
+
     rs = np.logspace(-1, 2, 40)
 
     params = np.array([[2, 2]])
@@ -182,6 +185,11 @@ def test_delta_sigma_of_r():
 def test_delta_sigma_of_r_miscentered():
     rs = np.logspace(-1, 2, 40)
 
+    mubins = np.linspace(np.log(1e14), np.log(1e16), 30)
+    zbins = np.linspace(0, 2, 30)
+
+    stacked_model = StackedModel(mubins, zbins)
+
     params = np.array([[2, 2, 0.8, 1e-1]])
     stacked_model.params = params
 
@@ -198,6 +206,11 @@ def test_delta_sigma_of_r_miscentered():
 
 def test_delta_sigma_of_r_miscentered_negative_bias():
     rs = np.logspace(-1, 2, 40)
+
+    mubins = np.linspace(np.log(1e14), np.log(1e16), 30)
+    zbins = np.linspace(0, 2, 30)
+
+    stacked_model = StackedModel(mubins, zbins)
 
     params = np.array([[2, -0.6, 0.8, 1e-1]])
     stacked_model.params = params
@@ -264,6 +277,10 @@ def test_delta_sigma_of_m_nocomoving():
 
 
 def test_delta_sigma_of_r_nocomoving():
+    mubins = np.linspace(np.log(1e14), np.log(1e16), 30)
+    zbins = np.linspace(0, 2, 30)
+
+    stacked_model = StackedModel(mubins, zbins)
     stacked_model.comoving_radii = False
 
     rs = np.logspace(-1, 2, 40)
@@ -283,7 +300,7 @@ def test_delta_sigma_of_r_nocomoving():
 
 
 def test_power_spectrum():
-    stacked_model = StackedModel()
+    stacked_model = StackedModel(mus, zs)
     #Need to check plots on this one!
     stacked_model.calc_power_spect()
 
@@ -314,7 +331,7 @@ def test_comoving_vol():
 
 
 from maszcal.cosmology import CosmoParams
-stacked_model = StackedModel()
+stacked_model = StackedModel(mus, zs)
 def test_tinker_mf():
     #WMAP cosmology
     used_ppf = True

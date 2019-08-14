@@ -29,6 +29,8 @@ class StackedModel:
             selection_func_file=defaults.DefaultSelectionFunc(),
             lensing_weights_file=defaults.DefaultLensingWeights(),
             cosmo_params=defaults.DefaultCosmology(),
+            delta=200,
+            mass_definition='mean',
     ):
 
         ### FITTING PARAMETERS AND LIKELIHOOD ###
@@ -56,6 +58,9 @@ class StackedModel:
         self.mus = mu_bins
         self.zs = redshift_bins
 
+        self.delta = delta
+        self.mass_definition = mass_definition
+
         ### SELECTION FUNCTION ###
         if isinstance(selection_func_file, defaults.DefaultSelectionFunc):
             self.selection_func = self._default_selection_func
@@ -70,7 +75,6 @@ class StackedModel:
 
         ### MISC ###
         self.constants = Constants()
-        self.DELTA = 200
         self.NUM_OFFSET_THETAS = 10
         self.NUM_OFFSET_RADII = 30
         self._comoving_radii = True
@@ -109,7 +113,14 @@ class StackedModel:
                                                                          npoints=self.number_ks)
 
     def init_onfw(self):
-        self.onfw_model = NFWModel(self.astropy_cosmology, comoving=self.comoving_radii)
+        rho_dict = {'mean':'rho_m', 'crit':'rho_c'}
+
+        self.onfw_model = NFWModel(
+            self.astropy_cosmology,
+            comoving=self.comoving_radii,
+            delta=self.delta,
+            rho=rho_dict[self.mass_definition],
+        )
 
     def prob_musz_given_mu(self, mu_szs, mus):
         """
@@ -281,7 +292,7 @@ class StackedModel:
         UNITS h/Mpc
         """
         masses = self.mass(self.mus)
-        overdensity = self.DELTA
+        overdensity = self.delta
         rho_matter = self.cosmo_params.rho_crit * self.cosmo_params.omega_matter / self.cosmo_params.h**2
 
         try:
