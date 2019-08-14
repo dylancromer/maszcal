@@ -10,17 +10,20 @@ class LensingSignal:
             log_masses=nothing.NoMasses(),
             redshifts=nothing.NoRedshifts(),
             comoving=True,
+            delta=200,
+            mass_definition='mean',
             selection_func_file=defaults.DefaultSelectionFunc(),
             lensing_weights_file=defaults.DefaultLensingWeights(),
     ):
-
-        self.comoving = comoving
         self.log_masses = log_masses
-
         if not isinstance(redshifts, nothing.NoRedshifts):
             self.redshifts = redshifts
         else:
             raise TypeError('redshifts are required to calculate a lensing signal')
+
+        self.comoving = comoving
+        self.delta = delta
+        self.mass_definition = mass_definition
 
         self.selection_func_file = selection_func_file
         self.lensing_weights_file = lensing_weights_file
@@ -33,7 +36,9 @@ class LensingSignal:
             self.log_masses,
             self.redshifts,
             selection_func_file=self.selection_func_file,
-            lensing_weights_file=self.lensing_weights_file
+            lensing_weights_file=self.lensing_weights_file,
+            delta=self.delta,
+            mass_definition=self.mass_definition,
         )
 
         self.stacked_model.comoving_radii = self.comoving
@@ -57,6 +62,8 @@ class LensingSignal:
         self.single_mass_model = SingleMassModel(
             self.redshifts,
             comoving_radii=self.comoving,
+            delta=self.delta,
+            mass_definition=self.mass_definition,
         )
 
     def single_mass_esd(self, rs, params, units=u.Msun/u.pc**2):

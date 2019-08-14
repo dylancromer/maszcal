@@ -11,6 +11,8 @@ class FakeStackedModel:
             redshift_bins,
             selection_func_file=defaults.DefaultSelectionFunc,
             lensing_weights_file=defaults.DefaultLensingWeights,
+            delta=200,
+            mass_definition='mean',
     ):
         pass
 
@@ -23,6 +25,8 @@ class FakeSingleMassModel:
             redshift,
             comoving_radii=True,
             cosmo_params=defaults.DefaultCosmology(),
+            delta=200,
+            mass_definition='mean',
     ):
         pass
 
@@ -51,6 +55,16 @@ def describe_lensing_signal():
             mocker.patch('maszcal.lensing.StackedModel', new=FakeStackedModel)
             weights_file = 'test/file/here'
             LensingSignal(mus, zs, lensing_weights_file=weights_file)
+
+        def it_allows_a_different_mass_definition(mocker):
+            mus = np.ones(10)
+            zs = np.ones(5)
+            mocker.patch('maszcal.lensing.StackedModel', new=FakeStackedModel)
+
+            delta = 500
+            mass_definition = 'crit'
+
+            LensingSignal(mus, zs, delta=delta, mass_definition=mass_definition)
 
     def describe_stacked_esd():
 

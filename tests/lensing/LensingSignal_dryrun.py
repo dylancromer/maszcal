@@ -3,18 +3,24 @@ import numpy as np
 from maszcal.lensing import LensingSignal
 
 
-
-
 def describe_LensingSignal():
 
-    @pytest.fixture
-    def lensing_signal():
-        return LensingSignal(comoving=False)
+    def it_can_use_different_mass_definitions():
+        mu = np.array([np.log(1e15)])
+        con = np.array([3])
+        rs = np.logspace(-1, 1, 5)
 
-    def it_does_not_return_nans(lensing_signal):
-        rs = np.logspace(-1, 1, 21)
-        params = np.array([[4, -1]])
+        redshift = 0.4*np.ones(1)
+        delta = 500
+        mass_def = 'crit'
+        lensing_signal = LensingSignal(redshifts=redshift, delta=delta, mass_definition=mass_def)
 
-        esd = lensing_signal.stacked_esd(rs, params)
+        esd_500c = lensing_signal.single_mass_esd(rs, np.array([[mu, con]]))
 
-        assert not np.any(np.isnan(esd))
+        delta = 200
+        kind = 'mean'
+        lensing_signal = LensingSignal(redshifts=redshift, delta=delta, mass_definition=mass_def)
+
+        esd_200m = lensing_signal.single_mass_esd(rs, np.array([[mu, con]]))
+
+        assert np.all(esd_200m < esd_500c)
