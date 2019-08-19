@@ -1,14 +1,24 @@
 import pytest
 import numpy as np
 from maszcal.concentration import ConModel
+from maszcal.cosmology import CosmoParams
 
 
 def describe_con_model():
 
+    def describe_init():
+
+        @pytest.fixture
+        def custom_cosmo():
+            return CosmoParams(hubble_constant=70.0)
+
+        def it_can_accept_a_custom_cosmology(custom_cosmo):
+            con_model = ConModel(mass_def='200m', cosmology=custom_cosmo)
+
     def describe_c():
 
         def it_calculates_a_concentration_from_a_mass():
-            con_model = ConModel()
+            con_model = ConModel(mass_def='200m')
 
             masses = np.linspace(np.log(1e14), np.log(1e16), 3)
 

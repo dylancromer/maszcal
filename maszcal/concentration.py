@@ -2,16 +2,28 @@ import numpy as np
 import colossus.cosmology.cosmology as colossus_cosmo
 import colossus.halo.concentration as colossus_con
 from colossus.halo.mass_adv import changeMassDefinitionCModel as _change_mass_def
+from maszcal.cosmology import CosmoParams
+from maszcal.cosmo_utils import get_colossus_params
+
+
+class DefaultCosmology:
+    pass
 
 
 class ConModel:
-    def _init_colossus(self):
-        params = {'flat': True, 'H0': 67.2, 'Om0': 0.31, 'Ob0': 0.049, 'sigma8': 0.81, 'ns': 0.95}
+    def _init_colossus(self, cosmology):
+        params = get_colossus_params(cosmology)
         colossus_cosmo.setCosmology('mycosmo', params)
 
-    def __init__(self, mass_def='200m'):
+    def __init__(self, mass_def, cosmology=DefaultCosmology()):
         self.mass_def = mass_def
-        self._init_colossus()
+
+        if isinstance(cosmology, DefaultCosmology):
+            cosmology_ = CosmoParams()
+        else:
+            cosmology_ = cosmology
+
+        self._init_colossus(cosmology_)
 
     def c(self, masses, redshifts, output_mass_def):
         _, cons = self.get_masses_and_cons(masses, redshifts, self.mass_def, output_mass_def)

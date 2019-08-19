@@ -1,3 +1,4 @@
+import numpy as np
 import camb
 from astropy.cosmology import Flatw0waCDM
 import astropy.units as u
@@ -59,3 +60,17 @@ def get_astropy_cosmology(cosmology_params):
     )
 
     return astropy_cosmology
+
+
+def get_colossus_params(cosmology_params):
+    omega_tot = cosmology_params.omega_matter + cosmology_params.omega_lambda
+    is_flat = np.allclose(omega_tot, 1, rtol=3e-3)
+
+    return {
+        'flat': is_flat,
+        'H0':cosmology_params.hubble_constant,
+        'Om0':cosmology_params.omega_matter,
+        'Ob0':cosmology_params.omega_bary,
+        'sigma8':cosmology_params.sigma_8,
+        'ns':cosmology_params.spectral_index,
+    }

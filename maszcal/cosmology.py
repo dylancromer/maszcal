@@ -10,8 +10,11 @@ class CosmoParams:
     omega_cdm_hsqr: float = Planck15.Odm0*Planck15.h**2
     spectral_index: float = 0.9667
     scalar_amp: float = 2.2e-9
+    sigma_8: float = 0.830
     tau_reion: float = 0.06
-    omega_matter: float = Planck15.Odm0
+    omega_bary: float = Planck15.Ob0
+    omega_cdm: float = Planck15.Odm0
+    omega_matter: float = Planck15.Om0
     omega_lambda: float = Planck15.Ode0
     rho_crit: float = Planck15.critical_density(0).to(u.Msun/u.Mpc**3).value
 
