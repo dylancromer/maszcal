@@ -4,10 +4,7 @@ import colossus.halo.concentration as colossus_con
 from colossus.halo.mass_adv import changeMassDefinitionCModel as _change_mass_def
 from maszcal.cosmology import CosmoParams
 from maszcal.cosmo_utils import get_colossus_params
-
-
-class DefaultCosmology:
-    pass
+import maszcal.defaults as defaults
 
 
 class ConModel:
@@ -15,10 +12,10 @@ class ConModel:
         params = get_colossus_params(cosmology)
         colossus_cosmo.setCosmology('mycosmo', params)
 
-    def __init__(self, mass_def, cosmology=DefaultCosmology()):
+    def __init__(self, mass_def, cosmology=defaults.DefaultCosmology()):
         self.mass_def = mass_def
 
-        if isinstance(cosmology, DefaultCosmology):
+        if isinstance(cosmology, defaults.DefaultCosmology):
             cosmology_ = CosmoParams()
         else:
             cosmology_ = cosmology
