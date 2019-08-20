@@ -167,3 +167,23 @@ def describe_stacked_model():
             delta_sigs_200m = model.delta_sigma_of_mass(rs, mu, con)
 
             assert np.all(delta_sigs_200m < delta_sigs_500c)
+
+    def describe_baryonic_corrections():
+
+        @pytest.fixture
+        def stacked_model():
+            params = np.array([[3, 0, 1]])
+
+            mus = np.linspace(np.log(1e12), np.log(1e16), 20)
+            zs = np.linspace(0, 2, 8)
+
+            model = StackedModel(mus, zs, params=params)
+
+            return model
+
+        def it_can_calc_a_baryonic_sigma(stacked_model):
+            rs = np.logspace(-1, 1, 5)
+
+            baryon_sigmas = stacked_model.sigma_baryon(rs, stacked_model.mus)
+
+            assert np.all(baryon_sigmas > 0)

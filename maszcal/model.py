@@ -194,6 +194,13 @@ class StackedModel:
             result = result * (u.Msun/u.Mpc**2).to(units)
             return result
 
+    def sigma_baryon(self, rs, mus, units=u.Msun/u.pc**2):
+        masses = self.mass(mus)
+
+        shape = np.exp(-rs**2 / (2*self.baryon_variance))
+        norm = masses / (4*np.pi*self.baryon_variance)
+        return norm * shape
+
     def misc_sigma(self, rs, mus, concentrations, cen_frac, r_misc, units=u.Msun/u.pc**2):
         """
         SHAPE mu, z, r, params
