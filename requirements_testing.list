@@ -1,0 +1,7 @@
+pytest
+pytest-describe
+pytest-mock
+pytest-benchmark
+pretend
+matplotlib
+seaborn

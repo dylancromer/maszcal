@@ -1,20 +1,25 @@
 from dataclasses import dataclass
+from astropy.cosmology import Planck15
+import astropy.units as u
 
 
 @dataclass
 class CosmoParams:
-    hubble_constant: float = 67
-    omega_bary_hsqr: float = 0.022
-    omega_cdm_hsqr: float = 0.1194
+    hubble_constant: float = Planck15.H0.value
+    omega_bary_hsqr: float = Planck15.Ob0*Planck15.h**2
+    omega_cdm_hsqr: float = Planck15.Odm0*Planck15.h**2
     spectral_index: float = 0.9667
     scalar_amp: float = 2.2e-9
+    sigma_8: float = 0.830
     tau_reion: float = 0.06
-    omega_matter: float = 0.3089
-    omega_lambda: float = 0.6911
-    rho_crit: float = 1.274e11  # 8.62e-27 from wiki
+    omega_bary: float = Planck15.Ob0
+    omega_cdm: float = Planck15.Odm0
+    omega_matter: float = Planck15.Om0
+    omega_lambda: float = Planck15.Ode0
+    rho_crit: float = Planck15.critical_density(0).to(u.Msun/u.Mpc**3).value
 
-    h: float = hubble_constant/100
-    cmb_temp: float = 2.725
+    h: float = Planck15.h
+    cmb_temp: float = Planck15.Tcmb0.value
 
     w0: float = -1.0
     wa: float = 0.0

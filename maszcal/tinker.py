@@ -105,7 +105,6 @@ def top_hatf(kR):
 
 
 def sigma_sq_integral(R_grid, power_spt, k_val):
-    #TODO: what the fuck is going on here
     """
     Determines the sigma^2 parameter over the m-z grid by integrating
     over k.

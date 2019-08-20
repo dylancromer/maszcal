@@ -24,3 +24,11 @@ class NoParams:
 
 class NoEmulation:
     pass
+
+
+class NoMasses:
+    pass
+
+
+class NoRedshifts:
+    pass

@@ -29,6 +29,8 @@ class StackedModel:
             selection_func_file=defaults.DefaultSelectionFunc(),
             lensing_weights_file=defaults.DefaultLensingWeights(),
             cosmo_params=defaults.DefaultCosmology(),
+            delta=200,
+            mass_definition='mean',
     ):
 
         ### FITTING PARAMETERS AND LIKELIHOOD ###
@@ -55,6 +57,9 @@ class StackedModel:
         self.mu_szs = mu_bins
         self.mus = mu_bins
         self.zs = redshift_bins
+
+        self.delta = delta
+        self.mass_definition = mass_definition
 
         ### SELECTION FUNCTION ###
         if isinstance(selection_func_file, defaults.DefaultSelectionFunc):
@@ -108,7 +113,14 @@ class StackedModel:
                                                                          npoints=self.number_ks)
 
     def init_onfw(self):
-        self.onfw_model = NFWModel(self.astropy_cosmology, comoving=self.comoving_radii)
+        rho_dict = {'mean':'rho_m', 'crit':'rho_c'}
+
+        self.onfw_model = NFWModel(
+            self.astropy_cosmology,
+            comoving=self.comoving_radii,
+            delta=self.delta,
+            rho=rho_dict[self.mass_definition],
+        )
 
     def prob_musz_given_mu(self, mu_szs, mus):
         """
@@ -276,9 +288,11 @@ class StackedModel:
     def dnumber_dlogmass(self):
         """
         SHAPE mu, z
+
+        UNITS h/Mpc
         """
         masses = self.mass(self.mus)
-        overdensity = 200
+        overdensity = self.delta
         rho_matter = self.cosmo_params.rho_crit * self.cosmo_params.omega_matter / self.cosmo_params.h**2
 
         try:
@@ -425,7 +439,7 @@ class StackedModel:
 
         return z_integral/self.number_sz()[None, :]
 
-    def delta_sigma(self, rs, units=u.Msun/u.Mpc**2, miscentered=False):
+    def delta_sigma(self, rs, units=u.Msun/u.pc**2, miscentered=False):
         if not miscentered:
             return self._delta_sigma(rs, units)
         else:
@@ -458,3 +472,54 @@ class StackedModel:
         )
 
         return z_integral/self.number_sz()
+
+
+class SingleMassModel:
+    def __init__(
+            self,
+            redshift,
+            comoving_radii=True,
+            delta=200,
+            mass_definition='mean',
+            cosmo_params=defaults.DefaultCosmology(),
+    ):
+
+        self.redshift = np.array([redshift])
+        self.comoving_radii = comoving_radii
+        self.delta = delta
+        self.mass_definition = mass_definition
+
+        if isinstance(cosmo_params, defaults.DefaultCosmology):
+            self.cosmo_params = CosmoParams()
+        else:
+            self.cosmo_params = cosmo_params
+
+        self.astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
+
+    def init_onfw(self):
+        rho_dict = {'mean':'rho_m', 'crit':'rho_c'}
+
+        self.onfw_model = NFWModel(
+            self.astropy_cosmology,
+            comoving=self.comoving_radii,
+            delta=self.delta,
+            rho=rho_dict[self.mass_definition],
+        )
+
+    def mass(self, mu):
+        return np.exp(mu)
+
+    def delta_sigma(self, rs, mus, concentrations, units=u.Msun/u.pc**2):
+
+        masses = self.mass(mus)
+
+        try:
+            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.redshift)
+            result = result * (u.Msun/u.Mpc**2).to(units)
+            return result
+        except AttributeError:
+            self.init_onfw()
+            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.redshift)
+            result = result * (u.Msun/u.Mpc**2).to(units)
+            return result
+

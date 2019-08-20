@@ -143,3 +143,27 @@ def describe_stacked_model():
             miscentered_sigmas = stacked_model.misc_sigma(rs, mus, cons, frac, r_misc)
 
             assert miscentered_sigmas.shape == (1, 8, 21, 2)
+
+        def it_can_use_different_mass_definitions():
+            mu = np.array([np.log(1e15)])
+            con = np.array([3])
+            rs = np.logspace(-1, 1, 10)
+
+            params = 2*np.ones((1,2))
+
+            mus = np.linspace(np.log(1e12), np.log(1e16), 20)
+            zs = np.linspace(0, 2, 8)
+
+            delta = 500
+            mass_def = 'crit'
+            model = StackedModel(mus, zs, delta=delta, mass_definition=mass_def)
+
+            delta_sigs_500c = model.delta_sigma_of_mass(rs, mu, con)
+
+            delta = 200
+            kind = 'mean'
+            model = StackedModel(mus, zs, delta=delta, mass_definition=mass_def)
+
+            delta_sigs_200m = model.delta_sigma_of_mass(rs, mu, con)
+
+            assert np.all(delta_sigs_200m < delta_sigs_500c)
