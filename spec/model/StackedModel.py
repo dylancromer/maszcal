@@ -59,12 +59,10 @@ def describe_stacked_model():
 
         @pytest.fixture
         def stacked_model():
-            params = 2*np.ones((1,2))
-
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
             zs = np.linspace(0, 2, 8)
 
-            model = StackedModel(mus, zs, params=params)
+            model = StackedModel(mus, zs)
 
             return model
 
@@ -72,14 +70,18 @@ def describe_stacked_model():
             mu_szs = np.linspace(np.log(1e12), np.log(1e16), 10)
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
 
-            prob_sz = stacked_model.prob_musz_given_mu(mu_szs, mus)
+            a_szs = np.linspace(-1, 1, 5)
+
+            prob_sz = stacked_model.prob_musz_given_mu(mu_szs, mus, a_szs)
             assert np.all(prob_sz >= 0)
 
         def prob_musz_given_mu_integrates_to_1(stacked_model):
             mu_szs = np.linspace(np.log(1e11), np.log(1e17), 100)
             mus = np.array([np.log(1e15)])
 
-            prob_sz = stacked_model.prob_musz_given_mu(mu_szs, mus)
+            a_szs = np.linspace(-1, 1, 5)
+
+            prob_sz = stacked_model.prob_musz_given_mu(mu_szs, mus, a_szs)
             integ = np.trapz(prob_sz, x=mu_szs, axis=0)
             assert np.allclose(integ, 1)
 
@@ -95,13 +97,16 @@ def describe_stacked_model():
                 (stacked_model.mus.size, stacked_model.zs.size)
             )
 
-            rs = np.logspace(-1, 1, 40)
+            rs = np.logspace(-1, 1, 21)
 
-            stacked_model.delta_sigma_of_mass = lambda rs,mus,cons,units,miscentered: np.ones(
-                (stacked_model.mus.size, zs.size, rs.size, stacked_model.concentrations.size)
+            stacked_model.delta_sigma_of_mass = lambda rs, mus, cons, units, miscentered: np.ones(
+                (stacked_model.mus.size, zs.size, rs.size, cons.size)
             )
 
-            delta_sigmas = stacked_model.delta_sigma(rs)
+            cons = np.linspace(2, 4, 1)
+            a_szs = np.linspace(-1, 1, 1)
+
+            delta_sigmas = stacked_model.delta_sigma(rs, cons, a_szs)
 
             precomp_delta_sigmas = np.ones((rs.size, 1))
 
@@ -118,38 +123,16 @@ def describe_stacked_model():
                 (stacked_model.mus.size, rs.size)
             )
 
-            avg_wl_mass = stacked_model.weak_lensing_avg_mass()
+            a_szs = np.linspace(-1, 1, 1)
+
+            avg_wl_mass = stacked_model.weak_lensing_avg_mass(a_szs)
 
             assert avg_wl_mass.shape == (1,)
-
-
-        def it_computes_miscentered_delta_sigma(stacked_model):
-            zs = stacked_model.zs
-            mus = np.array([15])
-            stacked_model.mus = mus
-            rs = np.logspace(-1, 1, 21)
-
-            params = np.array([[3, 2, 0.5, 1e-2],
-                               [3, 2, 0.7, 1e-1]])
-
-            cons = params[:, 0]
-            frac = params[:, 2]
-            r_misc = params[:, 3]
-
-            stacked_model.params = params
-
-            stacked_model.sigma_of_mass = lambda rs,mus,cons,units: np.ones((mus.size, zs.size, rs.size, cons.size))
-
-            miscentered_sigmas = stacked_model.misc_sigma(rs, mus, cons, frac, r_misc)
-
-            assert miscentered_sigmas.shape == (1, 8, 21, 2)
 
         def it_can_use_different_mass_definitions():
             mu = np.array([np.log(1e15)])
             con = np.array([3])
             rs = np.logspace(-1, 1, 10)
-
-            params = 2*np.ones((1,2))
 
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
             zs = np.linspace(0, 2, 8)
@@ -167,23 +150,3 @@ def describe_stacked_model():
             delta_sigs_200m = model.delta_sigma_of_mass(rs, mu, con)
 
             assert np.all(delta_sigs_200m < delta_sigs_500c)
-
-    def describe_baryonic_corrections():
-
-        @pytest.fixture
-        def stacked_model():
-            params = np.array([[3, 0, 1]])
-
-            mus = np.linspace(np.log(1e12), np.log(1e16), 20)
-            zs = np.linspace(0, 2, 8)
-
-            model = StackedModel(mus, zs, params=params)
-
-            return model
-
-        def it_can_calc_a_baryonic_sigma(stacked_model):
-            rs = np.logspace(-1, 1, 5)
-
-            baryon_sigmas = stacked_model.sigma_baryon(rs, stacked_model.mus)
-
-            assert np.all(baryon_sigmas > 0)
