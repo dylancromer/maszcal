@@ -63,3 +63,18 @@ def describe_con_model():
             new_masses = con_model.convert_mass_def(masses, redshifts, '500m', '200m')
 
             assert np.all(masses < new_masses.flatten())
+
+    def describe_convert_c_mass_pair():
+
+        def it_does_nothing_if_in_def_and_out_def_are_the_same():
+            con_model = ConModel(mass_def='500c')
+
+            masses = np.logspace(14, 16, 3)
+            cons = np.linspace(2, 4, 3)
+
+            redshifts = np.zeros(1)
+
+            new_masses, new_cons = con_model.convert_c_mass_pair(masses, cons, redshifts, '500c', '500c')
+
+            assert np.allclose(masses, new_masses.flatten())
+            assert np.allclose(cons, new_cons.flatten())
