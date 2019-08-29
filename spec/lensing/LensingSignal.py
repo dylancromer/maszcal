@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from maszcal.lensing import LensingSignal
+from maszcal.cosmology import CosmoParams
 import maszcal.defaults as defaults
 
 
@@ -9,8 +10,9 @@ class FakeStackedModel:
             self,
             mu_bins,
             redshift_bins,
-            selection_func_file=defaults.DefaultSelectionFunc,
-            lensing_weights_file=defaults.DefaultLensingWeights,
+            cosmo_params=defaults.DefaultCosmology(),
+            selection_func_file=defaults.DefaultSelectionFunc(),
+            lensing_weights_file=defaults.DefaultLensingWeights(),
             delta=200,
             mass_definition='mean',
     ):
@@ -65,6 +67,14 @@ def describe_lensing_signal():
             mass_definition = 'crit'
 
             LensingSignal(mus, zs, delta=delta, mass_definition=mass_definition)
+
+        def it_can_use_a_different_cosmology(mocker):
+            mus = np.ones(10)
+            zs = np.ones(5)
+            mocker.patch('maszcal.lensing.StackedModel', new=FakeStackedModel)
+
+            cosmo = CosmoParams(hubble_constant=80)
+            LensingSignal(mus, zs, cosmo_params=cosmo)
 
     def describe_stacked_esd():
 

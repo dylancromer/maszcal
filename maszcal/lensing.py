@@ -12,6 +12,7 @@ class LensingSignal:
             comoving=True,
             delta=200,
             mass_definition='mean',
+            cosmo_params=defaults.DefaultCosmology(),
             selection_func_file=defaults.DefaultSelectionFunc(),
             lensing_weights_file=defaults.DefaultLensingWeights(),
     ):
@@ -25,6 +26,7 @@ class LensingSignal:
         self.delta = delta
         self.mass_definition = mass_definition
 
+        self.cosmo_params = cosmo_params
         self.selection_func_file = selection_func_file
         self.lensing_weights_file = lensing_weights_file
 
@@ -35,6 +37,7 @@ class LensingSignal:
         self.stacked_model = StackedModel(
             self.log_masses,
             self.redshifts,
+            cosmo_params=self.cosmo_params,
             selection_func_file=self.selection_func_file,
             lensing_weights_file=self.lensing_weights_file,
             delta=self.delta,
