@@ -5,8 +5,6 @@ from maszcal.lensing import LensingSignal
 from maszcal.emulator import LensingEmulator
 
 
-
-
 def describe_lensing_signal():
 
     @pytest.fixture
