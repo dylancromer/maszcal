@@ -53,7 +53,6 @@ class LensingSignal:
             return self.stacked_model.delta_sigma(rs, cons, a_szs, units=units)
         except AttributeError:
             self._init_stacked_model()
-            self.stacked_model.params = params
             return self.stacked_model.delta_sigma(rs, cons, a_szs, units=units)
 
     def _check_redshift_for_single_mass_model(self):
