@@ -46,14 +46,15 @@ class LensingSignal:
 
         self.stacked_model.comoving_radii = self.comoving
 
-    def stacked_esd(self, rs, params, miscentered=False, units=u.Msun/u.pc**2):
+    def stacked_esd(self, rs, params, units=u.Msun/u.pc**2):
+        cons = params[:, 0]
+        a_szs = params[:, 1]
         try:
-            self.stacked_model.params = params
-            return self.stacked_model.delta_sigma(rs, miscentered=miscentered, units=units)
+            return self.stacked_model.delta_sigma(rs, cons, a_szs, units=units)
         except AttributeError:
             self._init_stacked_model()
             self.stacked_model.params = params
-            return self.stacked_model.delta_sigma(rs, miscentered=miscentered, units=units)
+            return self.stacked_model.delta_sigma(rs, cons, a_szs, units=units)
 
     def _check_redshift_for_single_mass_model(self):
         if self.redshifts.size != 1:
