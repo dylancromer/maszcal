@@ -27,44 +27,18 @@ def test_sigma_of_m():
 
     sigmas = stacked_model.delta_sigma_of_mass(rs,
                                                mus,
-                                               concentrations=cons,
+                                               cons,
                                                units=u.Msun/(u.Mpc * u.pc))
 
     sigmas = sigmas[0,:,:,0]
 
     plt.plot(rs, rs[:, None]*sigmas.T/1e6)
-    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
+    plt.title(rf'$ M = {round(np.exp(mus[0])/1e14, 2)} \;  10^{{14}} M_{{\odot}}$')
     plt.xlabel(r'$ r $')
     plt.ylabel(r'$ r \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
     plt.xscale('log')
 
     plt.savefig('figs/test/sigma_r_m.svg')
-    plt.gcf().clear()
-
-
-def test_misc_sigma_of_m():
-    zs = stacked_model.zs
-
-    rs = np.logspace(-1, 1, 30)
-    cons = np.array([2])
-
-    frac = np.array([0.5])
-    r_misc = np.array([1e-1])
-
-    miscentered_sigmas = stacked_model.misc_sigma(rs,
-                                                  mus,
-                                                  cons,
-                                                  frac,
-                                                  r_misc,
-                                                  units=u.Msun/(u.Mpc * u.pc))[0, 0, :, 0]
-
-    plt.plot(rs, rs*miscentered_sigmas/1e6)
-    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
-    plt.xlabel(r'$ r $')
-    plt.ylabel(r'$ r \Sigma_{\mathrm{misc}} (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
-    plt.xscale('log')
-
-    plt.savefig('figs/test/sigma_r_m_misc.svg')
     plt.gcf().clear()
 
 
@@ -75,14 +49,14 @@ def test_delta_sigma_of_m():
 
     delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
                                                      mus,
-                                                     concentrations=cons,
+                                                     cons,
                                                      units=u.Msun/(u.Mpc * u.pc))
 
     delta_sigmas = delta_sigmas[0,:,:,0]
 
 
     plt.plot(rs, rs[:, None]*delta_sigmas.T/1e6)
-    plt.title(rf'$ M = {np.exp(mus[0])} \; M_{{\odot}}$')
+    plt.title(rf'$ M = {round(np.exp(mus[0])/1e14, 2)} \; 10^{{14}} M_{{\odot}}$')
     plt.xlabel(r'$ r $')
     plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
     plt.xscale('log')
@@ -91,77 +65,12 @@ def test_delta_sigma_of_m():
     plt.gcf().clear()
 
 
-def test_delta_sigma_of_m_from_sigma():
-    rs = np.logspace(-1, 2, 40)
-    mus = np.array([np.log(1e15)])
-    cons = np.array([2])
-
-    delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
-                                                     mus,
-                                                     concentrations=cons,
-                                                     units=u.Msun/(u.Mpc * u.pc),
-                                                     miscentered=False)
-
-    delta_sigmas_check = stacked_model.delta_sigma_of_mass_nfw(rs,
-                                                               mus,
-                                                               concentrations=cons,
-                                                               units=u.Msun/(u.Mpc * u.pc))[0,0,:,0]
-
-    delta_sigmas = delta_sigmas[0,0,:,0]
-
-    plt.plot(rs, rs*delta_sigmas/1e6, label=r'from $\Sigma$')
-    plt.plot(rs, rs*delta_sigmas_check/1e6, label=r'NFW $\Delta\Sigma$')
-    plt.legend(loc='best')
-    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
-    plt.xlabel(r'$ r $')
-    plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
-    plt.xscale('log')
-
-    plt.savefig('figs/test/delta_sigma_r_m_from_sigma.svg')
-    plt.gcf().clear()
-
-    plt.plot(rs, delta_sigmas/delta_sigmas_check, label='ratio')
-    plt.legend(loc='best')
-    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
-    plt.xlabel(r'$ r $')
-    plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
-    plt.xscale('log')
-
-    plt.savefig('figs/test/delta_sigma_r_m_from_sigma_ratio.svg')
-    plt.gcf().clear()
-
-
-def test_misc_delta_sigma_of_m():
-    rs = np.logspace(-1, 2, 40)
-    mus = np.array([np.log(1e15)])
-    cons = np.array([2])
-
-    params = np.array([[2, 0, 0.8, 1e-1]])
-
-    stacked_model.params = params
-
-    delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
-                                                     mus,
-                                                     concentrations=cons,
-                                                     units=u.Msun/(u.Mpc * u.pc),
-                                                     miscentered=True)
-
-    delta_sigmas = delta_sigmas[0, 0, :, 0]
-
-    plt.plot(rs, rs*delta_sigmas/1e6, label=r'from $\Sigma$')
-    plt.legend(loc='best')
-    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
-    plt.xlabel(r'$ r $')
-    plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
-    plt.xscale('log')
-
-    plt.savefig('figs/test/delta_sigma_r_m_miscentered.svg')
-    plt.gcf().clear()
-
-
 def test_delta_sigma_of_r():
     mubins = np.linspace(np.log(1e14), np.log(1e16), 30)
     zbins = np.linspace(0, 2, 30)
+
+    cons = 2*np.ones(1)
+    a_szs = np.zeros(1)
 
     stacked_model = StackedModel(mubins, zbins)
 
@@ -171,7 +80,7 @@ def test_delta_sigma_of_r():
 
     stacked_model.params = params
 
-    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc))[:,0]
+    delta_sigmas = stacked_model.delta_sigma(rs, cons, a_szs, units=u.Msun/(u.Mpc * u.pc))[:,0]
 
     plt.plot(rs, rs * delta_sigmas/1e6)
     plt.xlabel(r'$ r $')
@@ -179,50 +88,6 @@ def test_delta_sigma_of_r():
     plt.xscale('log')
 
     plt.savefig('figs/test/delta_sigma_r.svg')
-    plt.gcf().clear()
-
-
-def test_delta_sigma_of_r_miscentered():
-    rs = np.logspace(-1, 2, 40)
-
-    mubins = np.linspace(np.log(1e14), np.log(1e16), 30)
-    zbins = np.linspace(0, 2, 30)
-
-    stacked_model = StackedModel(mubins, zbins)
-
-    params = np.array([[2, 2, 0.8, 1e-1]])
-    stacked_model.params = params
-
-    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc), miscentered=True)[:,0]
-
-    plt.plot(rs, rs * delta_sigmas/1e6)
-    plt.xlabel(r'$ r $')
-    plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
-    plt.xscale('log')
-
-    plt.savefig('figs/test/delta_sigma_r_miscentered.svg')
-    plt.gcf().clear()
-
-
-def test_delta_sigma_of_r_miscentered_negative_bias():
-    rs = np.logspace(-1, 2, 40)
-
-    mubins = np.linspace(np.log(1e14), np.log(1e16), 30)
-    zbins = np.linspace(0, 2, 30)
-
-    stacked_model = StackedModel(mubins, zbins)
-
-    params = np.array([[2, -0.6, 0.8, 1e-1]])
-    stacked_model.params = params
-
-    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc), miscentered=True)[:,0]
-
-    plt.plot(rs, rs * delta_sigmas/1e6)
-    plt.xlabel(r'$ r $')
-    plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
-    plt.xscale('log')
-
-    plt.savefig('figs/test/delta_sigma_r_miscentered_negative_bias.svg')
     plt.gcf().clear()
 
 
@@ -234,14 +99,14 @@ def test_sigma_of_m_nocomoving():
 
     sigmas = stacked_model.delta_sigma_of_mass(rs,
                                                mus,
-                                               concentrations=cons,
+                                               cons,
                                                units=u.Msun/(u.Mpc * u.pc))
 
     sigmas = sigmas[0,:,:,0]
 
 
     plt.plot(rs, rs[:, None]*sigmas.T/1e6)
-    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
+    plt.title(rf'$ M = {round(np.exp(mus[0])/1e14, 2)} \; 10^{{14}} M_{{\odot}}$')
     plt.xlabel(r'$ r $')
     plt.ylabel(r'$ r \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
     plt.xscale('log')
@@ -259,7 +124,7 @@ def test_delta_sigma_of_m_nocomoving():
 
     delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
                                                      mus,
-                                                     concentrations=cons,
+                                                     cons,
                                                      units=u.Msun/(u.Mpc * u.pc))
 
 
@@ -267,7 +132,7 @@ def test_delta_sigma_of_m_nocomoving():
 
 
     plt.plot(rs, rs[:, None]*delta_sigmas.T/1e6)
-    plt.title(rf'$ M = 10^{{{mus[0]}}} \; M_{{\odot}}$')
+    plt.title(rf'$ M = {round(np.exp(mus[0])/1e14, 2)} \; 10^{{14}} M_{{\odot}}$')
     plt.xlabel(r'$ r $')
     plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
     plt.xscale('log')
@@ -285,10 +150,10 @@ def test_delta_sigma_of_r_nocomoving():
 
     rs = np.logspace(-1, 2, 40)
 
-    params = np.array([[2, 2]])
-    stacked_model.params = params
+    cons = 2*np.ones(1)
+    a_szs = np.zeros(1)
 
-    delta_sigmas = stacked_model.delta_sigma(rs, units=u.Msun/(u.Mpc * u.pc))[:,0]
+    delta_sigmas = stacked_model.delta_sigma(rs, cons, a_szs, units=u.Msun/(u.Mpc * u.pc))[:,0]
 
     plt.plot(rs, rs * delta_sigmas/1e6)
     plt.xlabel(r'$ r $')

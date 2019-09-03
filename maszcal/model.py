@@ -250,7 +250,6 @@ class StackedModel:
                  self.mus,
                  cons,
                  units=units,
-                 miscentered=False,
              )[None, ...]),
             axis=0,
             dx=dmu_szs,
