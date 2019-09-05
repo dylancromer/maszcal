@@ -64,6 +64,7 @@ class LensingSignal:
 
         self.single_mass_model = SingleMassModel(
             self.redshifts,
+            cosmo_params=self.cosmo_params,
             comoving_radii=self.comoving,
             delta=self.delta,
             mass_definition=self.mass_definition,

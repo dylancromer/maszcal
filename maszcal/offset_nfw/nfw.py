@@ -140,7 +140,7 @@ class NFWModel(object):
     def _deltasigmagt(self,x):
         return (8.*np.arctan(np.sqrt((x-1.)/(1.+x)))/(x*x*np.sqrt(x*x-1.)) +
             4./(x*x)*np.log(x/2.)-2./(x*x-1.)+
-            4.*np.arctan(np.sqrt((x-1.)/(1.+x)))/(pow((x*x-1.),1.5)))
+            4.*np.arctan(np.sqrt((x-1.)/(1.+x)))/((x*x-1.)**(3/2)))
 
     def _sigmalt(self,x):
         return 2./(x*x-1.)*(1.-2./np.sqrt(1.-x*x)*np.arctanh(np.sqrt((1.-x)/(1.+x))))
