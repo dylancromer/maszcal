@@ -1,92 +1,91 @@
 import numpy as np
+import astropy.units as u
+from maszcal.defaults import DefaultCosmology
+from maszcal.cosmology import CosmoParams
+from maszcal.cosmo_utils import get_astropy_cosmology
 
 
-class SimpleDeltaSigma:
-    #TODO: fix shapes via broadcasting
-    def __init__(self, cosmo_params, zs, rhocrit_of_z_func):
-        self.cosmo_params = cosmo_params
-        self.zs = zs
+class NfwModel:
+    """
+    SHAPE mass, z, r, cons
+    """
+    def __init__(self, cosmo_params=DefaultCosmology()):
+        self._delta = 200
 
-        self.rhocrit_of_z = rhocrit_of_z_func
-
-    def rdel(self, mass, z, delta, mode):
-        if mode == 'seljak':
-            ans = (3 * mass / (4 * np.pi * delta * self.rhocrit_of_z(z)))**(1.0/3.0)
-
-        elif mode == 'duffy':
-            rho_m0 = self.cosmo_params.omega_matter
-            ans = (3 * mass / (4 * np.pi * delta * rho_m0))**(1.0/3.0)
-
+        if isinstance(cosmo_params, DefaultCosmology):
+            self.cosmo_params = CosmoParams()
         else:
-            raise ValueError('mode must be seljak or duffy')
+            self.cosmo_params = cosmo_params
 
-        return ans
+        self.astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
 
-    def concentration(self, virial_mass, z, mode):
-        if mode == 'seljak': #Seljak 2000 with hs in units
-            ans = 5.72 / (1 + z) * (viral_mass / 10**14)**(-0.2)
+    def omega(self, z):
+        return self.astropy_cosmology.efunc(z)**2
 
-        elif mode == 'duffy': #Duffy 2008 with hs in units
-            ans = 5.09 / (1 + z)**0.71 * (virial_mass / 10**14)**(-0.081)
+    def _reference_density(self, zs):
+        """
+        SHAPE z
+        """
+        redshift_dep = self.astropy_cosmology.Om(zs)/self.omega(zs)
+        return (self.astropy_cosmology.critical_density0 * redshift_dep).to(u.Msun/u.Mpc**3).value
 
-        elif mode == 'duffy_alt':  #Duffy 2008 with hs in units MEAN DENSITY 200
-            ans = 10.14 / (1 + z)**(1.01) * (virial_mass / 2e12)**(-0.081)
+    def _radius_delta(self, zs, masses):
+        """
+        SHAPE mass, z
+        """
+        pref = 3 / (4*np.pi)
+        return (pref * masses[:, None] / (self._delta*self._reference_density(zs))[None, :])**(1/3)
 
-        else:
-            raise ValueError('mode must be seljak, duffy, or duffy_alt')
+    def _scale_radius(self, zs, masses, cons):
+        """
+        SHAPE mass, z, cons
+        """
+        return self._radius_delta(zs, masses)[:, :, None]/cons[None, None, :]
 
-        return ans
+    def _delta_c(self, cons):
+        return (self._delta * cons**3)/(3 * (np.log(1+cons) - cons/(1+cons)))
 
-    def mass_concentration_del_2_del_mean200(self, mdel, delta, z, EPS):
-        mass = 2 * mdel
-        rdels = self.rdel(mdel, z, delta, 'seljak') * (1. + z)
-        ans = 0
+    def _less_than_func(self, x):
+        return (
+            8 * np.arctanh(np.sqrt((1-x) / (1+x))) / (x**2 * np.sqrt(1 - x**2))
+            + 4 * np.log(x/2) / x**2
+            - 2 / (x**2 - 1)
+            + 4 * np.arctanh(np.sqrt((1-x) / (1+x))) / ((x**2 - 1) * np.sqrt(1 - x**2))
+        )
 
-        while np.any(np.abs(ans/mass - 1)) > EPS :
-            ans = mass
-            conz = self.concentration(mass, z, 'duffy') #DUFFY
-            rs = self.rdel(mass, z, 200, 'duffy')/conz
-            xx = rdels / rs
-            assert False, 'I am in a loop'
-            mass = mdel * self.m_x(conz) / self.m_x(xx)
+    def _equal_func(self, x):
+        return 10/3 + 4*np.log(1/2)
 
-        assert False, 'I got out of the loop'
+    def _greater_than_func(self, x):
+        return (
+            8 * np.arctan(np.sqrt((x-1) / (x+1))) / (x**2 * np.sqrt(x**2 - 1))
+            + 4 * np.log(x/2) / x**2
+            - 2 / (x**2 - 1)
+            + 4 * np.arctan(np.sqrt((x-1) / (x+1))) / ((x**2 - 1)**(3/2))
+        )
 
-        return ans
+    def _inequality_func(self, xs):
+        less_than_mask = xs < 1
+        equal_mask = xs == 1
+        greater_than_mask = xs > 1
 
-    def rho_s(self, c_delta, delta,z):
-        return c_delta**3 * cosmo_params['rhom_0mpc'] * delta / 3. / (np.log(1.+c_delta)-c_delta/(1.+c_delta))
+        full_func_vals = np.zeros(xs.shape)
 
-    def m_x(self, x):
-        ans = np.log(1 + x) - x/(1+x)
-        return ans
+        full_func_vals[less_than_mask] = self._less_than_func(xs[less_than_mask])
+        full_func_vals[equal_mask] = self._equal_func(xs[equal_mask])
+        full_func_vals[greater_than_mask] = self._greater_than_func(xs[greater_than_mask])
 
-    def delta_sigma_of_mass(self, r, m_delta, delta):
-        ERRTOL = 1e-6
+        return full_func_vals
 
-        mass = self.mass_concentration_del_2_del_mean200(m_delta, delta, self.zs, ERRTOL)
-        c_delta = self.concentration(mass, self.zs, 2) #DUFFY
-        r_s = self.rdel(mass, self.zs, 200, 'duffy')/c_delta
+    def delta_sigma(self, rs, zs, masses, cons):
+        """
+        SHAPE mass, z, r, cons
+        """
+        scale_radii = self._scale_radius(zs, masses, cons)
+        prefactor = scale_radii * self._delta_c(cons)[None, None, :] * self._reference_density(zs)[None, :, None]
 
-        x = r/r_s
-        x_ltone = x[x < 1]
-        x_eqone = x[np.equal(x, 1.)]
-        x_gtone = x[x > 1]
+        xs = rs[None, None, :, None]/scale_radii[:, :, None, :]
 
-        fact = r_s * self.rho_s(c_delta, 200 , self.zs)
+        postfactor = self._inequality_func(xs)
 
-        delta_sigma_ltone = fact * (8 * np.arctanh(np.sqrt((1 - x_ltone)/(1 + x_ltone))) / (x_ltone**2 * np.sqrt(1 - x_ltone**2))
-                                    + 4 * np.log(x_ltone/2) / x_ltone**2
-                                    - 2 / (x_ltone**2 - 1)
-                                    + 4 * np.arctanh(np.sqrt((1 - x_ltone)/(1 + x_ltone))) / ((x_ltone**2 - 1) * np.sqrt(1 - x_ltone**2)))
-
-        delta_sigma_eqone = fact * (10/3 + 4 * np.log(0.5)) * x_eqone
-
-        delta_sigma_gtone = fact * (8 * np.arctan(np.sqrt((x_gtone - 1)/(1 + x_gtone)))/x_gtone**2 / np.sqrt(x_gtone**2 - 1)
-                                    + 4 * np.log(x_gtone/2)/x_gtone**2
-                                    - 2 / (x_gtone**2 - 1)
-                                    + 4 * np.arctan(np.sqrt((x_gtone - 1)/(1 + x_gtone)))/(x_gtone**2 - 1)**1.5)
-
-        delta_sigma = np.concatenate((delta_sigma_ltone, delta_sigma_eqone, delta_sigma_gtone))/10**12 # 10**12 converts [hM_sun/Mpc^2 to hM_sun/pc^2]
-
-        return delta_sigma
+        return prefactor[:, :, None, :] * postfactor
