@@ -9,8 +9,16 @@ class NfwModel:
     """
     SHAPE mass, z, r, cons
     """
-    def __init__(self, cosmo_params=DefaultCosmology(), units=u.Msun/u.pc**2):
-        self._delta = 200
+    def __init__(
+            self,
+            cosmo_params=DefaultCosmology(),
+            units=u.Msun/u.pc**2,
+            delta=200,
+            mass_def='mean',
+    ):
+        self._delta = delta
+        self._check_mass_def(mass_def)
+        self.mass_definition = mass_def
 
         if isinstance(cosmo_params, DefaultCosmology):
             self.cosmo_params = CosmoParams()
@@ -21,18 +29,29 @@ class NfwModel:
 
         self.units = units
 
-    def omega(self, z):
-        """
-        SHAPE z
-        """
-        return self._astropy_cosmology.efunc(z)**2
+    def _check_mass_def(self, mass_def):
+        if mass_def not in ['mean', 'crit']:
+            raise ValueError('Mass definition must be \'crit\' or \'mean\'')
+
+    @property
+    def mass_definition(self):
+        return self._mass_definition
+
+    @mass_definition.setter
+    def mass_definition(self, new_mass_def):
+        self._check_mass_def(new_mass_def)
+        self._mass_definition = new_mass_def
 
     def _reference_density(self, zs):
         """
         SHAPE z
         """
-        redshift_dep = self._astropy_cosmology.Om(zs)/self.omega(zs)
-        return (self._astropy_cosmology.critical_density0 * redshift_dep).to(u.Msun/u.Mpc**3).value
+        if self.mass_definition == 'mean':
+            rho_mass_def = self._astropy_cosmology.critical_density0 * self._astropy_cosmology.Om(zs)
+        elif self.mass_definition == 'crit':
+            rho_mass_def = self._astropy_cosmology.critical_density(zs)
+
+        return rho_mass_def.to(u.Msun/u.Mpc**3).value
 
     def _radius_delta(self, zs, masses):
         """

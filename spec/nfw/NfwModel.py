@@ -15,7 +15,7 @@ def describe_nfw_model():
     def it_calculates_delta_sigma(nfw_model):
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 3)
-        masses = np.logspace(14, 15, 5, base=10)
+        masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
 
         ds = nfw_model.delta_sigma(rs, zs, masses, cons)
@@ -30,7 +30,7 @@ def describe_nfw_model():
     def it_can_use_different_cosmologies(nfw_model, nfw_model_alt_cosmo):
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 3)
-        masses = np.logspace(14, 15, 5, base=10)
+        masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
 
         ds = nfw_model.delta_sigma(rs, zs, masses, cons)
@@ -43,10 +43,27 @@ def describe_nfw_model():
 
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 3)
-        masses = np.logspace(14, 15, 5, base=10)
+        masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
 
         ds = nfw_model.delta_sigma(rs, zs, masses, cons)
         ds_other_units = nfw_model_other_units.delta_sigma(rs, zs, masses, cons)
 
         assert np.all(ds_other_units > ds)
+
+    def it_can_use_different_mass_definitions(nfw_model):
+        nfw_model_500c = NfwModel(delta=500, mass_def='crit')
+
+        rs = np.logspace(-1, 1, 10)
+        zs = np.linspace(0, 1, 3)
+        masses = np.logspace(14, 15, 5)
+        cons = np.linspace(2, 4, 6)
+
+        ds = nfw_model.delta_sigma(rs, zs, masses, cons)
+        ds_500c = nfw_model_500c.delta_sigma(rs, zs, masses, cons)
+
+        assert np.all(ds < ds_500c)
+
+    def the_mass_definition_must_be_correct():
+        with pytest.raises(ValueError):
+            NfwModel(mass_def='oweijf')
