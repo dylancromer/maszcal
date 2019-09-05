@@ -9,7 +9,7 @@ class NfwModel:
     """
     SHAPE mass, z, r, cons
     """
-    def __init__(self, cosmo_params=DefaultCosmology()):
+    def __init__(self, cosmo_params=DefaultCosmology(), units=u.Msun/u.pc**2):
         self._delta = 200
 
         if isinstance(cosmo_params, DefaultCosmology):
@@ -17,17 +17,22 @@ class NfwModel:
         else:
             self.cosmo_params = cosmo_params
 
-        self.astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
+        self._astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
+
+        self.units = units
 
     def omega(self, z):
-        return self.astropy_cosmology.efunc(z)**2
+        """
+        SHAPE z
+        """
+        return self._astropy_cosmology.efunc(z)**2
 
     def _reference_density(self, zs):
         """
         SHAPE z
         """
-        redshift_dep = self.astropy_cosmology.Om(zs)/self.omega(zs)
-        return (self.astropy_cosmology.critical_density0 * redshift_dep).to(u.Msun/u.Mpc**3).value
+        redshift_dep = self._astropy_cosmology.Om(zs)/self.omega(zs)
+        return (self._astropy_cosmology.critical_density0 * redshift_dep).to(u.Msun/u.Mpc**3).value
 
     def _radius_delta(self, zs, masses):
         """
@@ -43,6 +48,9 @@ class NfwModel:
         return self._radius_delta(zs, masses)[:, :, None]/cons[None, None, :]
 
     def _delta_c(self, cons):
+        """
+        SHAPE cons
+        """
         return (self._delta * cons**3)/(3 * (np.log(1+cons) - cons/(1+cons)))
 
     def _less_than_func(self, x):
@@ -65,15 +73,11 @@ class NfwModel:
         )
 
     def _inequality_func(self, xs):
-        less_than_mask = xs < 1
-        equal_mask = xs == 1
-        greater_than_mask = xs > 1
-
         full_func_vals = np.zeros(xs.shape)
 
-        full_func_vals[less_than_mask] = self._less_than_func(xs[less_than_mask])
-        full_func_vals[equal_mask] = self._equal_func(xs[equal_mask])
-        full_func_vals[greater_than_mask] = self._greater_than_func(xs[greater_than_mask])
+        full_func_vals[xs < 1] = self._less_than_func(xs[xs < 1])
+        full_func_vals[xs == 1] = self._equal_func(xs[xs == 1])
+        full_func_vals[xs > 1] = self._greater_than_func(xs[xs > 1])
 
         return full_func_vals
 
@@ -83,6 +87,7 @@ class NfwModel:
         """
         scale_radii = self._scale_radius(zs, masses, cons)
         prefactor = scale_radii * self._delta_c(cons)[None, None, :] * self._reference_density(zs)[None, :, None]
+        prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
 
         xs = rs[None, None, :, None]/scale_radii[:, :, None, :]
 
