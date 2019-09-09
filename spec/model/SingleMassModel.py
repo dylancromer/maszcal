@@ -23,12 +23,15 @@ def describe_single_mass_model():
 
             assert np.all(delta_sigs > 0)
 
-        def it_can_use_different_units(single_mass_model):
+        def it_can_use_different_units():
+            redshift = 0.4*np.ones(1)
+            model = SingleMassModel(redshift=redshift, units=u.Msun/u.Mpc**2)
+
             mu = np.array([np.log(1e15)])
             con = np.array([3])
             rs = np.logspace(-1, 1, 5)
 
-            delta_sigs = single_mass_model.delta_sigma(rs, mu, con, units=u.Msun/u.Mpc**2)/1e12
+            delta_sigs = model.delta_sigma(rs, mu, con)/1e12
 
             assert np.all(rs*delta_sigs < 1e6)
 

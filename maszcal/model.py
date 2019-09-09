@@ -311,6 +311,7 @@ class SingleMassModel:
     ):
 
         self.redshift = np.array([redshift])
+        self.units = units
         self.comoving_radii = comoving_radii
         self.delta = delta
         self.mass_definition = mass_definition
@@ -327,7 +328,7 @@ class SingleMassModel:
             cosmo_params=self.cosmo_params,
             units=self.units,
             delta=self.delta,
-            mass_def=self.mass_definition,
+            mass_definition=self.mass_definition,
             comoving=self.comoving_radii,
         )
 
