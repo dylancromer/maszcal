@@ -79,5 +79,5 @@ def describe_nfw_model():
         ds_comoving = nfw_model.delta_sigma(rs, zs, masses, cons)
         ds_nocomoving = nfw_model_nocomoving.delta_sigma(rs, zs, masses, cons)
 
-        assert np.all(ds_comoving != ds_nocomoving)
+        assert np.all(ds_comoving < ds_nocomoving)
 
