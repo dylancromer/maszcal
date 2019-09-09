@@ -14,12 +14,12 @@ class NfwModel:
             cosmo_params=DefaultCosmology(),
             units=u.Msun/u.pc**2,
             delta=200,
-            mass_def='mean',
+            mass_definition='mean',
             comoving=True,
     ):
         self._delta = delta
-        self._check_mass_def(mass_def)
-        self.mass_definition = mass_def
+        self._check_mass_def(mass_definition)
+        self.mass_definition = mass_definition
         self.comoving = comoving
 
         if isinstance(cosmo_params, DefaultCosmology):

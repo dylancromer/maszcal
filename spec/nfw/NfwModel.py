@@ -52,7 +52,7 @@ def describe_nfw_model():
         assert np.all(ds_other_units > ds)
 
     def it_can_use_different_mass_definitions(nfw_model):
-        nfw_model_500c = NfwModel(delta=500, mass_def='crit')
+        nfw_model_500c = NfwModel(delta=500, mass_definition='crit')
 
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 3)
@@ -66,7 +66,7 @@ def describe_nfw_model():
 
     def it_must_use_a_correct_mass_definition():
         with pytest.raises(ValueError):
-            NfwModel(mass_def='oweijf')
+            NfwModel(mass_definition='oweijf')
 
     def it_can_use_comoving_coordinates(nfw_model):
         nfw_model_nocomoving = NfwModel(units=u.Msun/u.pc**2, comoving=False)
@@ -81,3 +81,12 @@ def describe_nfw_model():
 
         assert np.all(ds_comoving < ds_nocomoving)
 
+    def it_works_for_redshift_0(nfw_model):
+        rs = np.logspace(-1, 1, 10)
+        z = np.zeros(1)
+        m = 2e14*np.ones(1)
+        c = 3*np.ones(1)
+
+        ds = nfw_model.delta_sigma(rs, z, m, c)
+
+        assert not np.all(np.isnan(ds))

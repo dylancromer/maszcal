@@ -4,7 +4,7 @@ import scipy.integrate as integrate
 from scipy.interpolate import interp1d, interp2d
 import camb
 from astropy import units as u
-from maszcal.offset_nfw.nfw import NFWModel
+from maszcal.nfw import NfwModel
 from maszcal.tinker import dn_dlogM
 from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
@@ -25,6 +25,8 @@ class StackedModel:
             selection_func_file=defaults.DefaultSelectionFunc(),
             lensing_weights_file=defaults.DefaultLensingWeights(),
             cosmo_params=defaults.DefaultCosmology(),
+            units=u.Msun/u.pc**2,
+            comoving_radii=True,
             delta=200,
             mass_definition='mean',
     ):
@@ -54,6 +56,8 @@ class StackedModel:
         self.delta = delta
         self.mass_definition = mass_definition
 
+        self.units = units
+
         ### SELECTION FUNCTION ###
         if isinstance(selection_func_file, defaults.DefaultSelectionFunc):
             self.selection_func = self._default_selection_func
@@ -68,9 +72,8 @@ class StackedModel:
 
         ### MISC ###
         self.constants = Constants()
-        self.NUM_OFFSET_THETAS = 10
-        self.NUM_OFFSET_RADII = 30
-        self._comoving_radii = True
+        self._CUTOFF_MASS = 2e14
+        self._comoving_radii = comoving_radii
 
     @property
     def comoving_radii(self):
@@ -79,7 +82,7 @@ class StackedModel:
     @comoving_radii.setter
     def comoving_radii(self, rs_are_comoving):
         self._comoving_radii = rs_are_comoving
-        self.init_onfw()
+        self.init_nfw()
 
     def calc_power_spect(self):
         params = get_camb_params(self.cosmo_params, self.max_k, self.zs)
@@ -90,14 +93,13 @@ class StackedModel:
                                                                          maxkh=self.max_k,
                                                                          npoints=self.number_ks)
 
-    def init_onfw(self):
-        rho_dict = {'mean':'rho_m', 'crit':'rho_c'}
-
-        self.onfw_model = NFWModel(
-            self.astropy_cosmology,
-            comoving=self.comoving_radii,
+    def init_nfw(self):
+        self.nfw_model = NfwModel(
+            cosmo_params=self.cosmo_params,
+            units=self.units,
             delta=self.delta,
-            rho=rho_dict[self.mass_definition],
+            mass_definition=self.mass_definition,
+            comoving=self.comoving_radii,
         )
 
     def prob_musz_given_mu(self, mu_szs, mus, a_szs):
@@ -135,26 +137,22 @@ class StackedModel:
         """
         sel_func = np.ones((mu_szs.size, zs.size))
 
-        low_mass_indices = np.where(mu_szs < np.log(3e14))
+        low_mass_indices = np.where(mu_szs < np.log(self._CUTOFF_MASS))
         sel_func[low_mass_indices, :] = 0
 
         return sel_func
 
-    def delta_sigma_of_mass(self, rs, mus, cons, units=u.Msun/u.pc**2):
+    def delta_sigma_of_mass(self, rs, mus, cons):
         """
         SHAPE mu, z, r, params
         """
         masses = self.mass(mus)
 
         try:
-            result = self.onfw_model.deltasigma_theory(rs, masses, cons, self.zs)
-            result = result * (u.Msun/u.Mpc**2).to(units)
-            return result
+            return self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
         except AttributeError:
-            self.init_onfw()
-            result = self.onfw_model.deltasigma_theory(rs, masses, cons, self.zs)
-            result = result * (u.Msun/u.Mpc**2).to(units)
-            return result
+            self.init_nfw()
+            return self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
 
     def dnumber_dlogmass(self):
         """
@@ -238,7 +236,7 @@ class StackedModel:
 
         return z_integral
 
-    def delta_sigma(self, rs, cons, a_szs, units=u.Msun/u.pc**2):
+    def delta_sigma(self, rs, cons, a_szs):
         """
         SHAPE r, params
         """
@@ -249,7 +247,6 @@ class StackedModel:
                  rs,
                  self.mus,
                  cons,
-                 units=units,
              )[None, ...]),
             axis=0,
             dx=dmu_szs,
@@ -306,6 +303,7 @@ class SingleMassModel:
     def __init__(
             self,
             redshift,
+            units=u.Msun/u.pc**2,
             comoving_radii=True,
             delta=200,
             mass_definition='mean',
@@ -324,30 +322,24 @@ class SingleMassModel:
 
         self.astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
 
-    def init_onfw(self):
-        rho_dict = {'mean':'rho_m', 'crit':'rho_c'}
-
-        self.onfw_model = NFWModel(
-            self.astropy_cosmology,
-            comoving=self.comoving_radii,
+    def init_nfw(self):
+        self.nfw_model = NfwModel(
+            cosmo_params=self.cosmo_params,
+            units=self.units,
             delta=self.delta,
-            rho=rho_dict[self.mass_definition],
+            mass_def=self.mass_definition,
+            comoving=self.comoving_radii,
         )
 
     def mass(self, mu):
         return np.exp(mu)
 
-    def delta_sigma(self, rs, mus, concentrations, units=u.Msun/u.pc**2):
+    def delta_sigma(self, rs, mus, concentrations):
 
         masses = self.mass(mus)
 
         try:
-            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.redshift)
-            result = result * (u.Msun/u.Mpc**2).to(units)
-            return result
+            return self.nfw_model.delta_sigma(rs, self.redshift, masses, concentrations)
         except AttributeError:
-            self.init_onfw()
-            result = self.onfw_model.deltasigma_theory(rs, masses, concentrations, self.redshift)
-            result = result * (u.Msun/u.Mpc**2).to(units)
-            return result
-
+            self.init_nfw()
+            return self.nfw_model.delta_sigma(rs, self.redshift, masses, concentrations)

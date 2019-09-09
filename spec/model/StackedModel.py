@@ -99,7 +99,7 @@ def describe_stacked_model():
 
             rs = np.logspace(-1, 1, 21)
 
-            stacked_model.delta_sigma_of_mass = lambda rs, mus, cons, units: np.ones(
+            stacked_model.delta_sigma_of_mass = lambda rs, mus, cons: np.ones(
                 (stacked_model.mus.size, zs.size, rs.size, cons.size)
             )
 
@@ -119,7 +119,7 @@ def describe_stacked_model():
                 (stacked_model.mus.size, stacked_model.zs.size)
             )
 
-            stacked_model.delta_sigma_of_mass = lambda rs,mus,cons,units: np.ones(
+            stacked_model.delta_sigma_of_mass = lambda rs,mus,cons: np.ones(
                 (stacked_model.mus.size, rs.size)
             )
 
@@ -130,23 +130,22 @@ def describe_stacked_model():
             assert avg_wl_mass.shape == (1,)
 
         def it_can_use_different_mass_definitions():
-            mu = np.array([np.log(1e15)])
-            con = np.array([3])
+            cons = np.array([2, 3, 4])
             rs = np.logspace(-1, 1, 10)
 
-            mus = np.linspace(np.log(1e12), np.log(1e16), 20)
-            zs = np.linspace(0, 2, 8)
+            mus = np.linspace(np.log(1e12), np.log(1e15), 20)
+            zs = np.linspace(0, 2, 7)
 
             delta = 500
             mass_def = 'crit'
             model = StackedModel(mus, zs, delta=delta, mass_definition=mass_def)
 
-            delta_sigs_500c = model.delta_sigma_of_mass(rs, mu, con)
+            delta_sigs_500c = model.delta_sigma_of_mass(rs, mus, cons)
 
             delta = 200
             kind = 'mean'
             model = StackedModel(mus, zs, delta=delta, mass_definition=mass_def)
 
-            delta_sigs_200m = model.delta_sigma_of_mass(rs, mu, con)
+            delta_sigs_200m = model.delta_sigma_of_mass(rs, mus, cons)
 
             assert np.all(delta_sigs_200m < delta_sigs_500c)
