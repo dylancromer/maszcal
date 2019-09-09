@@ -74,7 +74,7 @@ def describe_lensing_signal():
             zs = np.ones(5)
             mocker.patch('maszcal.lensing.StackedModel', new=FakeStackedModel)
 
-            cosmo = CosmoParams(hubble_constant=80)
+            cosmo = CosmoParams(neutrino_mass_sum=1)
             LensingSignal(mus, zs, cosmo_params=cosmo)
 
     def describe_stacked_esd():

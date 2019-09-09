@@ -1,6 +1,19 @@
 from dataclasses import dataclass
+import numpy as np
 from astropy.cosmology import Planck15
 import astropy.units as u
+
+
+class NonFlatUniverseError(Exception):
+    pass
+
+
+class MatterInconsistencyError(Exception):
+    pass
+
+
+class HubbleConstantError(Exception):
+    pass
 
 
 @dataclass
@@ -26,6 +39,30 @@ class CosmoParams:
     neutrino_mass_sum: float = 0.06
 
     use_ppf: bool = True
+
+    def _check_closure(self):
+        if not np.allclose(self.omega_matter + self.omega_lambda, 1, rtol=1e-2):
+            raise NonFlatUniverseError('omega_matter and omega_lambda must sum to 1')
+
+    def _check_matter_consistency(self):
+        if not np.allclose(self.omega_matter, self.omega_cdm + self.omega_bary):
+            raise MatterInconsistencyError('omega_cdm and omega_bary must sum to omega_matter')
+
+    def _check_hsqr_params(self):
+        if not np.allclose(self.omega_bary, self.omega_bary_hsqr/self.h**2):
+            raise MatterInconsistencyError('omega_bary_hsqr must equal omega_bary * h**2')
+        if not np.allclose(self.omega_cdm, self.omega_cdm_hsqr/self.h**2):
+            raise MatterInconsistencyError('omega_cdm_hsqr must equal omega_cdm * h**2')
+
+    def _check_hubble_consistency(self):
+        if not np.allclose(self.hubble_constant/100, self.h):
+            raise HubbleConstantError('hubble_constant must equal h*100')
+
+    def __post_init__(self):
+        self._check_closure()
+        self._check_matter_consistency()
+        self._check_hsqr_params()
+        self._check_hubble_consistency()
 
 
 @dataclass

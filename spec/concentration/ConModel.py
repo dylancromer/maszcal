@@ -10,7 +10,7 @@ def describe_con_model():
 
         @pytest.fixture
         def custom_cosmo():
-            return CosmoParams(hubble_constant=70.0)
+            return CosmoParams(neutrino_mass_sum=0.10)
 
         def it_can_accept_a_custom_cosmology(custom_cosmo):
             con_model = ConModel(mass_def='200m', cosmology=custom_cosmo)

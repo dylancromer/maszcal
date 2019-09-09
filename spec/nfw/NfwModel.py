@@ -24,7 +24,16 @@ def describe_nfw_model():
 
     @pytest.fixture
     def nfw_model_alt_cosmo():
-        cosmo = CosmoParams(omega_matter=0.4)
+        cosmo = CosmoParams(
+            omega_matter=0.4,
+            omega_cdm=0.3,
+            omega_cdm_hsqr=0.7**2 * 0.3,
+            omega_bary=0.1,
+            omega_bary_hsqr=0.7**2 * 0.1,
+            omega_lambda=0.6,
+            hubble_constant=70,
+            h=0.7,
+        )
         return NfwModel(cosmo_params=cosmo)
 
     def it_can_use_different_cosmologies(nfw_model, nfw_model_alt_cosmo):
