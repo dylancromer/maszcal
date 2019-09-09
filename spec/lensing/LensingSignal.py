@@ -10,6 +10,7 @@ class FakeStackedModel:
             self,
             mu_bins,
             redshift_bins,
+            units=1,
             cosmo_params=defaults.DefaultCosmology(),
             selection_func_file=defaults.DefaultSelectionFunc(),
             lensing_weights_file=defaults.DefaultLensingWeights(),
@@ -18,7 +19,7 @@ class FakeStackedModel:
     ):
         pass
 
-    def delta_sigma(self, rs, cons, a_szs, units=1):
+    def delta_sigma(self, rs, cons, a_szs):
         return np.ones(12)
 
 class FakeSingleMassModel:
@@ -32,7 +33,7 @@ class FakeSingleMassModel:
     ):
         pass
 
-    def delta_sigma(self, rs, mus, concentrations, units=1):
+    def delta_sigma(self, rs, mus, concentrations):
         return np.ones(13)
 
 
