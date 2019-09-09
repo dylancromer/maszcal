@@ -64,6 +64,20 @@ def describe_nfw_model():
 
         assert np.all(ds < ds_500c)
 
-    def the_mass_definition_must_be_correct():
+    def it_must_use_a_correct_mass_definition():
         with pytest.raises(ValueError):
             NfwModel(mass_def='oweijf')
+
+    def it_can_use_comoving_coordinates(nfw_model):
+        nfw_model_nocomoving = NfwModel(units=u.Msun/u.pc**2, comoving=False)
+
+        rs = np.logspace(-1, 1, 10)
+        zs = np.linspace(1, 2, 3)
+        masses = np.logspace(14, 15, 5)
+        cons = np.linspace(2, 4, 6)
+
+        ds_comoving = nfw_model.delta_sigma(rs, zs, masses, cons)
+        ds_nocomoving = nfw_model_nocomoving.delta_sigma(rs, zs, masses, cons)
+
+        assert np.all(ds_comoving != ds_nocomoving)
+

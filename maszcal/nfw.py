@@ -15,10 +15,12 @@ class NfwModel:
             units=u.Msun/u.pc**2,
             delta=200,
             mass_def='mean',
+            comoving=True,
     ):
         self._delta = delta
         self._check_mass_def(mass_def)
         self.mass_definition = mass_def
+        self.comoving = comoving
 
         if isinstance(cosmo_params, DefaultCosmology):
             self.cosmo_params = CosmoParams()
@@ -42,31 +44,48 @@ class NfwModel:
         self._check_mass_def(new_mass_def)
         self._mass_definition = new_mass_def
 
-    def _reference_density(self, zs):
-        """
-        SHAPE z
-        """
+    def _reference_density_comoving(self, zs):
+        if self.mass_definition == 'mean':
+            rho_mass_def = self._astropy_cosmology.critical_density0 * self._astropy_cosmology.Om0 * np.ones(zs.shape)
+        elif self.mass_definition == 'crit':
+            rho_mass_def = self._astropy_cosmology.critical_density0 * np.ones(zs.shape)
+
+        return rho_mass_def
+
+    def _reference_density_nocomoving(self, zs):
         if self.mass_definition == 'mean':
             rho_mass_def = self._astropy_cosmology.critical_density0 * self._astropy_cosmology.Om(zs)
         elif self.mass_definition == 'crit':
             rho_mass_def = self._astropy_cosmology.critical_density(zs)
 
+        return rho_mass_def
+
+    def reference_density(self, zs):
+        """
+        SHAPE z
+        """
+
+        if self.comoving:
+            rho_mass_def = self._reference_density_comoving(zs)
+        else:
+            rho_mass_def = self._reference_density_nocomoving(zs)
+
         return rho_mass_def.to(u.Msun/u.Mpc**3).value
 
-    def _radius_delta(self, zs, masses):
+    def radius_delta(self, zs, masses):
         """
         SHAPE mass, z
         """
         pref = 3 / (4*np.pi)
-        return (pref * masses[:, None] / (self._delta*self._reference_density(zs))[None, :])**(1/3)
+        return (pref * masses[:, None] / (self._delta*self.reference_density(zs))[None, :])**(1/3)
 
-    def _scale_radius(self, zs, masses, cons):
+    def scale_radius(self, zs, masses, cons):
         """
         SHAPE mass, z, cons
         """
-        return self._radius_delta(zs, masses)[:, :, None]/cons[None, None, :]
+        return self.radius_delta(zs, masses)[:, :, None]/cons[None, None, :]
 
-    def _delta_c(self, cons):
+    def delta_c(self, cons):
         """
         SHAPE cons
         """
@@ -104,8 +123,8 @@ class NfwModel:
         """
         SHAPE mass, z, r, cons
         """
-        scale_radii = self._scale_radius(zs, masses, cons)
-        prefactor = scale_radii * self._delta_c(cons)[None, None, :] * self._reference_density(zs)[None, :, None]
+        scale_radii = self.scale_radius(zs, masses, cons)
+        prefactor = scale_radii * self.delta_c(cons)[None, None, :] * self.reference_density(zs)[None, :, None]
         prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
 
         xs = rs[None, None, :, None]/scale_radii[:, :, None, :]
