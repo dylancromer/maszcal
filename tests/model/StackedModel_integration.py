@@ -17,7 +17,7 @@ from maszcal.model import StackedModel
 
 mus = np.array([np.log(1e15)])
 zs = np.linspace(0, 2, 20)
-stacked_model = StackedModel(mus, zs)
+stacked_model = StackedModel(mus, zs, units=u.Msun/(u.pc**2))
 
 
 def test_sigma_of_m():
@@ -27,12 +27,11 @@ def test_sigma_of_m():
 
     sigmas = stacked_model.delta_sigma_of_mass(rs,
                                                mus,
-                                               cons,
-                                               units=u.Msun/(u.Mpc * u.pc))
+                                               cons)
 
     sigmas = sigmas[0,:,:,0]
 
-    plt.plot(rs, rs[:, None]*sigmas.T/1e6)
+    plt.plot(rs, rs[:, None]*sigmas.T)
     plt.title(rf'$ M = {round(np.exp(mus[0])/1e14, 2)} \;  10^{{14}} M_{{\odot}}$')
     plt.xlabel(r'$ r $')
     plt.ylabel(r'$ r \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
@@ -49,13 +48,12 @@ def test_delta_sigma_of_m():
 
     delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
                                                      mus,
-                                                     cons,
-                                                     units=u.Msun/(u.Mpc * u.pc))
+                                                     cons)
 
     delta_sigmas = delta_sigmas[0,:,:,0]
 
 
-    plt.plot(rs, rs[:, None]*delta_sigmas.T/1e6)
+    plt.plot(rs, rs[:, None]*delta_sigmas.T)
     plt.title(rf'$ M = {round(np.exp(mus[0])/1e14, 2)} \; 10^{{14}} M_{{\odot}}$')
     plt.xlabel(r'$ r $')
     plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
@@ -80,9 +78,9 @@ def test_delta_sigma_of_r():
 
     stacked_model.params = params
 
-    delta_sigmas = stacked_model.delta_sigma(rs, cons, a_szs, units=u.Msun/(u.Mpc * u.pc))[:,0]
+    delta_sigmas = stacked_model.delta_sigma(rs, cons, a_szs)[:,0]
 
-    plt.plot(rs, rs * delta_sigmas/1e6)
+    plt.plot(rs, rs * delta_sigmas)
     plt.xlabel(r'$ r $')
     plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
     plt.xscale('log')
@@ -99,13 +97,12 @@ def test_sigma_of_m_nocomoving():
 
     sigmas = stacked_model.delta_sigma_of_mass(rs,
                                                mus,
-                                               cons,
-                                               units=u.Msun/(u.Mpc * u.pc))
+                                               cons)
 
     sigmas = sigmas[0,:,:,0]
 
 
-    plt.plot(rs, rs[:, None]*sigmas.T/1e6)
+    plt.plot(rs, rs[:, None]*sigmas.T)
     plt.title(rf'$ M = {round(np.exp(mus[0])/1e14, 2)} \; 10^{{14}} M_{{\odot}}$')
     plt.xlabel(r'$ r $')
     plt.ylabel(r'$ r \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
@@ -124,14 +121,13 @@ def test_delta_sigma_of_m_nocomoving():
 
     delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
                                                      mus,
-                                                     cons,
-                                                     units=u.Msun/(u.Mpc * u.pc))
+                                                     cons)
 
 
     delta_sigmas = delta_sigmas[0,:,:,0]
 
 
-    plt.plot(rs, rs[:, None]*delta_sigmas.T/1e6)
+    plt.plot(rs, rs[:, None]*delta_sigmas.T)
     plt.title(rf'$ M = {round(np.exp(mus[0])/1e14, 2)} \; 10^{{14}} M_{{\odot}}$')
     plt.xlabel(r'$ r $')
     plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
@@ -153,9 +149,9 @@ def test_delta_sigma_of_r_nocomoving():
     cons = 2*np.ones(1)
     a_szs = np.zeros(1)
 
-    delta_sigmas = stacked_model.delta_sigma(rs, cons, a_szs, units=u.Msun/(u.Mpc * u.pc))[:,0]
+    delta_sigmas = stacked_model.delta_sigma(rs, cons, a_szs)[:,0]
 
-    plt.plot(rs, rs * delta_sigmas/1e6)
+    plt.plot(rs, rs * delta_sigmas)
     plt.xlabel(r'$ r $')
     plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
     plt.xscale('log')
