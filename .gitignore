@@ -7,6 +7,7 @@ misc/
 tests/onfw/
 tests/xarray_concentration_integ.py
 tests/test.py
+stats.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
