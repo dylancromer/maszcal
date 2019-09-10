@@ -98,4 +98,4 @@ def describe_nfw_model():
 
         ds = nfw_model.delta_sigma(rs, z, m, c)
 
-        assert not np.all(np.isnan(ds))
+        assert not np.any(np.isnan(ds))
