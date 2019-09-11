@@ -378,7 +378,7 @@ class SingleMassModel:
             return self.nfw_model.delta_sigma(rs, self.redshift, masses, concentrations)
 
 
-class GaussianBaryonicModel:
+class GaussianBaryonModel:
     def __init__(
             self,
             mu_bins,
@@ -436,10 +436,10 @@ class GaussianBaryonicModel:
         """
         masses = self.mass(mus)
 
-        prefac = masses/(1e12*np.pi)
-        exponen = np.exp(-rs[:, None]**2/(2*baryon_vars[None, :]))
-        postfac = (1 - exponen)/rs**2 - exponen/(2*baryon_vars[None, :])
-        return prefac[:, None, None]*postfac[None, :, :]
+        prefac = masses[:, None, None]/(np.pi)
+        exponen = np.exp(-(rs**2)[None, :, None]/(2*baryon_vars[None, None, :]))
+        postfac = (1 - exponen)/(rs**2)[None, :, None] - exponen/(2*baryon_vars[None, None, :])
+        return prefac * postfac * 1e-12 * (u.Msun/u.pc**2).to(self.units)
 
     def delta_sigma_nfw(self, rs, mus, cons):
         masses = self.mass(mus)
