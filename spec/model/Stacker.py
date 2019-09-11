@@ -9,48 +9,6 @@ from maszcal.ioutils import NumpyEncoder
 
 def describe_stacker():
 
-    def describe_data_handling():
-
-        def it_can_load_a_selection_function():
-            mus = np.linspace(1, 3, 10)
-            zs = np.linspace(0, 2, 5)
-
-            selection_function = lambda m,z: m[:, None]*z[None, :]
-            sel_funcs = selection_function(mus, zs)
-            sel_func_dict = {'zs':zs,
-                             'mus':mus,
-                             'selection_fs':sel_funcs}
-
-            SAVED_SELFUNC = 'data/test/test_sel_func.json'
-            with open(SAVED_SELFUNC, 'w') as outfile:
-                json.dump(sel_func_dict, outfile, cls=NumpyEncoder, ensure_ascii=False)
-
-            stacker = Stacker(mus, zs, selection_func_file=SAVED_SELFUNC, delta=200, units=u.Msun/u.pc**2)
-
-            assert np.allclose(stacker.selection_func(mus, zs), sel_funcs)
-
-            os.remove(SAVED_SELFUNC)
-
-        def it_can_load_lensing_weights():
-            mus = np.linspace(1, 3, 10)
-            zs = np.linspace(0.1, 2, 5)
-
-            weights = 1/zs**2
-
-            weight_dict = {'zs':zs,
-                           'weights':weights}
-
-            SAVED_WEIGHTS = 'data/test/test_lensing_weights.json'
-            with open(SAVED_WEIGHTS, 'w') as outfile:
-                json.dump(weight_dict, outfile, cls=NumpyEncoder, ensure_ascii=False)
-
-            stacker = Stacker(mus, zs, lensing_weights_file=SAVED_WEIGHTS, delta=200, units=u.Msun/u.pc**2)
-
-            os.remove(SAVED_WEIGHTS)
-
-            assert np.allclose(stacker.lensing_weights(zs), weights)
-
-
     def describe_math():
 
         @pytest.fixture

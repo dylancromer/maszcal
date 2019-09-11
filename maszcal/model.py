@@ -1,7 +1,5 @@
-import json
 import numpy as np
 import scipy.integrate as integrate
-from scipy.interpolate import interp1d, interp2d
 import camb
 from astropy import units as u
 from maszcal.nfw import NfwModel
@@ -10,6 +8,7 @@ from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
 from maszcal.mathutils import _trapz
 from maszcal.nothing import NoParams
+import maszcal.ioutils as ioutils
 import maszcal.defaults as defaults
 
 
@@ -38,12 +37,12 @@ class Stacker:
         if isinstance(selection_func_file, defaults.DefaultSelectionFunc):
             self.selection_func = self._default_selection_func
         else:
-            self.selection_func = self._get_selection_func_interpolator(selection_func_file)
+            self.selection_func = ioutils.get_selection_func_interpolator(selection_func_file)
 
         if isinstance(lensing_weights_file, defaults.DefaultLensingWeights):
             self.lensing_weights = self._default_lensing_weights
         else:
-            self.lensing_weights = self._get_lensing_weights_interpolator(lensing_weights_file)
+            self.lensing_weights = ioutils.get_lensing_weights_interpolator(lensing_weights_file)
 
         if delta is not None:
             self.delta = delta
@@ -65,17 +64,6 @@ class Stacker:
         self.constants = Constants()
         self._CUTOFF_MASS = 2e14
 
-    def _get_selection_func_interpolator(self, selection_func_file):
-        with open(selection_func_file, 'r') as json_file:
-            selec_func_dict = json.load(json_file)
-
-        mus = np.asarray(selec_func_dict['mus'])
-        zs = np.asarray(selec_func_dict['zs'])
-        selection_fs = np.asarray(selec_func_dict['selection_fs'])
-        interpolator = interp2d(zs, mus, selection_fs, kind='linear')
-
-        return lambda mu, z: interpolator(z, mu)
-
     def _default_selection_func(self, mu_szs, zs):
         """
         SHAPE mu_sz, z
@@ -86,15 +74,6 @@ class Stacker:
         sel_func[low_mass_indices, :] = 0
 
         return sel_func
-
-    def _get_lensing_weights_interpolator(self, lensing_weights_file):
-        with open(lensing_weights_file, 'r') as json_file:
-            weights_dict = json.load(json_file)
-
-        zs = np.asarray(weights_dict['zs'])
-        weights = np.asarray(weights_dict['weights'])
-
-        return interp1d(zs, weights, kind='cubic')
 
     def _default_lensing_weights(self, zs):
         """
