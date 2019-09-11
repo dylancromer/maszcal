@@ -436,7 +436,7 @@ class GaussianBaryonicModel:
         """
         masses = self.mass(mus)
 
-        prefac = masses/(2*np.pi)
+        prefac = masses/(np.pi)
         exponen = np.exp(-rs[:, None]**2/(2*baryon_vars[None, :]))
         postfac = (1 - exponen)/rs**2 - exponen/(2*baryon_vars[None, :])
         return prefac[:, None, None]*postfac[None, :, :]
