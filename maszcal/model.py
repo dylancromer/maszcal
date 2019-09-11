@@ -400,15 +400,73 @@ class SingleMassModel:
 
 
 class GaussianBaryonicModel:
+    def __init__(
+            self,
+            mu_bins,
+            redshift_bins,
+            selection_func_file=defaults.DefaultSelectionFunc(),
+            lensing_weights_file=defaults.DefaultLensingWeights(),
+            cosmo_params=defaults.DefaultCosmology(),
+            units=u.Msun/u.pc**2,
+            comoving_radii=True,
+            delta=200,
+            mass_definition='mean',
+    ):
+        if isinstance(cosmo_params, defaults.DefaultCosmology):
+            self.cosmo_params = CosmoParams()
+        else:
+            self.cosmo_params = cosmo_params
+
+        self.selection_func_file = selection_func_file
+        self.lensing_weights_file = lensing_weights_file
+
+        self.mu_szs = mu_bins
+        self.mus = mu_bins
+        self.zs = redshift_bins
+
+        self.delta = delta
+        self.mass_definition = mass_definition
+
+        self.units = units
+        self._comoving_radii = comoving_radii
+
+    @property
+    def comoving_radii(self):
+        return self._comoving_radii
+
+    @comoving_radii.setter
+    def comoving_radii(self, rs_are_comoving):
+        self._comoving_radii = rs_are_comoving
+        self._init_nfw()
+
+    def _init_nfw(self):
+        self.nfw_model = NfwModel(
+            cosmo_params=self.cosmo_params,
+            units=self.units,
+            delta=self.delta,
+            mass_definition=self.mass_definition,
+            comoving=self.comoving_radii,
+        )
+
     def mass(self, mu):
         return np.exp(mu)
 
-    def delta_sigma_of_mass(self, rs, mus, baryon_vars):
+    def delta_sigma_baryon(self, rs, mus, baryon_vars):
         """
         SHAPE mu, z, r, params
         """
         masses = self.mass(mus)
+
         prefac = masses/(2*np.pi)
         exponen = np.exp(-rs[:, None]**2/(2*baryon_vars[None, :]))
         postfac = (1 - exponen)/rs**2 - exponen/(2*baryon_vars[None, :])
         return prefac[:, None, None]*postfac[None, :, :]
+
+    def delta_sigma_nfw(self, rs, mus, cons):
+        masses = self.mass(mus)
+
+        try:
+            return self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
+        except AttributeError:
+            self._init_nfw()
+            return self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
