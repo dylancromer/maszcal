@@ -39,8 +39,9 @@ class CosmoParams:
     neutrino_mass_sum: float = 0.06
 
     use_ppf: bool = True
+    flat: bool = True
 
-    def _check_closure(self):
+    def _check_flatness(self):
         if not np.allclose(self.omega_matter + self.omega_lambda, 1, rtol=1e-2):
             raise NonFlatUniverseError('omega_matter and omega_lambda must sum to 1')
 
@@ -59,7 +60,8 @@ class CosmoParams:
             raise HubbleConstantError('hubble_constant must equal h*100')
 
     def __post_init__(self):
-        self._check_closure()
+        if self.flat:
+            self._check_flatness()
         self._check_matter_consistency()
         self._check_hsqr_params()
         self._check_hubble_consistency()
