@@ -49,3 +49,15 @@ def describe_gaussian_baryonic_model():
             ds = baryon_model.delta_sigma_nfw(rs, mus, cons)
 
             assert not np.any(np.isnan(ds))
+
+        def it_can_calculate_a_combined_delta_sigma(baryon_model):
+            rs = np.logspace(-1, 1, 10)
+            mus = np.log(2e14)*np.ones(1)
+            N_PARAMS = 3
+            cons = np.linspace(2, 3, N_PARAMS)
+            baryon_vars = 1e-1*np.ones(N_PARAMS)
+
+            ds = baryon_model.delta_sigma_of_mass(rs, mus, cons, baryon_vars)
+
+            assert not np.any(np.isnan(ds))
+            assert ds.shape == (1, 8, 10, 3)
