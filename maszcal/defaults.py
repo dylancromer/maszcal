@@ -8,5 +8,3 @@ class DefaultSelectionFunc:
 
 class DefaultLensingWeights:
     pass
-
-
