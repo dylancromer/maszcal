@@ -409,8 +409,7 @@ class GaussianBaryonModel:
         self.units = units
         self._comoving_radii = comoving_radii
 
-        self._USE_SIGMOID = True
-        self._SIGMOID_TURNAROUND = 3
+        self.BARYON_FRACTION = 1/6
 
     @property
     def comoving_radii(self):
@@ -470,28 +469,11 @@ class GaussianBaryonModel:
             self._init_nfw()
             return self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
 
-    def _baryon_fraction_sigmoid(self, rs):
-        return (1 - (np.tanh(rs - self._SIGMOID_TURNAROUND) + 1)/2)/6
-
-    def _baryon_fraction_constant(self, rs):
-        return np.ones(rs.shape)/6
-
-    def baryon_fraction(self, rs):
-        if self.comoving_radii:
-            rs = rs[None, :] / (1+self.zs)[:, None]
-
-        if self._USE_SIGMOID:
-            baryon_frac_func = self._baryon_fraction_sigmoid
-        else:
-            baryon_frac_func = self._baryon_fraction_constant
-
-        return baryon_frac_func(rs)
-
     def delta_sigma_of_mass(self, rs, mus, cons, ln_bary_vars):
         delta_sigma_baryons = self.delta_sigma_baryon(rs, mus, ln_bary_vars)
         delta_sigma_nfws = self.delta_sigma_nfw(rs, mus, cons)
-        return (self.baryon_fraction(rs)[None, :, :, None] * delta_sigma_baryons
-                + (1-self.baryon_fraction(rs)[None, :, :, None]) * delta_sigma_nfws)
+        return (self.BARYON_FRACTION * delta_sigma_baryons
+                + (1-self.BARYON_FRACTION)* delta_sigma_nfws)
 
     def delta_sigma(self, rs, cons, a_szs, ln_bary_vars):
         delta_sigmas_of_mass = self.delta_sigma_of_mass(rs, self.mus, cons, ln_bary_vars)

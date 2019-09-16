@@ -37,6 +37,25 @@ class FakeSingleMassModel:
         return np.ones(13)
 
 
+class FakeGaussianBaryonModel:
+    def __init__(
+            self,
+            mu_bins,
+            redshift_bins,
+            selection_func_file=defaults.DefaultSelectionFunc(),
+            lensing_weights_file=defaults.DefaultLensingWeights(),
+            cosmo_params=defaults.DefaultCosmology(),
+            units=1,
+            comoving_radii=True,
+            delta=200,
+            mass_definition='mean',
+    ):
+        pass
+
+    def delta_sigma(self, rs, cons, a_szs, ln_bary_vars):
+        return np.ones(7)
+
+
 def describe_lensing_signal():
 
     def describe_init():
@@ -131,3 +150,15 @@ def describe_lensing_signal():
 
             esd = lensing_signal.single_mass_esd(rs, params)
             assert np.all(esd == np.ones(13))
+
+    def describe_gaussian_baryon_esd():
+
+        @pytest.fixture
+        def lensing_signal(mocker):
+            mocker.patch('maszcal.lensing.BaryonGaussianModel', new=FakeGaussianBaryonModel)
+            mus = np.ones(10)
+            zs = np.ones(5)
+            return LensingSignal(log_masses=mus, redshifts=zs)
+
+        def it_can_compute_a_stacked_esd_with_baryons(lensing_signal):
+            pass
