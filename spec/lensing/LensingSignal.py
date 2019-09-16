@@ -67,21 +67,21 @@ def describe_lensing_signal():
         def it_accepts_a_selection_func_file(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.StackedModel', new=FakeStackedModel)
+            mocker.patch('maszcal.lensing.model.StackedModel', new=FakeStackedModel)
             sel_func_file = 'test/file/here'
             LensingSignal(mus, zs, selection_func_file=sel_func_file)
 
         def it_accepts_a_weights_file(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.StackedModel', new=FakeStackedModel)
+            mocker.patch('maszcal.lensing.model.StackedModel', new=FakeStackedModel)
             weights_file = 'test/file/here'
             LensingSignal(mus, zs, lensing_weights_file=weights_file)
 
         def it_allows_a_different_mass_definition(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.StackedModel', new=FakeStackedModel)
+            mocker.patch('maszcal.lensing.model.StackedModel', new=FakeStackedModel)
 
             delta = 500
             mass_definition = 'crit'
@@ -91,7 +91,7 @@ def describe_lensing_signal():
         def it_can_use_a_different_cosmology(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.StackedModel', new=FakeStackedModel)
+            mocker.patch('maszcal.lensing.model.StackedModel', new=FakeStackedModel)
 
             cosmo = CosmoParams(neutrino_mass_sum=1)
             LensingSignal(mus, zs, cosmo_params=cosmo)
@@ -100,7 +100,7 @@ def describe_lensing_signal():
 
         @pytest.fixture
         def lensing_signal(mocker):
-            mocker.patch('maszcal.lensing.StackedModel', new=FakeStackedModel)
+            mocker.patch('maszcal.lensing.model.StackedModel', new=FakeStackedModel)
 
             mus = np.linspace(32, 34, 10)
             zs = np.linspace(0, 2, 5)
@@ -140,7 +140,7 @@ def describe_lensing_signal():
 
         @pytest.fixture
         def lensing_signal(mocker):
-            mocker.patch('maszcal.lensing.SingleMassModel', new=FakeSingleMassModel)
+            mocker.patch('maszcal.lensing.model.SingleMassModel', new=FakeSingleMassModel)
             redshift = np.array([0])
             return LensingSignal(redshifts=redshift)
 
@@ -155,10 +155,16 @@ def describe_lensing_signal():
 
         @pytest.fixture
         def lensing_signal(mocker):
-            mocker.patch('maszcal.lensing.BaryonGaussianModel', new=FakeGaussianBaryonModel)
+            mocker.patch('maszcal.lensing.model.GaussianBaryonModel', new=FakeGaussianBaryonModel)
             mus = np.ones(10)
             zs = np.ones(5)
             return LensingSignal(log_masses=mus, redshifts=zs)
 
         def it_can_compute_a_stacked_esd_with_baryons(lensing_signal):
-            pass
+            rs = np.logspace(-1, 1, 10)
+            params = np.array([[3.01, 0, 1e-2],
+                               [3.02, 0, 2e-2]])
+
+            esd = lensing_signal.gaussian_baryon_esd(rs, params)
+
+            assert np.all(esd == np.ones(7))

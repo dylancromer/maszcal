@@ -1,6 +1,6 @@
 import astropy.units as u
 import maszcal.nothing as nothing
-from maszcal.model import StackedModel, SingleMassModel
+import maszcal.model as model
 import maszcal.defaults as defaults
 
 
@@ -36,7 +36,7 @@ class LensingSignal:
         if isinstance(self.log_masses, nothing.NoMasses):
             raise TypeError('log_masses must be provided to calculate a stacked model')
 
-        self.stacked_model = StackedModel(
+        self.stacked_model = model.StackedModel(
             self.log_masses,
             self.redshifts,
             cosmo_params=self.cosmo_params,
@@ -65,7 +65,7 @@ class LensingSignal:
     def _init_single_mass_model(self):
         self._check_redshift_for_single_mass_model()
 
-        self.single_mass_model = SingleMassModel(
+        self.single_mass_model = model.SingleMassModel(
             self.redshifts,
             cosmo_params=self.cosmo_params,
             comoving_radii=self.comoving,
@@ -81,3 +81,29 @@ class LensingSignal:
         except AttributeError:
             self._init_single_mass_model()
             return self.single_mass_model.delta_sigma(rs, log_masses, concentrations)
+
+    def _init_gaussian_baryon_model(self):
+        if isinstance(self.log_masses, nothing.NoMasses):
+            raise TypeError('log_masses must be provided to calculate a gaussian baryon model')
+
+        self.gaussian_baryon_model = model.GaussianBaryonModel(
+            mu_bins=self.log_masses,
+            redshift_bins=self.redshifts,
+            selection_func_file=self.selection_func_file,
+            lensing_weights_file=self.lensing_weights_file,
+            cosmo_params=self.cosmo_params,
+            units=self.units,
+            comoving_radii=self.comoving,
+            delta=self.delta,
+            mass_definition=self.mass_definition,
+        )
+
+    def gaussian_baryon_esd(self, rs, params):
+        cons = params[:, 0]
+        a_szs = params[:, 1]
+        ln_bary_vars = params[:, 2]
+        try:
+            return self.gaussian_baryon_model.delta_sigma(rs, cons, a_szs, ln_bary_vars)
+        except AttributeError:
+            self._init_gaussian_baryon_model()
+            return self.gaussian_baryon_model.delta_sigma(rs, cons, a_szs, ln_bary_vars)

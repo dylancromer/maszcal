@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from maszcal.lensing import LensingSignal
-from maszcal.model import StackedModel
+from maszcal.model import StackedModel, GaussianBaryonModel
 
 
 def describe_LensingSignal():
@@ -46,3 +46,23 @@ def describe_LensingSignal():
             esd_stacked_model = stacked_model.delta_sigma(rs, np.array([con]), np.array([a_sz]))
 
             assert np.all(esd_stacked_model == esd_lensing_signal)
+
+    def describe_gaussian_baryon_esd():
+
+        def it_matches_the_underlying_model():
+            mus = np.linspace(np.log(1e14), np.log(1e15), 10)
+            redshifts = np.linspace(0, 2, 5)
+            rs = np.logspace(-1, 1, 5)
+
+            con = 3
+            a_sz = 0
+            ln_baryon_var = np.log(6e-2)
+            params = np.array([[con, a_sz, ln_baryon_var]])
+
+            lensing_signal = LensingSignal(log_masses=mus, redshifts=redshifts)
+            gaussian_baryon_model = GaussianBaryonModel(mu_bins=mus, redshift_bins=redshifts)
+
+            esd_lensing_signal = lensing_signal.gaussian_baryon_esd(rs, params)
+            esd_baryon_model = gaussian_baryon_model.delta_sigma(rs, np.array([con]), np.array([a_sz]), np.array([ln_baryon_var]))
+
+            assert np.all(esd_lensing_signal == esd_baryon_model)
