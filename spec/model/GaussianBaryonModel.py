@@ -22,7 +22,7 @@ def describe_gaussian_baryonic_model():
             ds = baryon_model.delta_sigma_baryon(rs, mus, baryon_vars)
 
             assert not np.any(np.isnan(ds))
-            assert ds.shape == (1, 10, 1)
+            assert ds.shape == (1, 8, 10, 1)
 
         def it_can_use_other_units(baryon_model):
             rs = np.logspace(-1, 1, 10)

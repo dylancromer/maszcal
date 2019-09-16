@@ -450,9 +450,14 @@ class GaussianBaryonModel:
         """
         masses = self.mass(mus)
 
-        prefac = masses[:, None, None]/(np.pi)
-        exponen = np.exp(-(rs**2)[None, :, None]/(2*baryon_vars[None, None, :]))
-        postfac = (1 - exponen)/(rs**2)[None, :, None] - exponen/(2*baryon_vars[None, None, :])
+        if self.comoving_radii:
+            rs = rs[None, :] / (1+self.zs)[:, None]
+        else:
+            rs = rs[None, :]
+
+        prefac = masses[:, None, None, None]/(np.pi)
+        exponen = np.exp(-(rs**2)[None, :, :, None]/(2*baryon_vars[None, None, None, :]))
+        postfac = (1 - exponen)/(rs**2)[None, :, :, None] - exponen/(2*baryon_vars[None, None, None, :])
         return prefac * postfac * 1e-12 * (u.Msun/u.pc**2).to(self.units)
 
     def delta_sigma_nfw(self, rs, mus, cons):
@@ -471,6 +476,9 @@ class GaussianBaryonModel:
         return np.ones(rs.shape)/6
 
     def baryon_fraction(self, rs):
+        if self.comoving_radii:
+            rs = rs[None, :] / (1+self.zs)[:, None]
+
         if self._USE_SIGMOID:
             baryon_frac_func = self._baryon_fraction_sigmoid
         else:
@@ -479,10 +487,10 @@ class GaussianBaryonModel:
         return baryon_frac_func(rs)
 
     def delta_sigma_of_mass(self, rs, mus, cons, baryon_vars):
-        delta_sigma_baryons = self.delta_sigma_baryon(rs, mus, baryon_vars)[:, None, :, :] #added redshift axis
+        delta_sigma_baryons = self.delta_sigma_baryon(rs, mus, baryon_vars)
         delta_sigma_nfws = self.delta_sigma_nfw(rs, mus, cons)
-        return (self.baryon_fraction(rs)[None, None, :, None] * delta_sigma_baryons
-                + (1-self.baryon_fraction(rs)[None, None, :, None]) * delta_sigma_nfws)
+        return (self.baryon_fraction(rs)[None, :, :, None] * delta_sigma_baryons
+                + (1-self.baryon_fraction(rs)[None, :, :, None]) * delta_sigma_nfws)
 
     def delta_sigma(self, rs, cons, a_szs, baryon_vars):
         delta_sigmas_of_mass = self.delta_sigma_of_mass(rs, self.mus, cons, baryon_vars)
