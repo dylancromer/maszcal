@@ -32,10 +32,6 @@ def describe_stacked_model():
                 (stacked_model.mus.size, stacked_model.zs.size)
             )
 
-            stacked_model.delta_sigma_of_mass = lambda rs,mus,cons: np.ones(
-                (stacked_model.mus.size, rs.size)
-            )
-
             a_szs = np.linspace(-1, 1, 1)
 
             avg_wl_mass = stacked_model.weak_lensing_avg_mass(a_szs)

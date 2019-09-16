@@ -430,6 +430,17 @@ class GaussianBaryonModel:
             comoving=self.comoving_radii,
         )
 
+    def _init_stacker(self):
+        self.stacker = Stacker(
+            mu_bins=self.mus,
+            redshift_bins=self.zs,
+            cosmo_params=self.cosmo_params,
+            selection_func_file=self.selection_func_file,
+            lensing_weights_file=self.lensing_weights_file,
+            delta=self.delta,
+            units=self.units,
+        )
+
     def mass(self, mu):
         return np.exp(mu)
 
@@ -468,7 +479,16 @@ class GaussianBaryonModel:
         return baryon_frac_func(rs)
 
     def delta_sigma_of_mass(self, rs, mus, cons, baryon_vars):
-        delta_sigma_baryons = self.delta_sigma_baryon(rs, mus, baryon_vars)
+        delta_sigma_baryons = self.delta_sigma_baryon(rs, mus, baryon_vars)[:, None, :, :] #added redshift axis
         delta_sigma_nfws = self.delta_sigma_nfw(rs, mus, cons)
         return (self.baryon_fraction(rs)[None, None, :, None] * delta_sigma_baryons
                 + (1-self.baryon_fraction(rs)[None, None, :, None]) * delta_sigma_nfws)
+
+    def delta_sigma(self, rs, cons, a_szs, baryon_vars):
+        delta_sigmas_of_mass = self.delta_sigma_of_mass(rs, self.mus, cons, baryon_vars)
+
+        try:
+            return self.stacker.delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+        except AttributeError:
+            self._init_stacker()
+            return self.stacker.delta_sigma(delta_sigmas_of_mass, rs, a_szs)
