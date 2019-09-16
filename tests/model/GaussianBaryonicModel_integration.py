@@ -19,16 +19,16 @@ def describe_gaussian_baryonic_model():
 
         @pytest.fixture
         def baryon_model():
-            mus = np.log(2e14)*np.ones(1)
-            zs = np.zeros(1)
+            mus = np.linspace(np.log(1e14), np.log(1e15), 30)
+            zs = np.linspace(0, 1, 20)
             return GaussianBaryonModel(mus, zs)
 
         def it_makes_a_correct_baryon_delta_sigma(baryon_model):
             rs = np.logspace(-1, 1, 100)
             mus = np.log(2e14)*np.ones(1)
-            baryon_vars = np.logspace(-3, 0, 10)
+            ln_bary_vars = np.linspace(np.log(1e-2), np.log(3.3), 10)
 
-            ds = baryon_model.delta_sigma_baryon(rs, mus, baryon_vars)[0, :, :]
+            ds = baryon_model.delta_sigma_baryon(rs, mus, ln_bary_vars)[0, 0, :, :]
 
             plt.plot(rs, ds)
             plt.xscale('log')
@@ -50,10 +50,10 @@ def describe_gaussian_baryonic_model():
         def it_makes_a_correct_total_delta_sigma(baryon_model):
             rs = np.logspace(-1, 1, 100)
             mus = np.log(2e14)*np.ones(1)
-            baryon_vars = np.logspace(-3, 0, 10)
+            ln_bary_vars = np.linspace(np.log(1e-2), np.log(3.3), 10)
             cons = 3*np.ones(1)
 
-            ds = baryon_model.delta_sigma_of_mass(rs, mus, cons, baryon_vars)[0, 0, :, :]
+            ds = baryon_model.delta_sigma_of_mass(rs, mus, cons, ln_bary_vars)[0, 0, :, :]
 
             plt.plot(rs, ds)
             plt.xscale('log')
@@ -72,3 +72,28 @@ def describe_gaussian_baryonic_model():
             plt.savefig('figs/test/baryon_plus_cdm_r_delta_sigma.svg')
             plt.gcf().clear()
 
+        def it_makes_a_correct_stacked_delta_sigma(baryon_model):
+            rs = np.logspace(-1, 1, 100)
+            mus = np.log(2e14)*np.ones(1)
+            ln_bary_vars = np.linspace(np.log(1e-2), np.log(3.3), 10)
+            cons = 3*np.ones(1)
+            a_szs = -0.2*np.ones(1)
+
+            stacked_ds = baryon_model.delta_sigma(rs, cons, a_szs, ln_bary_vars)
+
+            plt.plot(rs, stacked_ds)
+            plt.xscale('log')
+            plt.xlabel(r'$R$')
+            plt.yscale('log')
+            plt.ylabel(r'$\Delta \Sigma$')
+
+            plt.savefig('figs/test/baryon_plus_cdm_stacked_delta_sigma.svg')
+            plt.gcf().clear()
+
+            plt.plot(rs, rs[:, None]*stacked_ds)
+            plt.xscale('log')
+            plt.xlabel(r'$R$')
+            plt.ylabel(r'$R \Delta \Sigma$')
+
+            plt.savefig('figs/test/baryon_plus_cdm_r_stacked_delta_sigma.svg')
+            plt.gcf().clear()

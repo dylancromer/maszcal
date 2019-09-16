@@ -17,9 +17,9 @@ def describe_gaussian_baryonic_model():
         def it_can_calculate_a_baryonic_delta_sigma(baryon_model):
             rs = np.logspace(-1, 1, 10)
             mus = np.log(2e14)*np.ones(1)
-            baryon_vars = 1e-1*np.ones(1)
+            ln_bary_vars = np.log(1e-1)*np.ones(1)
 
-            ds = baryon_model.delta_sigma_baryon(rs, mus, baryon_vars)
+            ds = baryon_model.delta_sigma_baryon(rs, mus, ln_bary_vars)
 
             assert not np.any(np.isnan(ds))
             assert ds.shape == (1, 8, 10, 1)
@@ -27,9 +27,9 @@ def describe_gaussian_baryonic_model():
         def it_can_use_other_units(baryon_model):
             rs = np.logspace(-1, 1, 10)
             mu = np.log(2e14)*np.ones(1)
-            baryon_vars = 1e-1*np.ones(1)
+            ln_bary_vars = np.log(1e-1)*np.ones(1)
 
-            ds = baryon_model.delta_sigma_baryon(rs, mu, baryon_vars)
+            ds = baryon_model.delta_sigma_baryon(rs, mu, ln_bary_vars)
 
             baryon_model_other_units = GaussianBaryonModel(
                 mu,
@@ -37,7 +37,7 @@ def describe_gaussian_baryonic_model():
                 units=u.Msun/u.Mpc**2
             )
 
-            ds_other_units = baryon_model_other_units.delta_sigma_baryon(rs, mu, baryon_vars)
+            ds_other_units = baryon_model_other_units.delta_sigma_baryon(rs, mu, ln_bary_vars)
 
             assert np.all(ds < ds_other_units)
 
@@ -55,9 +55,9 @@ def describe_gaussian_baryonic_model():
             mus = np.log(2e14)*np.ones(1)
             N_PARAMS = 3
             cons = np.linspace(2, 3, N_PARAMS)
-            baryon_vars = 1e-1*np.ones(N_PARAMS)
+            ln_bary_vars = np.log(1e-1)*np.ones(1)
 
-            ds = baryon_model.delta_sigma_of_mass(rs, mus, cons, baryon_vars)
+            ds = baryon_model.delta_sigma_of_mass(rs, mus, cons, ln_bary_vars)
 
             assert not np.any(np.isnan(ds))
             assert ds.shape == (1, 8, 10, 3)
@@ -67,17 +67,17 @@ def describe_gaussian_baryonic_model():
             N_PARAMS = 3
             cons = np.linspace(2, 4, N_PARAMS)
             a_szs = np.linspace(-1, 1, N_PARAMS)
-            baryon_vars = np.logspace(1e-2, 1e-1, N_PARAMS)
+            ln_bary_vars = np.linspace(np.log(1e-2), np.log(1e-1), N_PARAMS)
 
             baryon_model._init_stacker()
             baryon_model.stacker.dnumber_dlogmass = lambda : np.ones(
                 (baryon_model.mus.size, baryon_model.zs.size)
             )
-            baryon_model.delta_sigma_of_mass = lambda rs, mus, cons, baryon_vars: np.ones(
+            baryon_model.delta_sigma_of_mass = lambda rs, mus, cons, ln_bary_vars: np.ones(
                 (baryon_model.mus.size, baryon_model.zs.size, rs.size, N_PARAMS)
             )
 
-            stacked_ds = baryon_model.delta_sigma(rs, cons, a_szs, baryon_vars)
+            stacked_ds = baryon_model.delta_sigma(rs, cons, a_szs, ln_bary_vars)
 
             assert not np.any(np.isnan(stacked_ds))
             assert stacked_ds.shape == (rs.size, N_PARAMS)
