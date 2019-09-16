@@ -492,3 +492,10 @@ class GaussianBaryonModel:
         except AttributeError:
             self._init_stacker()
             return self.stacker.delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+
+    def weak_lensing_avg_mass(self, a_szs):
+        try:
+            return self.stacker.weak_lensing_avg_mass(a_szs)
+        except AttributeError:
+            self._init_stacker()
+            return self.stacker.weak_lensing_avg_mass(a_szs)

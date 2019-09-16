@@ -81,3 +81,17 @@ def describe_gaussian_baryonic_model():
 
             assert not np.any(np.isnan(stacked_ds))
             assert stacked_ds.shape == (rs.size, N_PARAMS)
+
+        def it_can_calculate_a_weak_lensing_average_mass(baryon_model):
+            N_PARAMS = 3
+            a_szs = np.linspace(-1, 1, N_PARAMS)
+
+            baryon_model._init_stacker()
+            baryon_model.stacker.dnumber_dlogmass = lambda : np.ones(
+                (baryon_model.mus.size, baryon_model.zs.size)
+            )
+
+            avg_masses = baryon_model.weak_lensing_avg_mass(a_szs)
+
+            assert not np.any(np.isnan(avg_masses))
+            assert np.all(avg_masses > 0)
