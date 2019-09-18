@@ -1,5 +1,4 @@
 import numpy as np
-import scipy.integrate as integrate
 import camb
 from astropy import units as u
 from maszcal.nfw import NfwModel
@@ -7,7 +6,6 @@ from maszcal.tinker import dn_dlogM
 from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
 from maszcal.mathutils import _trapz
-from maszcal.nothing import NoParams
 import maszcal.ioutils as ioutils
 import maszcal.defaults as defaults
 
@@ -473,7 +471,7 @@ class GaussianBaryonModel:
         delta_sigma_baryons = self.delta_sigma_baryon(rs, mus, ln_bary_vars)
         delta_sigma_nfws = self.delta_sigma_nfw(rs, mus, cons)
         return (self.BARYON_FRACTION * delta_sigma_baryons
-                + (1-self.BARYON_FRACTION)* delta_sigma_nfws)
+                + (1-self.BARYON_FRACTION) * delta_sigma_nfws)
 
     def delta_sigma(self, rs, cons, a_szs, ln_bary_vars):
         delta_sigmas_of_mass = self.delta_sigma_of_mass(rs, self.mus, cons, ln_bary_vars)

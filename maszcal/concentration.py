@@ -43,8 +43,6 @@ class ConModel:
         return converted_ms, cons
 
     def convert_c_mass_pair(self, masses, concentrations, redshifts, old_def, new_def):
-        MODEL = 'diemer19'
-
         converted_ms = np.empty((masses.size, redshifts.size))
         converted_cons = np.empty((concentrations.size, redshifts.size))
         for i, z in enumerate(redshifts):

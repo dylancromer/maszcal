@@ -16,4 +16,4 @@ def _trapz(arr, axis, dx=None):
 
     arr = dx*arr
 
-    return 0.5*(arr[0, ...] + 2*arr[1:-1,...].sum(axis=0) + arr[-1,...])
+    return 0.5*(arr[0, ...] + 2*arr[1:-1, ...].sum(axis=0) + arr[-1, ...])

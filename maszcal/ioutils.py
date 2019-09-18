@@ -40,4 +40,3 @@ def get_lensing_weights_interpolator(lensing_weights_file):
     weights = np.asarray(weights_dict['weights'])
 
     return interp1d(zs, weights, kind='cubic')
-

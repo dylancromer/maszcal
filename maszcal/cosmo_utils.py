@@ -68,9 +68,9 @@ def get_colossus_params(cosmology_params):
 
     return {
         'flat': is_flat,
-        'H0':cosmology_params.hubble_constant,
-        'Om0':cosmology_params.omega_matter,
-        'Ob0':cosmology_params.omega_bary,
-        'sigma8':cosmology_params.sigma_8,
-        'ns':cosmology_params.spectral_index,
+        'H0': cosmology_params.hubble_constant,
+        'Om0': cosmology_params.omega_matter,
+        'Ob0': cosmology_params.omega_bary,
+        'sigma8': cosmology_params.sigma_8,
+        'ns': cosmology_params.spectral_index,
     }
