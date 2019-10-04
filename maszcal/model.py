@@ -407,7 +407,7 @@ class GaussianBaryonModel:
         self.units = units
         self._comoving_radii = comoving_radii
 
-        self.BARYON_FRACTION = 1/6
+        self.baryon_frac = self.cosmo_params.omega_bary/self.cosmo_params.omega_matter
 
     @property
     def comoving_radii(self):
@@ -470,8 +470,8 @@ class GaussianBaryonModel:
     def delta_sigma_of_mass(self, rs, mus, cons, ln_bary_vars):
         delta_sigma_baryons = self.delta_sigma_baryon(rs, mus, ln_bary_vars)
         delta_sigma_nfws = self.delta_sigma_nfw(rs, mus, cons)
-        return (self.BARYON_FRACTION * delta_sigma_baryons
-                + (1-self.BARYON_FRACTION) * delta_sigma_nfws)
+        return (self.baryon_frac * delta_sigma_baryons
+                + (1-self.baryon_frac) * delta_sigma_nfws)
 
     def delta_sigma(self, rs, cons, a_szs, ln_bary_vars):
         delta_sigmas_of_mass = self.delta_sigma_of_mass(rs, self.mus, cons, ln_bary_vars)
@@ -488,3 +488,49 @@ class GaussianBaryonModel:
         except AttributeError:
             self._init_stacker()
             return self.stacker.weak_lensing_avg_mass(a_szs)
+
+
+class GnfwBaryonModel:
+    def __init__(
+            self,
+            mu_bins,
+            redshift_bins,
+            selection_func_file=defaults.DefaultSelectionFunc(),
+            lensing_weights_file=defaults.DefaultLensingWeights(),
+            cosmo_params=defaults.DefaultCosmology(),
+            units=u.Msun/u.pc**2,
+            comoving_radii=True,
+            delta=200,
+            mass_definition='mean',
+    ):
+        if isinstance(cosmo_params, defaults.DefaultCosmology):
+            self.cosmo_params = CosmoParams()
+        else:
+            self.cosmo_params = cosmo_params
+
+        self.selection_func_file = selection_func_file
+        self.lensing_weights_file = lensing_weights_file
+
+        self.mu_szs = mu_bins
+        self.mus = mu_bins
+        self.zs = redshift_bins
+
+        self.delta = delta
+        self.mass_definition = mass_definition
+
+        self.units = units
+        self._comoving_radii = comoving_radii
+
+        self.baryon_frac = self.cosmo_params.omega_bary/self.cosmo_params.omega_matter
+
+    def gnfw_norm(self, mus, alphas, betas, gammas):
+        return np.ones((mus.size, alphas.size))
+
+    def rho_gnfw(self, rs, mus, alphas, betas, gammas):
+        norm = self.gnfw_norm(mus, alphas, betas, gammas)
+        rs = rs[:, None, None]
+        alphas = alphas[None, None, :]
+        betas = betas[None, None, :]
+        gammas = gammas[None, None, :]
+
+        return norm / (rs**gammas * (1 + rs**(1/alphas))**((betas-gammas) * alphas))
