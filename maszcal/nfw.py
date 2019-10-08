@@ -119,6 +119,16 @@ class NfwModel:
 
         return full_func_vals
 
+    def rho(self, rs, zs, masses, cons):
+        """
+        SHAPE mass, z, r, cons
+        """
+        scale_radii = self.scale_radius(zs, masses, cons)
+        numerator = self.delta_c(cons)[None, None, :] * self.reference_density(zs)[None, :, None]
+        xs = rs[None, None, :, None]/scale_radii[:, :, None, :]
+        denominator = xs * (1+xs)**2
+        return numerator[:, :, None, :]/denominator
+
     def delta_sigma(self, rs, zs, masses, cons):
         """
         SHAPE mass, z, r, cons

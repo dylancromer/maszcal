@@ -1,6 +1,7 @@
 import numpy as np
 import camb
 from astropy import units as u
+import projector
 from maszcal.nfw import NfwModel
 from maszcal.tinker import dn_dlogM
 from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
@@ -523,6 +524,27 @@ class GnfwBaryonModel:
 
         self.baryon_frac = self.cosmo_params.omega_bary/self.cosmo_params.omega_matter
 
+    @property
+    def comoving_radii(self):
+        return self._comoving_radii
+
+    @comoving_radii.setter
+    def comoving_radii(self, rs_are_comoving):
+        self._comoving_radii = rs_are_comoving
+        self._init_nfw()
+
+    def _init_nfw(self):
+        self.nfw_model = NfwModel(
+            cosmo_params=self.cosmo_params,
+            units=self.units,
+            delta=self.delta,
+            mass_definition=self.mass_definition,
+            comoving=self.comoving_radii,
+        )
+
+    def mass(self, mu):
+        return np.exp(mu)
+
     def gnfw_norm(self, mus, alphas, betas, gammas):
         return np.ones((mus.size, alphas.size))
 
@@ -534,3 +556,24 @@ class GnfwBaryonModel:
         gammas = gammas[None, None, :]
 
         return norm / (rs**gammas * (1 + rs**(1/alphas))**((betas-gammas) * alphas))
+
+    def rho_nfw(self, rs, mus, cons):
+        masses = self.mass(mus)
+
+        try:
+            return self.nfw_model.rho(rs, self.zs, masses, cons)
+        except AttributeError:
+            self._init_nfw()
+            return self.nfw_model.rho(rs, self.zs, masses, cons)
+
+    def delta_sigma_nfw(self, rs, mus, cons):
+        masses = self.mass(mus)
+
+        try:
+            return self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
+        except AttributeError:
+            self._init_nfw()
+            return self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
+
+    def delta_sigma_gnfw(self, rs, mus, alphas, betas, gammas):
+        return projector.esd(rs, lambda r: self.rho_gnfw(r, mus, alphas, betas, gammas))

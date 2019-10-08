@@ -99,3 +99,13 @@ def describe_nfw_model():
         ds = nfw_model.delta_sigma(rs, z, m, c)
 
         assert not np.any(np.isnan(ds))
+
+    def it_can_calculate_a_rho(nfw_model):
+        rs = np.logspace(-1, 1, 10)
+        zs = np.linspace(0, 1, 3)
+        masses = np.logspace(14, 15, 5)
+        cons = np.linspace(2, 4, 6)
+
+        rhos = nfw_model.rho(rs, zs, masses, cons)
+
+        assert np.all(rhos > 0)
