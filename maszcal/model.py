@@ -6,7 +6,7 @@ from maszcal.nfw import NfwModel
 from maszcal.tinker import dn_dlogM
 from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
-from maszcal.mathutils import _trapz
+import maszcal.mathutils as mathutils
 import maszcal.ioutils as ioutils
 import maszcal.defaults as defaults
 
@@ -158,13 +158,13 @@ class Stacker:
         SHAPE params
         """
         dmu_szs = np.gradient(self.mu_szs)
-        mu_sz_integral = _trapz(self._sz_measure(a_szs), axis=0, dx=dmu_szs)
+        mu_sz_integral = mathutils.trapz_(self._sz_measure(a_szs), axis=0, dx=dmu_szs)
 
         dmus = np.gradient(self.mus)
-        mu_integral = _trapz(self.dnumber_dlogmass()[..., None] * mu_sz_integral, axis=0, dx=dmus)
+        mu_integral = mathutils.trapz_(self.dnumber_dlogmass()[..., None] * mu_sz_integral, axis=0, dx=dmus)
 
         dzs = np.gradient(self.zs)
-        z_integral = _trapz(
+        z_integral = mathutils.trapz_(
             ((
                 self.lensing_weights(self.zs) * self.comoving_vol()
             )[:, None] * mu_integral),
@@ -179,7 +179,7 @@ class Stacker:
         SHAPE r, params
         """
         dmu_szs = np.gradient(self.mu_szs)
-        mu_sz_integral = _trapz(
+        mu_sz_integral = mathutils.trapz_(
             (self._sz_measure(a_szs)[:, :, :, None, :]
              * delta_sigmas_of_mass[None, ...]),
             axis=0,
@@ -187,14 +187,14 @@ class Stacker:
         )
 
         dmus = np.gradient(self.mus)
-        mu_integral = _trapz(
+        mu_integral = mathutils.trapz_(
             self.dnumber_dlogmass()[..., None, None] * mu_sz_integral,
             axis=0,
             dx=dmus
         )
 
         dzs = np.gradient(self.zs)
-        z_integral = _trapz(
+        z_integral = mathutils.trapz_(
             ((
                 self.lensing_weights(self.zs) * self.comoving_vol()
              )[:, None, None] * mu_integral),
@@ -208,21 +208,21 @@ class Stacker:
         mass_wl = self.mass(self.mus)
 
         dmu_szs = np.gradient(self.mu_szs)
-        mu_sz_integral = _trapz(
+        mu_sz_integral = mathutils.trapz_(
             self._sz_measure(a_szs) * mass_wl[None, :, None, None],
             axis=0,
             dx=dmu_szs
         )
 
         dmus = np.gradient(self.mus)
-        mu_integral = _trapz(
+        mu_integral = mathutils.trapz_(
             self.dnumber_dlogmass()[..., None] * mu_sz_integral,
             axis=0,
             dx=dmus
         )
 
         dzs = np.gradient(self.zs)
-        z_integral = _trapz(
+        z_integral = mathutils.trapz_(
             ((
                 self.lensing_weights(self.zs) * self.comoving_vol()
             )[:, None] * mu_integral),
@@ -524,6 +524,11 @@ class GnfwBaryonModel:
 
         self.baryon_frac = self.cosmo_params.omega_bary/self.cosmo_params.omega_matter
 
+        self.CORE_RADIUS = 0.2
+        self.LOG10_MIN_INTEGRATION_RADIUS = -3
+        self.LOG10_MAX_INTEGRATION_RADIUS = np.log10(3.3)
+        self.NUM_INTEGRATION_RADII = 200
+
     @property
     def comoving_radii(self):
         return self._comoving_radii
@@ -545,19 +550,47 @@ class GnfwBaryonModel:
     def mass(self, mu):
         return np.exp(mu)
 
-    def gnfw_norm(self, mus, alphas, betas, gammas):
-        return np.ones((mus.size, alphas.size))
+    def gnfw_shape(self, rs, alphas, betas, gammas):
+        """
+        SHAPE rs.shape, params
+        """
+        ys = rs/self.CORE_RADIUS
+        ys = ys[..., None]
 
-    def rho_gnfw(self, rs, mus, alphas, betas, gammas):
-        norm = self.gnfw_norm(mus, alphas, betas, gammas)
-        rs = rs[:, None, None]
-        alphas = alphas[None, None, :]
-        betas = betas[None, None, :]
-        gammas = gammas[None, None, :]
+        alphas = alphas.reshape(tuple(1 for i in rs.shape) + (alphas.size,))
+        betas = betas.reshape(tuple(1 for i in rs.shape) + (betas.size,))
+        gammas = gammas.reshape(tuple(1 for i in rs.shape) + (gammas.size,))
 
-        return norm / (rs**gammas * (1 + rs**(1/alphas))**((betas-gammas) * alphas))
+        return 1 / (ys**gammas * (1 + ys**(1/alphas))**((betas-gammas) * alphas))
+
+    def gnfw_norm(self, mus, cons, alphas, betas, gammas):
+        """
+        SHAPE mu, z, params
+        """
+        rs = np.logspace(
+            self.LOG10_MIN_INTEGRATION_RADIUS,
+            self.LOG10_MAX_INTEGRATION_RADIUS,
+            self.NUM_INTEGRATION_RADII,
+        )
+
+        drs = np.gradient(rs)
+        rho_nfws = self.rho_nfw(rs, mus, cons)
+        gnfw_shapes = self.gnfw_shape(rs, alphas, betas, gammas)[None, None, ...]
+
+        return mathutils.trapz_(rho_nfws, dx=drs, axis=-2)/mathutils.trapz_(gnfw_shapes, dx=drs, axis=-2)
+
+    def rho_gnfw(self, rs, mus, cons, alphas, betas, gammas):
+        """
+        SHAPE mu, z, r, params
+        """
+        norm = self.gnfw_norm(mus, cons, alphas, betas, gammas)
+        norm = norm.reshape(norm.shape[:2] + tuple(1 for i in rs.shape) + norm.shape[2:])
+        return norm * self.gnfw_shape(rs, alphas, betas, gammas)[None, None, ...]
 
     def rho_nfw(self, rs, mus, cons):
+        """
+        SHAPE mu, z, r, params
+        """
         masses = self.mass(mus)
 
         try:
@@ -567,6 +600,9 @@ class GnfwBaryonModel:
             return self.nfw_model.rho(rs, self.zs, masses, cons)
 
     def delta_sigma_nfw(self, rs, mus, cons):
+        """
+        SHAPE mu, z, r, params
+        """
         masses = self.mass(mus)
 
         try:
@@ -575,5 +611,8 @@ class GnfwBaryonModel:
             self._init_nfw()
             return self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
 
-    def delta_sigma_gnfw(self, rs, mus, alphas, betas, gammas):
-        return projector.esd(rs, lambda r: self.rho_gnfw(r, mus, alphas, betas, gammas))
+    def delta_sigma_gnfw(self, rs, mus, cons, alphas, betas, gammas):
+        """
+        SHAPE mu, z, r, params
+        """
+        return projector.esd(rs, lambda r: self.rho_gnfw(r, mus, cons, alphas, betas, gammas), radius_axis=3)

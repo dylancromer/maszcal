@@ -17,11 +17,12 @@ def describe_gaussian_baryonic_model():
         def it_can_calculate_a_gnfw_rho(baryon_model):
             radii = np.logspace(-1, 1, 30)
             mus = np.log(1e14)*np.ones(1)
+            cs = 3*np.ones(1)
             alphas = np.ones(1)
             betas = 2*np.ones(1)
             gammas = np.ones(1)
 
-            rhos = baryon_model.rho_gnfw(radii, mus, alphas, betas, gammas)
+            rhos = baryon_model.rho_gnfw(radii, mus, cs, alphas, betas, gammas)
 
             assert np.all(rhos > 0)
 
@@ -45,11 +46,12 @@ def describe_gaussian_baryonic_model():
 
         def it_can_calculate_a_gnfw_delta_sigma(baryon_model):
             radii = np.logspace(-1, 1, 30)
-            mus = np.log(1e14)*np.ones(1)
-            alphas = np.ones(1)
-            betas = 2*np.ones(1)
-            gammas = np.ones(1)
+            mus = np.log(1e14)*np.ones(2)
+            cs = 3*np.ones(3)
+            alphas = np.ones(3)
+            betas = 2*np.ones(3)
+            gammas = np.ones(3)
 
-            ds = baryon_model.delta_sigma_gnfw(radii, mus, alphas, betas, gammas)
+            ds = baryon_model.delta_sigma_gnfw(radii, mus, cs, alphas, betas, gammas)
 
             assert np.all(ds > 0)
