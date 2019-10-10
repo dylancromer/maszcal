@@ -127,7 +127,7 @@ class NfwModel:
         numerator = self.delta_c(cons)[None, None, :] * self.reference_density(zs)[None, :, None]
         xs = rs[None, None, :, None]/scale_radii[:, :, None, :]
         denominator = xs * (1+xs)**2
-        return numerator[:, :, None, :]/denominator
+        return (numerator[:, :, None, :]/denominator)
 
     def delta_sigma(self, rs, zs, masses, cons):
         """

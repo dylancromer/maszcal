@@ -557,9 +557,9 @@ class GnfwBaryonModel:
         ys = rs/self.CORE_RADIUS
         ys = ys[..., None]
 
-        alphas = alphas.reshape(tuple(1 for i in rs.shape) + (alphas.size,))
-        betas = betas.reshape(tuple(1 for i in rs.shape) + (betas.size,))
-        gammas = gammas.reshape(tuple(1 for i in rs.shape) + (gammas.size,))
+        alphas = alphas.reshape(rs.ndim*(1,) + (alphas.size,))
+        betas = betas.reshape(rs.ndim*(1,) + (betas.size,))
+        gammas = gammas.reshape(rs.ndim*(1,) + (gammas.size,))
 
         return 1 / (ys**gammas * (1 + ys**(1/alphas))**((betas-gammas) * alphas))
 
@@ -574,45 +574,55 @@ class GnfwBaryonModel:
         )
 
         drs = np.gradient(rs)
-        rho_nfws = self.rho_nfw(rs, mus, cons)
+        rho_cdms = self.rho_cdm(rs, mus, cons)
         gnfw_shapes = self.gnfw_shape(rs, alphas, betas, gammas)[None, None, ...]
 
-        return mathutils.trapz_(rho_nfws, dx=drs, axis=-2)/mathutils.trapz_(gnfw_shapes, dx=drs, axis=-2)
+        return mathutils.trapz_(rho_cdms, dx=drs, axis=-2)/mathutils.trapz_(gnfw_shapes, dx=drs, axis=-2)
 
-    def rho_gnfw(self, rs, mus, cons, alphas, betas, gammas):
+    def rho_bary(self, rs, mus, cons, alphas, betas, gammas):
         """
-        SHAPE mu, z, r, params
+        SHAPE r, mu, z, params
         """
         norm = self.gnfw_norm(mus, cons, alphas, betas, gammas)
-        norm = norm.reshape(norm.shape[:2] + tuple(1 for i in rs.shape) + norm.shape[2:])
-        return norm * self.gnfw_shape(rs, alphas, betas, gammas)[None, None, ...]
+        norm = norm.reshape(rs.ndim*(1,) + norm.shape)
+        profile_shape = self.gnfw_shape(rs, alphas, betas, gammas)
+        profile_shape = profile_shape.reshape(profile_shape.shape[:-1] + (1, 1) + profile_shape.shape[-1:])
+        return self.baryon_frac * norm * profile_shape
 
-    def rho_nfw(self, rs, mus, cons):
+    def rho_cdm(self, rs, mus, cons):
         """
         SHAPE mu, z, r, params
         """
         masses = self.mass(mus)
 
         try:
-            return self.nfw_model.rho(rs, self.zs, masses, cons)
+            return (1-self.baryon_frac) * self.nfw_model.rho(rs, self.zs, masses, cons)
         except AttributeError:
             self._init_nfw()
-            return self.nfw_model.rho(rs, self.zs, masses, cons)
+            return (1-self.baryon_frac) * self.nfw_model.rho(rs, self.zs, masses, cons)
 
-    def delta_sigma_nfw(self, rs, mus, cons):
+    def delta_sigma_cdm(self, rs, mus, cons):
         """
         SHAPE mu, z, r, params
         """
         masses = self.mass(mus)
 
         try:
-            return self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
+            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
         except AttributeError:
             self._init_nfw()
-            return self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
+            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
 
-    def delta_sigma_gnfw(self, rs, mus, cons, alphas, betas, gammas):
+    def delta_sigma_bary(self, rs, mus, cons, alphas, betas, gammas):
         """
         SHAPE mu, z, r, params
         """
-        return projector.esd(rs, lambda r: self.rho_gnfw(r, mus, cons, alphas, betas, gammas), radius_axis=3)
+        return np.moveaxis(
+            projector.esd(rs, lambda r: self.rho_bary(r, mus, cons, alphas, betas, gammas)) * (u.Msun/u.Mpc**2).to(self.units),
+            0,
+            2,
+        )
+
+    def delta_sigma_total(self, rs, mus, cons, alphas, betas, gammas):
+        return self.delta_sigma_bary(rs, mus, cons, alphas, betas, gammas) + self.delta_sigma_cdm(rs, mus, cons)
+
