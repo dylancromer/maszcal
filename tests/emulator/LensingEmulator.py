@@ -2,8 +2,6 @@ import numpy as np
 from maszcal.emulator import LensingEmulator
 
 
-
-
 def test_lensing_emulator():
     xs = np.linspace(0, 1, 10)
     ys = np.linspace(0, 1, 10)
