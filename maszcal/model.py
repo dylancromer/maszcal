@@ -174,14 +174,14 @@ class Stacker:
 
         return z_integral
 
-    def delta_sigma(self, delta_sigmas_of_mass, rs, a_szs):
+    def stacked_delta_sigma(self, delta_sigmas, rs, a_szs):
         """
         SHAPE r, params
         """
         dmu_szs = np.gradient(self.mu_szs)
         mu_sz_integral = mathutils.trapz_(
             (self._sz_measure(a_szs)[:, :, :, None, :]
-             * delta_sigmas_of_mass[None, ...]),
+             * delta_sigmas[None, ...]),
             axis=0,
             dx=dmu_szs,
         )
@@ -301,7 +301,7 @@ class StackedModel:
     def mass(self, mus):
         return np.exp(mus)
 
-    def delta_sigma_of_mass(self, rs, mus, cons):
+    def delta_sigma(self, rs, mus, cons):
         """
         SHAPE mu, z, r, params
         """
@@ -313,14 +313,14 @@ class StackedModel:
             self._init_nfw()
             return self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
 
-    def delta_sigma(self, rs, cons, a_szs):
-        delta_sigmas_of_mass = self.delta_sigma_of_mass(rs, self.mus, cons)
+    def stacked_delta_sigma(self, rs, cons, a_szs):
+        delta_sigmas = self.delta_sigma(rs, self.mus, cons)
 
         try:
-            return self.stacker.delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
         except AttributeError:
             self._init_stacker()
-            return self.stacker.delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
 
     def weak_lensing_avg_mass(self, a_szs):
         try:
@@ -468,20 +468,20 @@ class GaussianBaryonModel:
             self._init_nfw()
             return self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
 
-    def delta_sigma_of_mass(self, rs, mus, cons, ln_bary_vars):
+    def delta_sigma(self, rs, mus, cons, ln_bary_vars):
         delta_sigma_baryons = self.delta_sigma_baryon(rs, mus, ln_bary_vars)
         delta_sigma_nfws = self.delta_sigma_nfw(rs, mus, cons)
         return (self.baryon_frac * delta_sigma_baryons
                 + (1-self.baryon_frac) * delta_sigma_nfws)
 
-    def delta_sigma(self, rs, cons, a_szs, ln_bary_vars):
-        delta_sigmas_of_mass = self.delta_sigma_of_mass(rs, self.mus, cons, ln_bary_vars)
+    def stacked_delta_sigma(self, rs, cons, a_szs, ln_bary_vars):
+        delta_sigmas = self.delta_sigma(rs, self.mus, cons, ln_bary_vars)
 
         try:
-            return self.stacker.delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
         except AttributeError:
             self._init_stacker()
-            return self.stacker.delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
 
     def weak_lensing_avg_mass(self, a_szs):
         try:
@@ -625,4 +625,3 @@ class GnfwBaryonModel:
 
     def delta_sigma_total(self, rs, mus, cons, alphas, betas, gammas):
         return self.delta_sigma_bary(rs, mus, cons, alphas, betas, gammas) + self.delta_sigma_cdm(rs, mus, cons)
-

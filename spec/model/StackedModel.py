@@ -49,12 +49,12 @@ def describe_stacked_model():
             mass_def = 'crit'
             model = StackedModel(mus, zs, delta=delta, mass_definition=mass_def)
 
-            delta_sigs_500c = model.delta_sigma_of_mass(rs, mus, cons)
+            delta_sigs_500c = model.delta_sigma(rs, mus, cons)
 
             delta = 200
             kind = 'mean'
             model = StackedModel(mus, zs, delta=delta, mass_definition=mass_def)
 
-            delta_sigs_200m = model.delta_sigma_of_mass(rs, mus, cons)
+            delta_sigs_200m = model.delta_sigma(rs, mus, cons)
 
             assert np.all(delta_sigs_200m < delta_sigs_500c)

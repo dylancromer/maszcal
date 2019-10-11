@@ -54,7 +54,7 @@ def describe_stacker():
 
             delta_sigmas_of_mass = np.ones((stacker.mus.size, zs.size, rs.size, cons.size))
 
-            delta_sigmas = stacker.delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+            delta_sigmas = stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
 
             precomp_delta_sigmas = np.ones((rs.size, 1))
 
@@ -71,4 +71,4 @@ def describe_stacker():
 
             delta_sigmas_of_mass = np.ones((stacker.mus.size, stacker.zs.size, rs.size, N_PARAMS))
 
-            delta_sigmas = stacker.delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+            delta_sigmas = stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)

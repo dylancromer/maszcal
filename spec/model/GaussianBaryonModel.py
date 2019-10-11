@@ -57,7 +57,7 @@ def describe_gaussian_baryonic_model():
             cons = np.linspace(2, 3, N_PARAMS)
             ln_bary_vars = np.log(1e-1)*np.ones(1)
 
-            ds = baryon_model.delta_sigma_of_mass(rs, mus, cons, ln_bary_vars)
+            ds = baryon_model.delta_sigma(rs, mus, cons, ln_bary_vars)
 
             assert not np.any(np.isnan(ds))
             assert ds.shape == (1, 8, 10, 3)
@@ -73,11 +73,11 @@ def describe_gaussian_baryonic_model():
             baryon_model.stacker.dnumber_dlogmass = lambda : np.ones(
                 (baryon_model.mus.size, baryon_model.zs.size)
             )
-            baryon_model.delta_sigma_of_mass = lambda rs, mus, cons, ln_bary_vars: np.ones(
+            baryon_model.delta_sigma = lambda rs, mus, cons, ln_bary_vars: np.ones(
                 (baryon_model.mus.size, baryon_model.zs.size, rs.size, N_PARAMS)
             )
 
-            stacked_ds = baryon_model.delta_sigma(rs, cons, a_szs, ln_bary_vars)
+            stacked_ds = baryon_model.stacked_delta_sigma(rs, cons, a_szs, ln_bary_vars)
 
             assert not np.any(np.isnan(stacked_ds))
             assert stacked_ds.shape == (rs.size, N_PARAMS)
