@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from maszcal.lensing import LensingSignal
+from maszcal.lensing import StackedLensingSignal
 
 
 def describe_lensing_signal():
@@ -25,7 +25,7 @@ def describe_lensing_signal():
         def lsignal():
             mus = np.linspace(np.log(1e14), np.log(1e16), 25)
             zs = np.linspace(0, 2, 25)
-            return LensingSignal(log_masses=mus, redshifts=zs)
+            return StackedLensingSignal(log_masses=mus, redshifts=zs)
 
         def its_fast_for_20_radial_bins(radii_20, params, lsignal, benchmark):
             benchmark(lsignal.stacked_esd, radii_20, params)
