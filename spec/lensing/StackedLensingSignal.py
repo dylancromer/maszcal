@@ -11,12 +11,14 @@ class FakeStackedModel:
             self,
             mu_bins,
             redshift_bins,
-            units=1,
-            cosmo_params=defaults.DefaultCosmology(),
             selection_func_file=defaults.DefaultSelectionFunc(),
             lensing_weights_file=defaults.DefaultLensingWeights(),
+            cosmo_params=defaults.DefaultCosmology(),
+            units=1,
+            comoving_radii=True,
             delta=200,
             mass_definition='mean',
+
     ):
         pass
 

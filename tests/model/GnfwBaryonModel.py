@@ -95,3 +95,30 @@ def describe_gaussian_baryonic_model():
 
             plt.savefig('figs/test/delta_sigma_total.svg')
             plt.gcf().clear()
+
+    def describe_stacked_delta_sigma():
+
+        @pytest.fixture
+        def baryon_model():
+            mus = np.linspace(np.log(1e14), np.log(1e15), 30)
+            zs = np.linspace(0, 1, 20)
+            return GnfwBaryonModel(mus, zs, units=u.Msun/u.pc**2)
+
+        def the_plots_look_right(baryon_model):
+            radii = np.logspace(-1, 1, 30)
+            cons = 3*np.ones(1)
+            alphas = np.ones(1)
+            betas = np.linspace(1, 5, 5)
+            gammas = np.ones(1)
+            a_szs = -0.3*np.ones(1)
+
+            esds = baryon_model.stacked_delta_sigma(radii, cons, alphas, betas, gammas, a_szs)
+
+            plt.plot(radii, radii[:, None]*esds)
+            plt.xscale('log')
+
+            plt.xlabel(r'$R$')
+            plt.ylabel(r'$R \Delta\Sigma(R)$')
+
+            plt.savefig('figs/test/stacked_gnfw_delta_sigma.svg')
+            plt.gcf().clear()

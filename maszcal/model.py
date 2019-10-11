@@ -267,16 +267,7 @@ class StackedModel:
         self.mass_definition = mass_definition
 
         self.units = units
-        self._comoving_radii = comoving_radii
-
-    @property
-    def comoving_radii(self):
-        return self._comoving_radii
-
-    @comoving_radii.setter
-    def comoving_radii(self, rs_are_comoving):
-        self._comoving_radii = rs_are_comoving
-        self._init_nfw()
+        self.comoving_radii = comoving_radii
 
     def _init_nfw(self):
         self.nfw_model = NfwModel(
@@ -406,18 +397,9 @@ class GaussianBaryonModel:
         self.mass_definition = mass_definition
 
         self.units = units
-        self._comoving_radii = comoving_radii
+        self.comoving_radii = comoving_radii
 
         self.baryon_frac = self.cosmo_params.omega_bary/self.cosmo_params.omega_matter
-
-    @property
-    def comoving_radii(self):
-        return self._comoving_radii
-
-    @comoving_radii.setter
-    def comoving_radii(self, rs_are_comoving):
-        self._comoving_radii = rs_are_comoving
-        self._init_nfw()
 
     def _init_nfw(self):
         self.nfw_model = NfwModel(
@@ -520,7 +502,7 @@ class GnfwBaryonModel:
         self.mass_definition = mass_definition
 
         self.units = units
-        self._comoving_radii = comoving_radii
+        self.comoving_radii = comoving_radii
 
         self.baryon_frac = self.cosmo_params.omega_bary/self.cosmo_params.omega_matter
 
@@ -529,15 +511,6 @@ class GnfwBaryonModel:
         self.LOG10_MAX_INTEGRATION_RADIUS = np.log10(3.3)
         self.NUM_INTEGRATION_RADII = 200
 
-    @property
-    def comoving_radii(self):
-        return self._comoving_radii
-
-    @comoving_radii.setter
-    def comoving_radii(self, rs_are_comoving):
-        self._comoving_radii = rs_are_comoving
-        self._init_nfw()
-
     def _init_nfw(self):
         self.nfw_model = NfwModel(
             cosmo_params=self.cosmo_params,
@@ -545,6 +518,17 @@ class GnfwBaryonModel:
             delta=self.delta,
             mass_definition=self.mass_definition,
             comoving=self.comoving_radii,
+        )
+
+    def _init_stacker(self):
+        self.stacker = Stacker(
+            mu_bins=self.mus,
+            redshift_bins=self.zs,
+            cosmo_params=self.cosmo_params,
+            selection_func_file=self.selection_func_file,
+            lensing_weights_file=self.lensing_weights_file,
+            delta=self.delta,
+            units=self.units,
         )
 
     def mass(self, mu):
@@ -625,3 +609,19 @@ class GnfwBaryonModel:
 
     def delta_sigma_total(self, rs, mus, cons, alphas, betas, gammas):
         return self.delta_sigma_bary(rs, mus, cons, alphas, betas, gammas) + self.delta_sigma_cdm(rs, mus, cons)
+
+    def stacked_delta_sigma(self, rs, cons, alphas, betas, gammas, a_szs):
+        delta_sigmas = self.delta_sigma_total(rs, self.mus, cons, alphas, betas, gammas)
+
+        try:
+            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
+        except AttributeError:
+            self._init_stacker()
+            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
+
+    def weak_lensing_avg_mass(self, a_szs):
+        try:
+            return self.stacker.weak_lensing_avg_mass(a_szs)
+        except AttributeError:
+            self._init_stacker()
+            return self.stacker.weak_lensing_avg_mass(a_szs)

@@ -76,6 +76,23 @@ def describe_gaussian_baryonic_model():
 
             assert np.all(ds > 0)
 
+        def it_can_calculate_a_stacked_delta_sigma(baryon_model):
+            radii = np.logspace(-1, 1, 10)
+            cs = 3*np.ones(3)
+            alphas = np.ones(3)
+            betas = 2*np.ones(3)
+            gammas = np.ones(3)
+            a_szs = np.zeros(1)
+
+            baryon_model._init_stacker()
+            baryon_model.stacker.dnumber_dlogmass = lambda : np.ones(
+                (baryon_model.mus.size, baryon_model.zs.size)
+            )
+
+            ds = baryon_model.stacked_delta_sigma(radii, cs, alphas, betas, gammas, a_szs)
+
+            assert np.all(ds > 0)
+
     def describe_units():
 
         @pytest.fixture
