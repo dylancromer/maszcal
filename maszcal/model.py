@@ -507,8 +507,8 @@ class GnfwBaryonModel:
         self.baryon_frac = self.cosmo_params.omega_bary/self.cosmo_params.omega_matter
 
         self.CORE_RADIUS = 0.2
-        self.LOG10_MIN_INTEGRATION_RADIUS = -3
-        self.LOG10_MAX_INTEGRATION_RADIUS = np.log10(3.3)
+        self.MIN_INTEGRATION_RADIUS = 1e-4
+        self.MAX_INTEGRATION_RADIUS = 3.3
         self.NUM_INTEGRATION_RADII = 200
 
     def _init_nfw(self):
@@ -551,9 +551,9 @@ class GnfwBaryonModel:
         """
         SHAPE mu, z, params
         """
-        rs = np.logspace(
-            self.LOG10_MIN_INTEGRATION_RADIUS,
-            self.LOG10_MAX_INTEGRATION_RADIUS,
+        rs = np.linspace(
+            self.MIN_INTEGRATION_RADIUS,
+            self.MAX_INTEGRATION_RADIUS,
             self.NUM_INTEGRATION_RADII,
         )
 
