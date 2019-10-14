@@ -43,6 +43,34 @@ def describe_gaussian_baryonic_model():
 
             assert np.all(rhos > 0)
 
+        def it_has_the_correct_baryon_fraction(baryon_model):
+            rs = np.linspace(
+                baryon_model.MIN_INTEGRATION_RADIUS,
+                baryon_model.MAX_INTEGRATION_RADIUS,
+                baryon_model.NUM_INTEGRATION_RADII
+            )
+            mus = np.log(1e14)*np.ones(1)
+            cs = 3*np.ones(1)
+            alphas = 0.88*np.ones(1)
+            betas = 3.8*2*np.ones(1)
+            gammas = 0.2*np.ones(1)
+
+            rho_barys = baryon_model.rho_bary(rs, mus, cs, alphas, betas, gammas)
+            rho_cdms = np.moveaxis(baryon_model.rho_cdm(rs, mus, cs), 2, 0)
+
+            ratio = np.trapz(
+                rho_barys * rs[:, None, None, None]**2,
+                x=rs,
+                axis=0
+            ) / np.trapz(
+                (rho_barys + rho_cdms) * rs[:, None, None, None]**2,
+                x=rs,
+                axis=0
+            )
+
+            f_b = baryon_model.baryon_frac
+            assert np.allclose(ratio, f_b)
+
         def it_can_calculate_an_nfw_delta_sigma(baryon_model):
             radii = np.logspace(-1, 1, 10)
             mus = np.log(1e14)*np.ones(1)
