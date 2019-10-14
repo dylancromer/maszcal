@@ -52,7 +52,7 @@ def describe_gaussian_baryonic_model():
             mus = np.log(1e14)*np.ones(1)
             cs = 3*np.ones(1)
             alphas = 0.88*np.ones(1)
-            betas = 3.8*2*np.ones(1)
+            betas = 3.8*np.ones(1)
             gammas = 0.2*np.ones(1)
 
             rho_barys = baryon_model.rho_bary(rs, mus, cs, alphas, betas, gammas)
