@@ -1,6 +1,5 @@
 import numpy as np
 import colossus.cosmology.cosmology as colossus_cosmo
-import colossus.halo.concentration as colossus_con
 from colossus.halo.mass_adv import changeMassDefinitionCModel as _change_mass_def_cmodel
 from colossus.halo.mass_defs import changeMassDefinition as _change_mass_def
 from maszcal.cosmology import CosmoParams
