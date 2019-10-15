@@ -6,9 +6,6 @@ from maszcal.cosmo_utils import get_astropy_cosmology
 
 
 class NfwModel:
-    """
-    SHAPE mass, z, r, cons
-    """
     def __init__(
             self,
             cosmo_params=DefaultCosmology(),
@@ -125,9 +122,11 @@ class NfwModel:
         """
         scale_radii = self.scale_radius(zs, masses, cons)
         numerator = self.delta_c(cons)[None, None, :] * self.reference_density(zs)[None, :, None]
-        xs = rs[None, None, :, None]/scale_radii[:, :, None, :]
+        numerator = np.reshape(numerator, numerator.shape[:2] + rs.ndim*(1,) + numerator.shape[2:])
+        xs = rs[None, None, ..., None]/np.reshape(scale_radii,
+                                                  scale_radii.shape[:2] + rs.ndim*(1,) + scale_radii.shape[2:])
         denominator = xs * (1+xs)**2
-        return (numerator[:, :, None, :]/denominator)
+        return numerator/denominator
 
     def delta_sigma(self, rs, zs, masses, cons):
         """
