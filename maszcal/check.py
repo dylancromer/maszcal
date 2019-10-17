@@ -89,6 +89,10 @@ class BaryonicEmulationErrors:
         errors_above_level = errors[np.where(np.abs(errors) > error_level)]
         return 100*(errors_above_level.size/errors.size)
 
+    def _check_param_limits(self, param_mins, param_maxes):
+        if param_mins.shape != param_maxes.shape:
+            raise ValueError('param_mins and param_maxes must both be of same length.')
+
     def get_emulation_errors(
             self,
             param_mins,
@@ -97,7 +101,8 @@ class BaryonicEmulationErrors:
             sampling_method='lh',
             fixed_params=None,
     ):
-        #!TODO: need to check params to make sure all is consistent
+        self._check_param_limits(param_mins, param_maxes)
+
         params_to_interpolate = self._get_params(param_mins, param_maxes, num_samples, fixed_params, sampling_method)
         function_to_interpolate = self._get_function_values(params_to_interpolate)
 

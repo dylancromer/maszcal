@@ -56,7 +56,7 @@ def describe_emulation_errors():
 
             num_samples = 10
 
-            fixed_params = {'con':3}
+            fixed_params = {'con': 3}
 
             params = check.BaryonicEmulationErrors._get_params(
                 param_mins,
@@ -88,6 +88,23 @@ def describe_emulation_errors():
                 lensing_signal_class=lensing_signal_class,
             )
 
+        def it_errors_if_you_have_mismatching_params_limits(emulation_errors):
+            param_mins = np.array([0, 0, 0, 0])
+            param_maxes = np.array([1, 1, 1, 1, 1])
+            num_samples = 10
+            fixed_params = None
+
+            with pytest.raises(ValueError) as excinfo:
+                error_levels, error_fracs = emulation_errors.get_emulation_errors(
+                    param_mins,
+                    param_maxes,
+                    num_samples,
+                    sampling_method='lh',
+                    fixed_params=fixed_params,
+                )
+
+            assert str(excinfo.value) == 'param_mins and param_maxes must both be of same length.'
+
         def it_produces_an_error_percent_curve_that_is_monotonically_decreasing(emulation_errors):
             CON_MIN = 1
             CON_MAX = 2
@@ -97,7 +114,7 @@ def describe_emulation_errors():
             param_mins = np.array([CON_MIN, A_SZ_MIN])
             param_maxes = np.array([CON_MAX, A_SZ_MAX])
 
-            fixed_params = {'alpha':0.88, 'beta':3.8, 'gamma':0.2}
+            fixed_params = {'alpha': 0.88, 'beta': 3.8, 'gamma': 0.2}
 
             num_samples = 10
 
