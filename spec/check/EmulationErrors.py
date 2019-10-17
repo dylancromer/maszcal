@@ -6,10 +6,29 @@ from maszcal.cosmology import CosmoParams
 
 class PretendEmulator:
     def emulate(self, radii, params, func_vals):
-        pass
+        self.radii = radii
 
     def evaluate_on(self, params):
-        return np.ones(2)
+        return np.ones((self.radii.size, params.shape[0]))
+
+
+class PretendLensingSignal:
+    def __init__(
+            self,
+            log_masses=None,
+            redshifts=None,
+            units=1,
+            comoving=True,
+            delta=200,
+            mass_definition='mean',
+            cosmo_params=None,
+            selection_func_file=None,
+            lensing_weights_file=None,
+    ):
+        pass
+
+    def stacked_esd(self, rs, params):
+        return np.ones((rs.size, params.shape[0]))
 
 
 def describe_emulation_errors():
@@ -27,7 +46,7 @@ def describe_emulation_errors():
                 param_maxes,
                 num_samples,
                 fixed_params=None,
-                sampling='lh'
+                sampling_method='lh'
             )
             assert np.all(params > 0)
 
@@ -44,7 +63,7 @@ def describe_emulation_errors():
                 param_maxes,
                 num_samples,
                 fixed_params=fixed_params,
-                sampling='lh'
+                sampling_method='lh'
             )
 
             assert params.shape == (10, 5)
@@ -59,7 +78,15 @@ def describe_emulation_errors():
             zs = np.linspace(0, 1, 6)
 
             emulator_class = PretendEmulator
-            return check.BaryonicEmulationErrors(rs, mus, zs, emulator_class=emulator_class)
+            lensing_signal_class = PretendLensingSignal
+            return check.BaryonicEmulationErrors(
+                rs,
+                mus,
+                zs,
+                10,
+                emulator_class=emulator_class,
+                lensing_signal_class=lensing_signal_class,
+            )
 
         def it_produces_an_error_percent_curve_that_is_monotonically_decreasing(emulation_errors):
             CON_MIN = 1
@@ -78,7 +105,7 @@ def describe_emulation_errors():
                 param_mins,
                 param_maxes,
                 num_samples,
-                sampling='lh',
+                sampling_method='lh',
                 fixed_params=fixed_params,
             )
 
@@ -90,6 +117,7 @@ def describe_emulation_errors():
             rs = np.logspace(-1, 1, 5)
             mus = np.linspace(np.log(1e14), np.log(1e16), 6)
             zs = np.linspace(0, 1, 6)
+            num_test_samples = 10
             with pytest.raises(TypeError):
                 check.BaryonicEmulationErrors(radii=rs, log_masses=mus)
 
@@ -97,8 +125,9 @@ def describe_emulation_errors():
             rs = np.logspace(-1, 1, 5)
             mus = np.ones(10)
             zs = np.ones(5)
+            num_test_samples = 10
             sel_func_file = 'test/file/here'
-            emu_errs = check.BaryonicEmulationErrors(rs, mus, zs, selection_func_file=sel_func_file)
+            emu_errs = check.BaryonicEmulationErrors(rs, mus, zs, num_test_samples, selection_func_file=sel_func_file)
 
             assert emu_errs.selection_func_file == sel_func_file
 
@@ -106,8 +135,9 @@ def describe_emulation_errors():
             rs = np.logspace(-1, 1, 5)
             mus = np.ones(10)
             zs = np.ones(5)
+            num_test_samples = 10
             weights_file = 'test/file/here'
-            emu_errs = check.BaryonicEmulationErrors(rs, mus, zs, lensing_weights_file=weights_file)
+            emu_errs = check.BaryonicEmulationErrors(rs, mus, zs, num_test_samples, lensing_weights_file=weights_file)
 
             assert emu_errs.lensing_weights_file == weights_file
 
@@ -115,19 +145,21 @@ def describe_emulation_errors():
             rs = np.logspace(-1, 1, 5)
             mus = np.ones(10)
             zs = np.ones(5)
+            num_test_samples = 10
 
             delta = 500
             mass_definition = 'crit'
 
-            emu_errs = check.BaryonicEmulationErrors(rs, mus, zs, delta=delta, mass_definition=mass_definition)
+            emu_errs = check.BaryonicEmulationErrors(rs, mus, zs, num_test_samples, delta=delta, mass_definition=mass_definition)
             assert emu_errs.mass_definition == mass_definition
 
         def it_can_use_a_different_cosmology(mocker):
             rs = np.logspace(-1, 1, 5)
             mus = np.ones(10)
             zs = np.ones(5)
+            num_test_samples = 10
 
             cosmo = CosmoParams(neutrino_mass_sum=1)
-            emu_errs = check.BaryonicEmulationErrors(rs, mus, zs, cosmo_params=cosmo)
+            emu_errs = check.BaryonicEmulationErrors(rs, mus, zs, num_test_samples, cosmo_params=cosmo)
 
             assert emu_errs.cosmo_params == cosmo
