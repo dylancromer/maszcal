@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
 import astropy.units as u
+import supercubos
 import maszcal.defaults as defaults
 import maszcal.emulator
 
@@ -19,8 +20,24 @@ class BaryonicEmulationErrors:
     lensing_weights_file: object = defaults.DefaultLensingWeights()
     emulator_class: object = maszcal.emulator.LensingEmulator
 
-    def _get_params_from_partial(self, param_mins, param_maxes, fixed_params, sampling):
-        pass
+    @staticmethod
+    def _get_params(param_mins, param_maxes, num_samples, fixed_params, sampling):
+        PARAM_AXIS = {'con':0, 'alpha':1, 'beta':2, 'gamma':3, 'a_sz':4}
+        sampler = supercubos.LatinSampler()
+
+        lh_params = np.zeros((num_samples, 5))
+        if fixed_params is not None:
+            fixed_param_axes = [PARAM_AXIS[param] for param in fixed_params.keys()]
+            for param, val in fixed_params.items():
+                lh_params[:, PARAM_AXIS[param]] = val
+        else:
+            fixed_param_axes = []
+
+        free_param_mask = np.ones(5, dtype=bool)
+        free_param_mask[fixed_param_axes] = False
+
+        lh_params[:, free_param_mask] = sampler.get_lh_sample(param_mins, param_maxes, num_samples)
+        return lh_params
 
     def _get_function_to_interpolate(self, params_to_interpolate):
         pass
@@ -45,10 +62,10 @@ class BaryonicEmulationErrors:
             param_mins,
             param_maxes,
             num_samples,
-            sampling='all',
+            sampling='lh',
             fixed_params=None,
     ):
-        params_to_interpolate = self._get_params_from_partial(param_mins, param_maxes, fixed_params, sampling)
+        params_to_interpolate = self._get_params(param_mins, param_maxes, num_samples, fixed_params, sampling)
         function_to_interpolate = self._get_function_to_interpolate(params_to_interpolate)
 
         emulator = self._get_emulator(params_to_interpolate, function_to_interpolate)

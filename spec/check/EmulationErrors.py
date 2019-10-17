@@ -14,37 +14,75 @@ class PretendEmulator:
 
 def describe_emulation_errors():
 
-    @pytest.fixture
-    def emulation_errors():
-        rs = np.logspace(-1, 1, 5)
-        mus = np.linspace(np.log(1e14), np.log(1e16), 6)
-        zs = np.linspace(0, 1, 6)
+    def describe__get_params_from_partial():
 
-        emulator_class = PretendEmulator
-        return check.BaryonicEmulationErrors(rs, mus, zs, emulator_class=emulator_class)
+        def it_gets_a_parameter_sample():
+            param_mins = np.array([0, 0, 0, 0, 0])
+            param_maxes = np.array([1, 1, 1, 1, 1])
 
-    def it_produces_a_number_versus_error_level_curve(emulation_errors):
-        CON_MIN = 1
-        CON_MAX = 2
-        A_SZ_MIN = -1
-        A_SZ_MAX = 1
+            num_samples = 10
 
-        param_mins = np.array([CON_MIN, A_SZ_MIN])
-        param_maxes = np.array([CON_MAX, A_SZ_MAX])
+            params = check.BaryonicEmulationErrors._get_params(
+                param_mins,
+                param_maxes,
+                num_samples,
+                fixed_params=None,
+                sampling='lh'
+            )
+            assert np.all(params > 0)
 
-        fixed_params = {'alpha':0.88, 'beta':3.8, 'gamma':0.2}
+        def it_returns_params_with_a_constant_column_if_a_param_is_fixed():
+            param_mins = np.array([0, 0, 0, 0])
+            param_maxes = np.array([1, 1, 1, 1])
 
-        num_samples = 100
+            num_samples = 10
 
-        error_levels, error_fracs = emulation_errors.get_emulation_errors(
-            param_mins,
-            param_maxes,
-            num_samples,
-            sampling='lh',
-            fixed_params=fixed_params,
-        )
+            fixed_params = {'con':3}
 
-        assert np.all(error_levels > 0)
+            params = check.BaryonicEmulationErrors._get_params(
+                param_mins,
+                param_maxes,
+                num_samples,
+                fixed_params=fixed_params,
+                sampling='lh'
+            )
+
+            assert params.shape == (10, 5)
+            assert np.all(params[:, 0] == params[0, 0])
+
+    def describe_get_emulation_errors():
+
+        @pytest.fixture
+        def emulation_errors():
+            rs = np.logspace(-1, 1, 5)
+            mus = np.linspace(np.log(1e14), np.log(1e16), 6)
+            zs = np.linspace(0, 1, 6)
+
+            emulator_class = PretendEmulator
+            return check.BaryonicEmulationErrors(rs, mus, zs, emulator_class=emulator_class)
+
+        def it_produces_an_error_percent_curve_that_is_monotonically_decreasing(emulation_errors):
+            CON_MIN = 1
+            CON_MAX = 2
+            A_SZ_MIN = -1
+            A_SZ_MAX = 1
+
+            param_mins = np.array([CON_MIN, A_SZ_MIN])
+            param_maxes = np.array([CON_MAX, A_SZ_MAX])
+
+            fixed_params = {'alpha':0.88, 'beta':3.8, 'gamma':0.2}
+
+            num_samples = 10
+
+            error_levels, error_fracs = emulation_errors.get_emulation_errors(
+                param_mins,
+                param_maxes,
+                num_samples,
+                sampling='lh',
+                fixed_params=fixed_params,
+            )
+
+            assert np.all(error_fracs[1:] <= error_fracs[:-1])
 
     def describe_init():
 
