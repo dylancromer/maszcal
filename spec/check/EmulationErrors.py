@@ -88,23 +88,6 @@ def describe_emulation_errors():
                 lensing_signal_class=lensing_signal_class,
             )
 
-        def it_errors_if_you_have_mismatching_params_limits(emulation_errors):
-            param_mins = np.array([0, 0, 0, 0])
-            param_maxes = np.array([1, 1, 1, 1, 1])
-            num_samples = 10
-            fixed_params = None
-
-            with pytest.raises(ValueError) as excinfo:
-                error_levels, error_fracs = emulation_errors.get_emulation_errors(
-                    param_mins,
-                    param_maxes,
-                    num_samples,
-                    sampling_method='lh',
-                    fixed_params=fixed_params,
-                )
-
-            assert str(excinfo.value) == 'param_mins and param_maxes must both be of same length.'
-
         def it_produces_an_error_percent_curve_that_is_monotonically_decreasing(emulation_errors):
             CON_MIN = 1
             CON_MAX = 2
@@ -180,3 +163,40 @@ def describe_emulation_errors():
             emu_errs = check.BaryonicEmulationErrors(rs, mus, zs, num_test_samples, cosmo_params=cosmo)
 
             assert emu_errs.cosmo_params == cosmo
+
+    def describe_input_handling():
+
+        @pytest.fixture
+        def emulation_errors():
+            rs = np.logspace(-1, 1, 5)
+            mus = np.linspace(np.log(1e14), np.log(1e16), 6)
+            zs = np.linspace(0, 1, 6)
+
+            emulator_class = PretendEmulator
+            lensing_signal_class = PretendLensingSignal
+            return check.BaryonicEmulationErrors(
+                rs,
+                mus,
+                zs,
+                10,
+                emulator_class=emulator_class,
+                lensing_signal_class=lensing_signal_class,
+            )
+
+        def it_errors_if_you_have_mismatching_params_limits(emulation_errors):
+            param_mins = np.array([0, 0, 0, 0])
+            param_maxes = np.array([1, 1, 1, 1, 1])
+
+            with pytest.raises(ValueError):
+                emulation_errors._check_param_limits(param_mins, param_maxes)
+
+        def it_errors_if_fixed_plus_free_params_arent_5(emulation_errors):
+            with pytest.raises(ValueError):
+                emulation_errors._check_num_of_params(param_limits=np.array([0, 0, 0]), fixed_params=None)
+
+            with pytest.raises(ValueError):
+                emulation_errors._check_num_of_params(param_limits=np.array([0, 0, 0]), fixed_params={'con': 3})
+
+        def it_errors_if_your_sampling_method_is_wrong(emulation_errors):
+            with pytest.raises(ValueError):
+                emulation_errors._check_sampling_method('enrfienfie')

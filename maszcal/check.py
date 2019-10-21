@@ -90,8 +90,23 @@ class BaryonicEmulationErrors:
         return 100*(errors_above_level.size/errors.size)
 
     def _check_param_limits(self, param_mins, param_maxes):
-        if param_mins.shape != param_maxes.shape:
-            raise ValueError('param_mins and param_maxes must both be of same length.')
+        if param_mins.size != param_maxes.size:
+            raise ValueError('param_mins and param_maxes must both be of same size.')
+
+    def _check_num_of_params(self, param_limits, fixed_params):
+        if fixed_params is None:
+            num_of_fixed_params = 0
+        else:
+            num_of_fixed_params = len(fixed_params)
+
+        if param_limits.size + num_of_fixed_params != 5:
+            raise ValueError('Total number of parameters incorrect: '\
+                             'length of param_mins/param_maxes and '\
+                             'length of fixed_params must sum to 5')
+
+    def _check_sampling_method(self, sampling_method):
+        if sampling_method not in ['lh', 'sym', 'rand']:
+            raise ValueError('sampling_method must be \'lh\', \'sym\', or \'rand\'')
 
     def get_emulation_errors(
             self,
@@ -102,6 +117,8 @@ class BaryonicEmulationErrors:
             fixed_params=None,
     ):
         self._check_param_limits(param_mins, param_maxes)
+        self._check_num_of_params(param_mins, fixed_params)
+        self._check_sampling_method(sampling_method)
 
         params_to_interpolate = self._get_params(param_mins, param_maxes, num_samples, fixed_params, sampling_method)
         function_to_interpolate = self._get_function_values(params_to_interpolate)
