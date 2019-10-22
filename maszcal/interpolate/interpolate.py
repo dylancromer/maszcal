@@ -1,8 +1,21 @@
 from dataclasses import dataclass
 import numpy as np
+import smolyak
 from .rbf import Rbf
 from maszcal.interp_utils import make_flat
 import maszcal.nothing as nothing
+
+
+class SmolyakInterpolator:
+    def __init__(self, smolyak_grid, func_vals):
+        self.smolyak_grid = smolyak_grid
+        self.interp_func_vals = func_vals
+
+    def process(self):
+        self._smolyak_interpolator = smolyak.interp.SmolyakInterp(self.smolyak_grid, self.interp_func_vals)
+
+    def interp(self, smolyak_grid):
+        return self._smolyak_interpolator.interpolate(smolyak_grid)
 
 
 class RbfInterpolator:
