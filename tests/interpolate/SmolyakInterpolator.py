@@ -1,4 +1,3 @@
-
 import pytest
 import numpy as np
 import smolyak
@@ -48,6 +47,7 @@ def describe_smolyak_interpolator():
             param_mins = np.array([2, 0.6, 3.4, 0.1, -2])
             param_maxes = np.array([6, 1, 4.2, 0.3, 2])
             smolyak_grid = smolyak.grid.SmolyakGrid(d=5, mu=6, lb=param_mins, ub=param_maxes)
+            assert False, smolyak_grid.grid.shape
             rs = np.array([1e-1])
 
             func_vals = bary_lensing_signal.stacked_esd(rs, smolyak_grid.grid)[0]
