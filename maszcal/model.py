@@ -534,16 +534,29 @@ class GnfwBaryonModel:
     def mass(self, mu):
         return np.exp(mu)
 
-    def gnfw_shape(self, rs, alphas, betas, gammas):
+    def _r_delta(self, mus):
         """
-        SHAPE rs.shape, params
+        SHAPE mu, z
         """
-        ys = rs/self.CORE_RADIUS
+        masses = self.mass(mus)
+        try:
+            return self.nfw_model.radius_delta(self.zs, masses)
+        except AttributeError:
+            self._init_nfw()
+            return self.nfw_model.radius_delta(self.zs, masses)
+
+    def gnfw_shape(self, rs, mus, cons, alphas, betas, gammas):
+        """
+        SHAPE mu, z, rs.shape, params
+        """
+        ys = (rs[None, None, ...]/mathutils.atleast_kd(self._r_delta(mus),
+                                                       rs.ndim+2))/self.CORE_RADIUS
         ys = ys[..., None]
 
-        alphas = alphas.reshape(rs.ndim*(1,) + (alphas.size,))
-        betas = betas.reshape(rs.ndim*(1,) + (betas.size,))
-        gammas = gammas.reshape(rs.ndim*(1,) + (gammas.size,))
+        new_shape = (rs.ndim + 2)*(1,) + (alphas.size,)
+        alphas = alphas.reshape(new_shape)
+        betas = betas.reshape(new_shape)
+        gammas = gammas.reshape(new_shape)
 
         return 1 / (ys**gammas * (1 + ys**(1/alphas))**((betas-gammas) * alphas))
 
@@ -559,15 +572,17 @@ class GnfwBaryonModel:
 
         drs = np.gradient(rs)
         top_integrand = self._rho_nfw(rs, mus, cons) * rs[None, None, :, None]**2
-        bottom_integrand = self.gnfw_shape(rs, alphas, betas, gammas)[None, None, ...] * rs[None, None, :, None]**2
+        bottom_integrand = self.gnfw_shape(rs, mus, cons, alphas, betas, gammas) * rs[None, None, :, None]**2
 
         return mathutils.trapz_(top_integrand, dx=drs, axis=-2)/mathutils.trapz_(bottom_integrand, dx=drs, axis=-2)
 
     def _rho_gnfw(self, rs, mus, cons, alphas, betas, gammas):
         norm = self._gnfw_norm(mus, cons, alphas, betas, gammas)
         norm = norm.reshape(rs.ndim*(1,) + norm.shape)
-        profile_shape = self.gnfw_shape(rs, alphas, betas, gammas)
-        profile_shape = profile_shape.reshape(profile_shape.shape[:-1] + (1, 1) + profile_shape.shape[-1:])
+        profile_shape = self.gnfw_shape(rs, mus, cons, alphas, betas, gammas)
+        profile_shape = profile_shape.reshape(
+            profile_shape.shape[2:-1] + profile_shape.shape[:2] + profile_shape.shape[-1:]
+        )
         return norm * profile_shape
 
     def _rho_nfw(self, rs, mus, cons):
