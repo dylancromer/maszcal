@@ -549,14 +549,12 @@ class GnfwBaryonModel:
         """
         SHAPE mu, z, rs.shape, params
         """
-        ys = (rs[None, None, ...]/mathutils.atleast_kd(self._r_delta(mus),
-                                                       rs.ndim+2))/self.CORE_RADIUS
+        ys = (rs[None, None, ...]/mathutils.atleast_kd(self._r_delta(mus), rs.ndim+2)) / self.CORE_RADIUS
         ys = ys[..., None]
 
-        new_shape = (rs.ndim + 2)*(1,) + (alphas.size,)
-        alphas = alphas.reshape(new_shape)
-        betas = betas.reshape(new_shape)
-        gammas = gammas.reshape(new_shape)
+        alphas = alphas.reshape((rs.ndim + 2)*(1,) + (alphas.size,))
+        betas = betas.reshape((rs.ndim + 2)*(1,) + (betas.size,))
+        gammas = gammas.reshape((rs.ndim + 2)*(1,) + (gammas.size,))
 
         return 1 / (ys**gammas * (1 + ys**(1/alphas))**((betas-gammas) * alphas))
 
@@ -580,9 +578,15 @@ class GnfwBaryonModel:
         norm = self._gnfw_norm(mus, cons, alphas, betas, gammas)
         norm = norm.reshape(rs.ndim*(1,) + norm.shape)
         profile_shape = self.gnfw_shape(rs, mus, cons, alphas, betas, gammas)
-        profile_shape = profile_shape.reshape(
-            profile_shape.shape[2:-1] + profile_shape.shape[:2] + profile_shape.shape[-1:]
+
+        radius_axes = np.arange(profile_shape.ndim)[2:-1]
+        new_radius_axes = np.arange(radius_axes.size)
+        profile_shape = np.moveaxis(
+            profile_shape,
+            tuple(radius_axes),
+            tuple(new_radius_axes),
         )
+
         return norm * profile_shape
 
     def _rho_nfw(self, rs, mus, cons):

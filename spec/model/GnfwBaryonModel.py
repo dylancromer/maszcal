@@ -24,11 +24,11 @@ def describe_gaussian_baryonic_model():
 
         def it_can_calculate_a_gnfw_rho(baryon_model):
             radii = np.logspace(-1, 1, 10)
-            mus = np.log(1e14)*np.ones(1)
-            cs = 3*np.ones(1)
-            alphas = np.ones(1)
-            betas = 2*np.ones(1)
-            gammas = np.ones(1)
+            mus = np.log(1e14)*np.ones(2)
+            cs = 3*np.ones(3)
+            alphas = np.ones(3)
+            betas = 2*np.ones(3)
+            gammas = np.ones(3)
 
             rhos = baryon_model.rho_bary(radii, mus, cs, alphas, betas, gammas)
 
@@ -110,7 +110,7 @@ def describe_gaussian_baryonic_model():
             alphas = np.ones(3)
             betas = 2*np.ones(3)
             gammas = np.ones(3)
-            a_szs = np.zeros(1)
+            a_szs = np.zeros(3)
 
             baryon_model._init_stacker()
             baryon_model.stacker.dnumber_dlogmass = lambda : np.ones(
