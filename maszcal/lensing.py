@@ -219,3 +219,53 @@ class StackedBaryonLensingSignal:
         except AttributeError:
             self._init_baryon_model()
             return self.baryon_model.stacked_delta_sigma(rs, cons, alphas, betas, gammas, a_szs)
+
+
+class SingleBaryonLensingSignal:
+    def __init__(
+            self,
+            redshift=nothing.NoRedshifts(),
+            units=u.Msun/u.pc**2,
+            comoving=True,
+            delta=200,
+            mass_definition='mean',
+            cosmo_params=defaults.DefaultCosmology(),
+    ):
+        if not isinstance(redshift, nothing.NoRedshifts):
+            self.redshift = redshift
+        else:
+            raise TypeError('redshift is required to calculate a lensing signal')
+
+        self._check_redshift_for_single_mass_model()
+
+        self.units = units
+        self.comoving = comoving
+        self.delta = delta
+        self.mass_definition = mass_definition
+
+        self.cosmo_params = cosmo_params
+
+    def _check_redshift_for_single_mass_model(self):
+        if np.asarray(self.redshift).size != 1:
+            raise TypeError('redshifts must have length 1 to calculate a single-mass-bin model')
+
+    def _init_single_mass_model(self):
+        self.single_mass_model = model.SingleMassModel(
+            self.redshift,
+            cosmo_params=self.cosmo_params,
+            comoving_radii=self.comoving,
+            delta=self.delta,
+            mass_definition=self.mass_definition,
+        )
+
+    def esd(self, rs, params):
+        log_masses = params[:, 0]
+        cons = params[:, 1]
+        alphas = params[:, 2]
+        betas = params[:, 3]
+        gammas = params[:, 4]
+        try:
+            return self.single_mass_model.delta_sigma(rs, log_masses, cons, alphas, betas, gammas)
+        except AttributeError:
+            self._init_single_mass_model()
+            return self.single_mass_model.delta_sigma(rs, log_masses, cons, alphas, betas, gammas)
