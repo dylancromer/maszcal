@@ -10,7 +10,7 @@ rcParams.update({'figure.autolayout': True})
 import seaborn as sns
 sns.set(style='whitegrid', font_scale=1.5, rc={"lines.linewidth": 2,'lines.markersize': 8.0,})
 from maszcal.model import SingleMassModel
-from maszcal.lensing import LensingSignal
+from maszcal.lensing import SingleMassLensingSignal
 
 
 def describe_single_mass_bin():
@@ -23,7 +23,7 @@ def describe_single_mass_bin():
     @pytest.fixture
     def lensing_signal():
         zs = np.ones(1)
-        return LensingSignal(redshifts=zs)
+        return SingleMassLensingSignal(redshift=zs)
 
     def both_classes_give_the_same_thing(lensing_signal, single_mass_model):
         rs = np.logspace(-2, 1, 50)
@@ -32,7 +32,7 @@ def describe_single_mass_bin():
         params = np.array([[mu, concentration]])
 
         ds = single_mass_model.delta_sigma(rs, mu, concentration)
-        esd = lensing_signal.single_mass_esd(rs, params)
+        esd = lensing_signal.esd(rs, params)
 
         assert np.all(ds == esd)
 

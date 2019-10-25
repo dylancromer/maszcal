@@ -43,8 +43,8 @@ class SingleMassLensingSignal:
         )
 
     def esd(self, rs, params):
-        log_masses = params[:, 0]
-        concentrations = params[:, 1]
+        log_masses = params[:, 0].flatten()
+        concentrations = params[:, 1].flatten()
         try:
             return self.single_mass_model.delta_sigma(rs, log_masses, concentrations)
         except AttributeError:
@@ -98,9 +98,9 @@ class StackedGbLensingSignal:
         )
 
     def esd(self, rs, params):
-        cons = params[:, 0]
-        a_szs = params[:, 1]
-        ln_bary_vars = params[:, 2]
+        cons = params[:, 0].flatten()
+        a_szs = params[:, 1].flatten()
+        ln_bary_vars = params[:, 2].flatten()
         try:
             return self.gaussian_baryon_model.stacked_delta_sigma(rs, cons, a_szs, ln_bary_vars)
         except AttributeError:
@@ -154,8 +154,8 @@ class StackedLensingSignal:
         )
 
     def stacked_esd(self, rs, params):
-        cons = params[:, 0]
-        a_szs = params[:, 1]
+        cons = params[:, 0].flatten()
+        a_szs = params[:, 1].flatten()
         try:
             return self.stacked_model.stacked_delta_sigma(rs, cons, a_szs)
         except AttributeError:
@@ -209,11 +209,11 @@ class StackedBaryonLensingSignal:
         )
 
     def stacked_esd(self, rs, params):
-        cons = params[:, 0]
-        alphas = params[:, 1]
-        betas = params[:, 2]
-        gammas = params[:, 3]
-        a_szs = params[:, 4]
+        cons = params[:, 0].flatten()
+        alphas = params[:, 1].flatten()
+        betas = params[:, 2].flatten()
+        gammas = params[:, 3].flatten()
+        a_szs = params[:, 4].flatten()
         try:
             return self.baryon_model.stacked_delta_sigma(rs, cons, alphas, betas, gammas, a_szs)
         except AttributeError:
@@ -250,7 +250,7 @@ class SingleBaryonLensingSignal:
             raise TypeError('redshifts must have length 1 to calculate a single-mass-bin model')
 
     def _init_single_mass_model(self):
-        self.single_mass_model = model.SingleMassModel(
+        self.single_mass_model = model.SingleMassBaryonModel(
             self.redshift,
             cosmo_params=self.cosmo_params,
             comoving_radii=self.comoving,
@@ -259,11 +259,11 @@ class SingleBaryonLensingSignal:
         )
 
     def esd(self, rs, params):
-        log_masses = params[:, 0]
-        cons = params[:, 1]
-        alphas = params[:, 2]
-        betas = params[:, 3]
-        gammas = params[:, 4]
+        log_masses = params[:, 0].flatten()
+        cons = params[:, 1].flatten()
+        alphas = params[:, 2].flatten()
+        betas = params[:, 3].flatten()
+        gammas = params[:, 4].flatten()
         try:
             return self.single_mass_model.delta_sigma(rs, log_masses, cons, alphas, betas, gammas)
         except AttributeError:

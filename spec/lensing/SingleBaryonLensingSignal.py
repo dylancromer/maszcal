@@ -10,7 +10,7 @@ class FakeSingleMassBaryonModel:
     def __init__(
             self,
             redshift,
-            units=u.Msun/u.pc**2,
+            units=1,
             comoving_radii=True,
             delta=200,
             mass_definition='mean',
@@ -51,13 +51,13 @@ def describe_single_mass_lensing_signal():
 
         @pytest.fixture
         def lensing_signal(mocker):
-            mocker.patch('maszcal.lensing.model.SingleMassModel', new=FakeSingleMassBaryonModel)
+            mocker.patch('maszcal.lensing.model.SingleMassBaryonModel', new=FakeSingleMassBaryonModel)
             redshift = np.array([0])
             return SingleBaryonLensingSignal(redshift=redshift)
 
         def it_gives_a_single_mass_model_for_the_esd(lensing_signal):
             rs = np.logspace(-1, 1, 3)
-            params = np.array([[1, 1]])
+            params = np.array([[1, 1, 1, 1, 1]])
 
             esd = lensing_signal.esd(rs, params)
             assert np.all(esd == np.ones(13))
