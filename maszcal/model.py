@@ -650,3 +650,133 @@ class GnfwBaryonModel:
         except AttributeError:
             self._init_stacker()
             return self.stacker.weak_lensing_avg_mass(a_szs)
+
+
+class SingleMassBaryonModel:
+    def __init__(
+            self,
+            redshift,
+            units=u.Msun/u.pc**2,
+            comoving_radii=True,
+            delta=200,
+            mass_definition='mean',
+            cosmo_params=defaults.DefaultCosmology(),
+    ):
+        self.redshift = np.array([redshift])
+        self.units = units
+        self.comoving_radii = comoving_radii
+        self.delta = delta
+        self.mass_definition = mass_definition
+
+        if isinstance(cosmo_params, defaults.DefaultCosmology):
+            self.cosmo_params = CosmoParams()
+        else:
+            self.cosmo_params = cosmo_params
+
+        self.astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
+
+        self.baryon_frac = self.cosmo_params.omega_bary/self.cosmo_params.omega_matter
+
+        self.CORE_RADIUS = 0.5
+        self.MIN_INTEGRATION_RADIUS = 1e-4
+        self.MAX_INTEGRATION_RADIUS = 3.3
+        self.NUM_INTEGRATION_RADII = 200
+
+    def _init_nfw(self):
+        self.nfw_model = NfwModel(
+            cosmo_params=self.cosmo_params,
+            units=self.units,
+            delta=self.delta,
+            mass_definition=self.mass_definition,
+            comoving=self.comoving_radii,
+        )
+
+    def mass(self, mu):
+        return np.exp(mu)
+
+    def _r_delta(self, mus):
+        """
+        SHAPE mu, z
+        """
+        masses = self.mass(mus)
+        try:
+            return self.nfw_model.radius_delta(self.redshift, masses).flatten()
+        except AttributeError:
+            self._init_nfw()
+            return self.nfw_model.radius_delta(self.redshift, masses).flatten()
+
+    def gnfw_shape(self, rs, mus, cons, alphas, betas, gammas):
+        """
+        SHAPE mu, z, rs.shape, params
+        """
+        ys = (rs[..., None]/mathutils.atleast_kd(self._r_delta(mus), rs.ndim+1)) / self.CORE_RADIUS
+
+        alphas = alphas[None, :]
+        betas = betas[None, :]
+        gammas = gammas[None, :]
+
+        return 1 / (ys**gammas * (1 + ys**(1/alphas))**((betas-gammas) * alphas))
+
+    def _gnfw_norm(self, mus, cons, alphas, betas, gammas):
+        """
+        SHAPE mu, z, params
+        """
+        rs = np.linspace(
+            self.MIN_INTEGRATION_RADIUS,
+            self.MAX_INTEGRATION_RADIUS,
+            self.NUM_INTEGRATION_RADII,
+        )
+
+        drs = np.gradient(rs)
+        top_integrand = self._rho_nfw(rs, mus, cons) * rs[:, None]**2
+        bottom_integrand = self.gnfw_shape(rs, mus, cons, alphas, betas, gammas) * rs[:, None]**2
+
+        return mathutils.trapz_(top_integrand, dx=drs, axis=0)/mathutils.trapz_(bottom_integrand, dx=drs, axis=0)
+
+    def _rho_gnfw(self, rs, mus, cons, alphas, betas, gammas):
+        norm = self._gnfw_norm(mus, cons, alphas, betas, gammas)[None, :]
+        profile_shape = self.gnfw_shape(rs, mus, cons, alphas, betas, gammas)
+        return norm * profile_shape
+
+    def _rho_nfw(self, rs, mus, cons):
+        masses = self.mass(mus)
+
+        try:
+            return self.nfw_model.rho(rs, self.redshift, masses, cons)[0, 0, :, :]
+        except AttributeError:
+            self._init_nfw()
+            return self.nfw_model.rho(rs, self.redshift, masses, cons)[0, 0, :, :]
+
+    def rho_bary(self, rs, mus, cons, alphas, betas, gammas):
+        """
+        SHAPE r, mu, z, params
+        """
+        return self.baryon_frac * self._rho_gnfw(rs, mus, cons, alphas, betas, gammas)
+
+    def rho_cdm(self, rs, mus, cons):
+        """
+        SHAPE mu, z, r, params
+        """
+        return (1-self.baryon_frac) * self._rho_nfw(rs, mus, cons)
+
+    def delta_sigma_cdm(self, rs, mus, cons):
+        """
+        SHAPE r, params
+        """
+        masses = self.mass(mus)
+
+        try:
+            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, self.redshift, masses, cons)[0, 0, :, :]
+        except AttributeError:
+            self._init_nfw()
+            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, self.redshift, masses, cons)[0, 0, :, :]
+
+    def delta_sigma_bary(self, rs, mus, cons, alphas, betas, gammas):
+        """
+        SHAPE r, params
+        """
+        return (projector.esd(rs, lambda r: self.rho_bary(r, mus, cons, alphas, betas, gammas))
+                * (u.Msun/u.Mpc**2).to(self.units))
+
+    def delta_sigma(self, rs, mus, cons, alphas, betas, gammas):
+        return self.delta_sigma_bary(rs, mus, cons, alphas, betas, gammas) + self.delta_sigma_cdm(rs, mus, cons)
