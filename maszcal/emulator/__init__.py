@@ -1,5 +1,4 @@
-from ._interpolate import *
-from .rbf import Rbf
+from ._emulator import *
 
 
 __all__ = [s for s in dir() if not s.startswith('_')]

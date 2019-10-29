@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from maszcal.likelihood import GaussianLikelihood
+from maszcal.fitting.likelihood import GaussianLikelihood
 
 
 def describe_gaussian_likelihood():
