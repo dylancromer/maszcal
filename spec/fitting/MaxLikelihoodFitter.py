@@ -9,13 +9,24 @@ def describe_max_likelihood_fitter():
 
         @pytest.fixture
         def fitter():
-            data = np.ones(10)
+            return MaxLikelihoodFitter()
+
+        def it_returns_the_correct_fit_for_simple_data_and_model(fitter):
             def model_func(a): return a*np.ones(10)
+            guess = 0.5
+            data = np.ones(10)
             cov = np.identity(10)
 
-            return MaxLikelihoodFitter(data=data, model_func=model_func, covariance=cov)
-
-        def it_returns_the_correct_fit(fitter):
-            best_fit_param = fitter.fit()
+            best_fit_param = fitter.fit(model_func, guess, data, cov)
 
             assert np.allclose(best_fit_param, 1)
+
+        def it_returns_the_correct_fit(fitter):
+            guess = 0.5
+            def model_func(a): return a*np.linspace(0, 1, 10)
+            data = 2*np.linspace(0, 1, 10)
+            cov = np.identity(10)
+
+            best_fit_param = fitter.fit(model_func, guess, data, cov)
+
+            assert np.allclose(best_fit_param, 2)

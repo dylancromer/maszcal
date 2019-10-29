@@ -2,26 +2,22 @@ import numpy as np
 
 
 class GaussianLikelihood:
-    def __init__(self, radii, data, theory_func, covariance):
-        self.radii = radii
-        self.data = data
-        self.theory_func = theory_func
-        self.covariance = covariance
-
-    def calc_likelihood(self, params):
+    @classmethod
+    def likelihood(cls, params, theory_func, data, covariance):
         n = params.size
         prefac = 1 / (2*np.pi)**(n/2)
-        prefac *= np.sqrt(np.linalg.det(self.covariance))
+        prefac *= np.sqrt(np.linalg.det(covariance))
 
-        theory = self.theory_func(params)
-        diff = self.data - theory
-        fisher = np.linalg.inv(self.covariance)
+        theory = theory_func(params)
+        diff = data - theory
+        fisher = np.linalg.inv(covariance)
 
         return prefac * np.exp(-0.5 * diff.T @ fisher @ diff)
 
-    def calc_loglike(self, params):
-        theory = self.theory_func(params)
-        diff = self.data - theory
-        fisher = np.linalg.inv(self.covariance)
+    @classmethod
+    def log_like(cls, params, theory_func, data, covariance):
+        theory = theory_func(params)
+        diff = data - theory
+        fisher = np.linalg.inv(covariance)
 
         return -0.5 * diff.T @ fisher @ diff
