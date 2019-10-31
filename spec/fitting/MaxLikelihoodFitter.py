@@ -30,3 +30,14 @@ def describe_max_likelihood_fitter():
             best_fit_param = fitter.fit(model_func, guess, data, cov)
 
             assert np.allclose(best_fit_param, 2)
+
+        def it_can_use_a_prior_on_the_params(fitter):
+            guess = 0.5
+            def model_func(a): return a*np.linspace(0, 1, 10)
+            def prior(a): return -np.inf if a < 0 else 0
+            data = 2*np.linspace(0, 1, 10)
+            cov = np.identity(10)
+
+            best_fit_param = fitter.fit(model_func, guess, data, cov, ln_prior_func=prior)
+
+            assert np.allclose(best_fit_param, 2)

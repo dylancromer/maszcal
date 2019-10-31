@@ -32,3 +32,7 @@ class NoMasses:
 
 class NoRedshifts:
     pass
+
+
+class NoPriorFunc:
+    pass
