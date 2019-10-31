@@ -13,11 +13,12 @@ def describe_gaussian_likelihood():
         rs, data_dsigs = np.loadtxt('data/test/testdata.csv', delimiter=',').T
         data = rs*data_dsigs
         covariance = np.identity(rs.size)
+        fisher = covariance
 
         theory_func = lambda params: data
         params = np.array((3, 0))
 
-        like = likelihood.likelihood(params, theory_func, data, covariance)
+        like = likelihood.likelihood(params, theory_func, data, covariance, fisher)
 
         assert like == 1 / (2*np.pi)**(params.size/2)
 

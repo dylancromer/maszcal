@@ -6,8 +6,8 @@ import maszcal.nothing as nothing
 
 class MaxLikelihoodFitter:
     @classmethod
-    def _get_log_like_func(cls, model_func, data, covariance):
-        return lambda param: GaussianLikelihood.log_like(param, model_func, data, covariance)
+    def _get_log_like_func(cls, model_func, data, fisher):
+        return lambda param: GaussianLikelihood.log_like(param, model_func, data, fisher)
 
     @classmethod
     def _minimize_func(cls, func, guess):
@@ -15,8 +15,8 @@ class MaxLikelihoodFitter:
         return result.x
 
     @classmethod
-    def fit(cls, model_func, guess, data, covariance, ln_prior_func=nothing.NoPriorFunc()):
-        ln_like_func = cls._get_log_like_func(model_func, data, covariance)
+    def fit(cls, model_func, guess, data, fisher, ln_prior_func=nothing.NoPriorFunc()):
+        ln_like_func = cls._get_log_like_func(model_func, data, fisher)
 
         if isinstance(ln_prior_func, nothing.NoPriorFunc):
             def neg_ln_posterior_func(param): return -ln_like_func(param)

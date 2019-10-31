@@ -15,9 +15,9 @@ def describe_max_likelihood_fitter():
             def model_func(a): return a*np.ones(10)
             guess = 0.5
             data = np.ones(10)
-            cov = np.identity(10)
+            fish = np.identity(10)
 
-            best_fit_param = fitter.fit(model_func, guess, data, cov)
+            best_fit_param = fitter.fit(model_func, guess, data, fish)
 
             assert np.allclose(best_fit_param, 1)
 
@@ -25,9 +25,9 @@ def describe_max_likelihood_fitter():
             guess = 0.5
             def model_func(a): return a*np.linspace(0, 1, 10)
             data = 2*np.linspace(0, 1, 10)
-            cov = np.identity(10)
+            fish = np.identity(10)
 
-            best_fit_param = fitter.fit(model_func, guess, data, cov)
+            best_fit_param = fitter.fit(model_func, guess, data, fish)
 
             assert np.allclose(best_fit_param, 2)
 
@@ -36,8 +36,8 @@ def describe_max_likelihood_fitter():
             def model_func(a): return a*np.linspace(0, 1, 10)
             def prior(a): return -np.inf if a < 0 else 0
             data = 2*np.linspace(0, 1, 10)
-            cov = np.identity(10)
+            fish = np.identity(10)
 
-            best_fit_param = fitter.fit(model_func, guess, data, cov, ln_prior_func=prior)
+            best_fit_param = fitter.fit(model_func, guess, data, fish, ln_prior_func=prior)
 
             assert np.allclose(best_fit_param, 2)
