@@ -19,8 +19,13 @@ class MaxLikelihoodFitter:
         ln_like_func = cls._get_log_like_func(model_func, data, covariance)
 
         if isinstance(ln_prior_func, nothing.NoPriorFunc):
-            ln_posterior_func = lambda param: -ln_like_func(param)
+            def neg_ln_posterior_func(param): return -ln_like_func(param)
         else:
-            ln_posterior_func = lambda param: -ln_like_func(param) - ln_prior_func(param)
+            def neg_ln_posterior_func(param):
+                prior = ln_prior_func(param)
 
-        return cls._minimize_func(ln_posterior_func, guess)
+                ln_posterior = prior if (prior == -np.inf) else prior + ln_like_func(param)
+
+                return -ln_posterior
+
+        return cls._minimize_func(neg_ln_posterior_func, guess)
