@@ -30,8 +30,6 @@ def describe_lensing_signal():
 
         cons = np.linspace(2, 5, 10)
         a_szs = np.linspace(-1.2, 1.2, 10)
-        #cent_fracs = np.linspace(0, 1, 5)
-        #misc_lengths = np.linspace(1e-4, 1e-2, 5)
 
         params = cartesian_prod(cons, a_szs)
 
