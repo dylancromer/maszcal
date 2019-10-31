@@ -12,14 +12,8 @@ class MaxLikelihoodFitter:
         return lambda param: -GaussianLikelihood.log_like(param, model_func, data, covariance)
 
     @classmethod
-    def _check_optimization_status(cls, result):
-        if not result.success:
-            raise Warning('scipy.optimize.minimize did not complete successfully')
-
-    @classmethod
     def _minimize_func(cls, func, guess):
         result = scipy.optimize.minimize(func, guess)
-        cls._check_optimization_status(result)
         return result.x
 
     @classmethod
