@@ -21,7 +21,7 @@ def test_delta_sigma_of_m():
     mus = np.array([np.log(1e15)])
     cons = np.array([2])
 
-    delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
+    delta_sigmas = stacked_model.delta_sigma(rs,
                                                      mus,
                                                      cons)
 
@@ -53,7 +53,7 @@ def test_delta_sigma_of_r():
 
     stacked_model.params = params
 
-    delta_sigmas = stacked_model.delta_sigma(rs, cons, a_szs)[:,0]
+    delta_sigmas = stacked_model.stacked_delta_sigma(rs, cons, a_szs)[:,0]
 
     plt.plot(rs, rs * delta_sigmas)
     plt.xlabel(r'$ r $')
@@ -71,9 +71,7 @@ def test_delta_sigma_of_m_nocomoving():
     mus = np.array([np.log(1e15)])
     cons = np.array([2])
 
-    delta_sigmas = stacked_model.delta_sigma_of_mass(rs,
-                                                     mus,
-                                                     cons)
+    delta_sigmas = stacked_model.delta_sigma(rs, mus, cons)
 
 
     delta_sigmas = delta_sigmas[0,:,:,0]
@@ -101,7 +99,7 @@ def test_delta_sigma_of_r_nocomoving():
     cons = 2*np.ones(1)
     a_szs = np.zeros(1)
 
-    delta_sigmas = stacked_model.delta_sigma(rs, cons, a_szs)[:,0]
+    delta_sigmas = stacked_model.stacked_delta_sigma(rs, cons, a_szs)[:,0]
 
     plt.plot(rs, rs * delta_sigmas)
     plt.xlabel(r'$ r $')

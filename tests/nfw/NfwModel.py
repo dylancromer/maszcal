@@ -27,4 +27,4 @@ def describe_nfw_model():
 
         esds = np.moveaxis(projector.esd(rs, rho_func), 0, 2) * (u.Msun/u.Mpc**2).to(u.Msun/u.pc**2)
 
-        assert np.allclose(ds, esds, rtol=1e-3)
+        assert np.allclose(ds, esds, rtol=1e-2)
