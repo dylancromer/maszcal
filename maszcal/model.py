@@ -731,7 +731,7 @@ class SingleMassBaryonModel:
         top_integrand = self._rho_nfw(rs, mus, cons) * rs[:, None]**2
         bottom_integrand = self.gnfw_shape(rs, mus, cons, alphas, betas, gammas) * rs[:, None]**2
 
-        return mathutils.trapz_(top_integrand, dx=drs, axis=0)/mathutils.trapz_(bottom_integrand, dx=drs, axis=0)
+        return mathutils.trapz_(top_integrand, dx=drs, axis=-2)/mathutils.trapz_(bottom_integrand, dx=drs, axis=0)
 
     def _rho_gnfw(self, rs, mus, cons, alphas, betas, gammas):
         norm = self._gnfw_norm(mus, cons, alphas, betas, gammas)[None, :]
