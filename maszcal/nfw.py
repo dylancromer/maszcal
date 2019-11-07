@@ -141,3 +141,40 @@ class NfwModel:
         postfactor = self._inequality_func(xs)
 
         return prefactor[:, :, None, :] * postfactor
+
+
+class NfwTestModel(NfwModel):
+    """
+    Overwrites some methods to make it work for a concentration-mass relation
+    """
+    def scale_radius(self, zs, masses, cons):
+        """
+        SHAPE mass, z
+        """
+        return self.radius_delta(zs, masses)/cons
+
+    def rho(self, rs, zs, masses, cons):
+        """
+        SHAPE mass, z, r
+        """
+        scale_radii = self.scale_radius(zs, masses, cons)
+        numerator = self.delta_c(cons) * self.reference_density(zs)[None, :]
+        numerator = np.reshape(numerator, numerator.shape + rs.ndim*(1,))
+        xs = rs[None, None, ...]/np.reshape(scale_radii,
+                                            scale_radii.shape + rs.ndim*(1,))
+        denominator = xs * (1+xs)**2
+        return numerator/denominator
+
+    def delta_sigma(self, rs, zs, masses, cons):
+        """
+        SHAPE mass, z, r
+        """
+        scale_radii = self.scale_radius(zs, masses, cons)
+        prefactor = scale_radii * self.delta_c(cons) * self.reference_density(zs)[None, :]
+        prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
+
+        xs = rs[None, None, :]/scale_radii[:, :, None]
+
+        postfactor = self._inequality_func(xs)
+
+        return prefactor[:, :, None] * postfactor

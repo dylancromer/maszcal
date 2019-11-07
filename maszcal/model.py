@@ -2,13 +2,14 @@ import numpy as np
 import camb
 from astropy import units as u
 import projector
-from maszcal.nfw import NfwModel
 from maszcal.tinker import dn_dlogM
 from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
-import maszcal.mathutils as mathutils
-import maszcal.ioutils as ioutils
-import maszcal.defaults as defaults
+from maszcal.concentration import ConModel
+import maszcal.nfw
+import maszcal.mathutils
+import maszcal.ioutils
+import maszcal.defaults
 
 
 class Stacker:
@@ -16,9 +17,9 @@ class Stacker:
             self,
             mu_bins,
             redshift_bins,
-            cosmo_params=defaults.DefaultCosmology(),
-            selection_func_file=defaults.DefaultSelectionFunc(),
-            lensing_weights_file=defaults.DefaultLensingWeights(),
+            cosmo_params=maszcal.defaults.DefaultCosmology(),
+            selection_func_file=maszcal.defaults.DefaultSelectionFunc(),
+            lensing_weights_file=maszcal.defaults.DefaultLensingWeights(),
             delta=None,
             units=None,
     ):
@@ -26,22 +27,22 @@ class Stacker:
         self.mus = mu_bins
         self.zs = redshift_bins
 
-        if isinstance(cosmo_params, defaults.DefaultCosmology):
+        if isinstance(cosmo_params, maszcal.defaults.DefaultCosmology):
             self.cosmo_params = CosmoParams()
         else:
             self.cosmo_params = cosmo_params
 
         self.astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
 
-        if isinstance(selection_func_file, defaults.DefaultSelectionFunc):
+        if isinstance(selection_func_file, maszcal.defaults.DefaultSelectionFunc):
             self.selection_func = self._default_selection_func
         else:
-            self.selection_func = ioutils.get_selection_func_interpolator(selection_func_file)
+            self.selection_func = maszcal.ioutils.get_selection_func_interpolator(selection_func_file)
 
-        if isinstance(lensing_weights_file, defaults.DefaultLensingWeights):
+        if isinstance(lensing_weights_file, maszcal.defaults.DefaultLensingWeights):
             self.lensing_weights = self._default_lensing_weights
         else:
-            self.lensing_weights = ioutils.get_lensing_weights_interpolator(lensing_weights_file)
+            self.lensing_weights = maszcal.ioutils.get_lensing_weights_interpolator(lensing_weights_file)
 
         if delta is not None:
             self.delta = delta
@@ -158,13 +159,13 @@ class Stacker:
         SHAPE params
         """
         dmu_szs = np.gradient(self.mu_szs)
-        mu_sz_integral = mathutils.trapz_(self._sz_measure(a_szs), axis=0, dx=dmu_szs)
+        mu_sz_integral = maszcal.mathutils.trapz_(self._sz_measure(a_szs), axis=0, dx=dmu_szs)
 
         dmus = np.gradient(self.mus)
-        mu_integral = mathutils.trapz_(self.dnumber_dlogmass()[..., None] * mu_sz_integral, axis=0, dx=dmus)
+        mu_integral = maszcal.mathutils.trapz_(self.dnumber_dlogmass()[..., None] * mu_sz_integral, axis=0, dx=dmus)
 
         dzs = np.gradient(self.zs)
-        z_integral = mathutils.trapz_(
+        z_integral = maszcal.mathutils.trapz_(
             ((
                 self.lensing_weights(self.zs) * self.comoving_vol()
             )[:, None] * mu_integral),
@@ -179,7 +180,7 @@ class Stacker:
         SHAPE r, params
         """
         dmu_szs = np.gradient(self.mu_szs)
-        mu_sz_integral = mathutils.trapz_(
+        mu_sz_integral = maszcal.mathutils.trapz_(
             (self._sz_measure(a_szs)[:, :, :, None, :]
              * delta_sigmas[None, ...]),
             axis=0,
@@ -187,14 +188,14 @@ class Stacker:
         )
 
         dmus = np.gradient(self.mus)
-        mu_integral = mathutils.trapz_(
+        mu_integral = maszcal.mathutils.trapz_(
             self.dnumber_dlogmass()[..., None, None] * mu_sz_integral,
             axis=0,
             dx=dmus
         )
 
         dzs = np.gradient(self.zs)
-        z_integral = mathutils.trapz_(
+        z_integral = maszcal.mathutils.trapz_(
             ((
                 self.lensing_weights(self.zs) * self.comoving_vol()
              )[:, None, None] * mu_integral),
@@ -208,21 +209,21 @@ class Stacker:
         mass_wl = self.mass(self.mus)
 
         dmu_szs = np.gradient(self.mu_szs)
-        mu_sz_integral = mathutils.trapz_(
+        mu_sz_integral = maszcal.mathutils.trapz_(
             self._sz_measure(a_szs) * mass_wl[None, :, None, None],
             axis=0,
             dx=dmu_szs
         )
 
         dmus = np.gradient(self.mus)
-        mu_integral = mathutils.trapz_(
+        mu_integral = maszcal.mathutils.trapz_(
             self.dnumber_dlogmass()[..., None] * mu_sz_integral,
             axis=0,
             dx=dmus
         )
 
         dzs = np.gradient(self.zs)
-        z_integral = mathutils.trapz_(
+        z_integral = maszcal.mathutils.trapz_(
             ((
                 self.lensing_weights(self.zs) * self.comoving_vol()
             )[:, None] * mu_integral),
@@ -242,16 +243,16 @@ class StackedModel:
             self,
             mu_bins,
             redshift_bins,
-            selection_func_file=defaults.DefaultSelectionFunc(),
-            lensing_weights_file=defaults.DefaultLensingWeights(),
-            cosmo_params=defaults.DefaultCosmology(),
+            selection_func_file=maszcal.defaults.DefaultSelectionFunc(),
+            lensing_weights_file=maszcal.defaults.DefaultLensingWeights(),
+            cosmo_params=maszcal.defaults.DefaultCosmology(),
             units=u.Msun/u.pc**2,
             comoving_radii=True,
             delta=200,
             mass_definition='mean',
     ):
 
-        if isinstance(cosmo_params, defaults.DefaultCosmology):
+        if isinstance(cosmo_params, maszcal.defaults.DefaultCosmology):
             self.cosmo_params = CosmoParams()
         else:
             self.cosmo_params = cosmo_params
@@ -270,7 +271,7 @@ class StackedModel:
         self.comoving_radii = comoving_radii
 
     def _init_nfw(self):
-        self.nfw_model = NfwModel(
+        self.nfw_model = maszcal.nfw.NfwModel(
             cosmo_params=self.cosmo_params,
             units=self.units,
             delta=self.delta,
@@ -321,6 +322,53 @@ class StackedModel:
             return self.stacker.weak_lensing_avg_mass(a_szs)
 
 
+class StackedTestModel(StackedModel):
+    """
+    Changes some methods to enable use of a concentration-mass relation
+    """
+    def _init_con_model(self):
+        mass_def = str(self.delta) + self.mass_definition[0]
+        self._con_model = ConModel(mass_def, cosmology=self.cosmo_params)
+
+    def _con(self, masses):
+        mass_def = str(self.delta) + self.mass_definition[0]
+        try:
+            return self._con_model.c(masses, self.zs, mass_def)
+        except AttributeError:
+            self._init_con_model()
+            return self._con_model.c(masses, self.zs, mass_def)
+
+    def _init_nfw(self):
+        self.nfw_model = maszcal.nfw.NfwTestModel(
+            cosmo_params=self.cosmo_params,
+            units=self.units,
+            delta=self.delta,
+            mass_definition=self.mass_definition,
+            comoving=self.comoving_radii,
+        )
+
+    def delta_sigma(self, rs, mus):
+        """
+        SHAPE mu, z, r, params
+        """
+        masses = self.mass(mus)
+
+        try:
+            return self.nfw_model.delta_sigma(rs, self.zs, masses, self._con(masses))
+        except AttributeError:
+            self._init_nfw()
+            return self.nfw_model.delta_sigma(rs, self.zs, masses, self._con(masses))
+
+    def stacked_delta_sigma(self, rs, a_szs):
+        delta_sigmas = self.delta_sigma(rs, self.mus)
+
+        try:
+            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
+        except AttributeError:
+            self._init_stacker()
+            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
+
+
 class SingleMassModel:
     def __init__(
             self,
@@ -329,7 +377,7 @@ class SingleMassModel:
             comoving_radii=True,
             delta=200,
             mass_definition='mean',
-            cosmo_params=defaults.DefaultCosmology(),
+            cosmo_params=maszcal.defaults.DefaultCosmology(),
     ):
 
         self.redshift = np.array([redshift])
@@ -338,7 +386,7 @@ class SingleMassModel:
         self.delta = delta
         self.mass_definition = mass_definition
 
-        if isinstance(cosmo_params, defaults.DefaultCosmology):
+        if isinstance(cosmo_params, maszcal.defaults.DefaultCosmology):
             self.cosmo_params = CosmoParams()
         else:
             self.cosmo_params = cosmo_params
@@ -346,7 +394,7 @@ class SingleMassModel:
         self.astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
 
     def _init_nfw(self):
-        self.nfw_model = NfwModel(
+        self.nfw_model = maszcal.nfw.NfwModel(
             cosmo_params=self.cosmo_params,
             units=self.units,
             delta=self.delta,
@@ -373,15 +421,15 @@ class GnfwBaryonModel:
             self,
             mu_bins,
             redshift_bins,
-            selection_func_file=defaults.DefaultSelectionFunc(),
-            lensing_weights_file=defaults.DefaultLensingWeights(),
-            cosmo_params=defaults.DefaultCosmology(),
+            selection_func_file=maszcal.defaults.DefaultSelectionFunc(),
+            lensing_weights_file=maszcal.defaults.DefaultLensingWeights(),
+            cosmo_params=maszcal.defaults.DefaultCosmology(),
             units=u.Msun/u.pc**2,
             comoving_radii=True,
             delta=200,
             mass_definition='mean',
     ):
-        if isinstance(cosmo_params, defaults.DefaultCosmology):
+        if isinstance(cosmo_params, maszcal.defaults.DefaultCosmology):
             self.cosmo_params = CosmoParams()
         else:
             self.cosmo_params = cosmo_params
@@ -407,7 +455,7 @@ class GnfwBaryonModel:
         self.NUM_INTEGRATION_RADII = 200
 
     def _init_nfw(self):
-        self.nfw_model = NfwModel(
+        self.nfw_model = maszcal.nfw.NfwModel(
             cosmo_params=self.cosmo_params,
             units=self.units,
             delta=self.delta,
@@ -444,7 +492,7 @@ class GnfwBaryonModel:
         """
         SHAPE mu, z, rs.shape, params
         """
-        ys = (rs[None, None, ...]/mathutils.atleast_kd(self._r_delta(mus), rs.ndim+2)) / self.CORE_RADIUS
+        ys = (rs[None, None, ...]/maszcal.mathutils.atleast_kd(self._r_delta(mus), rs.ndim+2)) / self.CORE_RADIUS
         ys = ys[..., None]
 
         alphas = alphas.reshape((rs.ndim + 2)*(1,) + (alphas.size,))
@@ -467,7 +515,8 @@ class GnfwBaryonModel:
         top_integrand = self._rho_nfw(rs, mus, cons) * rs[None, None, :, None]**2
         bottom_integrand = self.gnfw_shape(rs, mus, cons, alphas, betas, gammas) * rs[None, None, :, None]**2
 
-        return mathutils.trapz_(top_integrand, dx=drs, axis=-2)/mathutils.trapz_(bottom_integrand, dx=drs, axis=-2)
+        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-2)
+                /maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=-2))
 
     def _rho_gnfw(self, rs, mus, cons, alphas, betas, gammas):
         norm = self._gnfw_norm(mus, cons, alphas, betas, gammas)
@@ -555,7 +604,7 @@ class SingleMassBaryonModel:
             comoving_radii=True,
             delta=200,
             mass_definition='mean',
-            cosmo_params=defaults.DefaultCosmology(),
+            cosmo_params=maszcal.defaults.DefaultCosmology(),
     ):
         self.redshift = np.array([redshift])
         self.units = units
@@ -563,7 +612,7 @@ class SingleMassBaryonModel:
         self.delta = delta
         self.mass_definition = mass_definition
 
-        if isinstance(cosmo_params, defaults.DefaultCosmology):
+        if isinstance(cosmo_params, maszcal.defaults.DefaultCosmology):
             self.cosmo_params = CosmoParams()
         else:
             self.cosmo_params = cosmo_params
@@ -578,7 +627,7 @@ class SingleMassBaryonModel:
         self.NUM_INTEGRATION_RADII = 200
 
     def _init_nfw(self):
-        self.nfw_model = NfwModel(
+        self.nfw_model = maszcal.nfw.NfwModel(
             cosmo_params=self.cosmo_params,
             units=self.units,
             delta=self.delta,
@@ -604,7 +653,7 @@ class SingleMassBaryonModel:
         """
         SHAPE mu, z, rs.shape, params
         """
-        ys = (rs[..., None]/mathutils.atleast_kd(self._r_delta(mus), rs.ndim+1)) / self.CORE_RADIUS
+        ys = (rs[..., None]/maszcal.mathutils.atleast_kd(self._r_delta(mus), rs.ndim+1)) / self.CORE_RADIUS
 
         alphas = alphas[None, :]
         betas = betas[None, :]
@@ -626,7 +675,8 @@ class SingleMassBaryonModel:
         top_integrand = self._rho_nfw(rs, mus, cons) * rs[:, None]**2
         bottom_integrand = self.gnfw_shape(rs, mus, cons, alphas, betas, gammas) * rs[:, None]**2
 
-        return mathutils.trapz_(top_integrand, dx=drs, axis=-2)/mathutils.trapz_(bottom_integrand, dx=drs, axis=0)
+        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-2)
+                /maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=0))
 
     def _rho_gnfw(self, rs, mus, cons, alphas, betas, gammas):
         norm = self._gnfw_norm(mus, cons, alphas, betas, gammas)[None, :]
