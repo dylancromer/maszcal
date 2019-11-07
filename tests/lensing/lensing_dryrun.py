@@ -47,26 +47,6 @@ def describe_lensing():
 
             assert np.all(esd_stacked_model == esd_lensing_signal)
 
-    def describe_stacked_gb_lensing_signal():
-
-        def it_matches_the_underlying_model():
-            mus = np.linspace(np.log(1e14), np.log(1e15), 10)
-            redshifts = np.linspace(0, 2, 5)
-            rs = np.logspace(-1, 1, 5)
-
-            con = 3
-            a_sz = 0
-            ln_baryon_var = np.log(6e-2)
-            params = np.array([[con, a_sz, ln_baryon_var]])
-
-            lensing_signal = lensing.StackedGbLensingSignal(log_masses=mus, redshifts=redshifts)
-            gaussian_baryon_model = model.GaussianBaryonModel(mu_bins=mus, redshift_bins=redshifts)
-
-            esd_lensing_signal = lensing_signal.esd(rs, params)
-            esd_baryon_model = gaussian_baryon_model.stacked_delta_sigma(rs, np.array([con]), np.array([a_sz]), np.array([ln_baryon_var]))
-
-            assert np.all(esd_lensing_signal == esd_baryon_model)
-
     def describe_stacked_baryon_lensing_signal():
 
         def it_matches_the_underlying_model():
@@ -95,3 +75,24 @@ def describe_lensing():
             )
 
             assert np.all(esd_lensing_signal == esd_baryon_model)
+
+    def describe_stacked_test_lensing_signal():
+
+        def it_matches_the_underlying_model():
+            mus = np.linspace(np.log(1e14), np.log(1e15), 10)
+            redshifts = np.linspace(0, 2, 5)
+            rs = np.logspace(-1, 1, 5)
+
+            a_sz = -0.01
+            params = np.array([[a_sz]])
+
+            lensing_signal = lensing.StackedTestLensingSignal(log_masses=mus, redshifts=redshifts)
+            test_model = model.StackedTestModel(mu_bins=mus, redshift_bins=redshifts)
+
+            esd_lensing_signal = lensing_signal.stacked_esd(rs, params)
+            esd_test_model = test_model.stacked_delta_sigma(
+                rs,
+                np.array([a_sz]),
+            )
+
+            assert np.all(esd_lensing_signal == esd_test_model)

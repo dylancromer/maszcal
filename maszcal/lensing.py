@@ -107,6 +107,29 @@ class StackedLensingSignal:
             return self.stacked_model.stacked_delta_sigma(rs, cons, a_szs)
 
 
+class StackedTestLensingSignal(StackedLensingSignal):
+    def _init_stacked_model(self):
+        self.stacked_model = model.StackedTestModel(
+            self.log_masses,
+            self.redshifts,
+            cosmo_params=self.cosmo_params,
+            units=self.units,
+            comoving_radii=self.comoving,
+            selection_func_file=self.selection_func_file,
+            lensing_weights_file=self.lensing_weights_file,
+            delta=self.delta,
+            mass_definition=self.mass_definition,
+        )
+
+    def stacked_esd(self, rs, params):
+        a_szs = params.flatten()
+        try:
+            return self.stacked_model.stacked_delta_sigma(rs, a_szs)
+        except AttributeError:
+            self._init_stacked_model()
+            return self.stacked_model.stacked_delta_sigma(rs, a_szs)
+
+
 class StackedBaryonLensingSignal:
     def __init__(
             self,
