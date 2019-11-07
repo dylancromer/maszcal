@@ -234,6 +234,41 @@ class Stacker:
         return z_integral/self.number_sz(a_szs)
 
 
+class TestStacker(Stacker):
+    '''
+    Changes a method to allow use of a con-mass relation
+    '''
+    def stacked_delta_sigma(self, delta_sigmas, rs, a_szs):
+        """
+        SHAPE r, params
+        """
+        dmu_szs = np.gradient(self.mu_szs)
+        mu_sz_integral = maszcal.mathutils.trapz_(
+            (self._sz_measure(a_szs)[:, :, :, None, :]
+             * delta_sigmas[None, ..., None]),
+            axis=0,
+            dx=dmu_szs,
+        )
+
+        dmus = np.gradient(self.mus)
+        mu_integral = maszcal.mathutils.trapz_(
+            self.dnumber_dlogmass()[..., None, None] * mu_sz_integral,
+            axis=0,
+            dx=dmus
+        )
+
+        dzs = np.gradient(self.zs)
+        z_integral = maszcal.mathutils.trapz_(
+            ((
+                self.lensing_weights(self.zs) * self.comoving_vol()
+             )[:, None, None] * mu_integral),
+            axis=0,
+            dx=dzs
+        )
+
+        return z_integral/self.number_sz(a_szs)[None, :]
+
+
 class StackedModel:
     """
     Canonical variable order:
@@ -326,6 +361,17 @@ class StackedTestModel(StackedModel):
     """
     Changes some methods to enable use of a concentration-mass relation
     """
+    def _init_stacker(self):
+        self.stacker = TestStacker(
+            mu_bins=self.mus,
+            redshift_bins=self.zs,
+            cosmo_params=self.cosmo_params,
+            selection_func_file=self.selection_func_file,
+            lensing_weights_file=self.lensing_weights_file,
+            delta=self.delta,
+            units=self.units,
+        )
+
     def _init_con_model(self):
         mass_def = str(self.delta) + self.mass_definition[0]
         self._con_model = ConModel(mass_def, cosmology=self.cosmo_params)

@@ -28,16 +28,11 @@ def describe_stacked_model():
             mocker.patch('maszcal.model.ConModel', new=FakeConModel)
 
             model = StackedTestModel(mus, zs)
+            model._init_stacker()
 
             return model
 
-        def it_computes_weak_lensing_avg_mass(mocker):
-            mus = np.linspace(np.log(1e12), np.log(1e16), 20)
-            zs = np.linspace(0, 2, 8)
-            stacked_model = StackedTestModel(mus, zs)
-            stacked_model._init_stacker()
-            mocker.patch('maszcal.model.ConModel', new=FakeConModel)
-
+        def it_computes_weak_lensing_avg_mass(stacked_model):
             stacked_model.stacker.dnumber_dlogmass = lambda : np.ones(
                 (stacked_model.mus.size, stacked_model.zs.size)
             )
@@ -68,3 +63,16 @@ def describe_stacked_model():
             delta_sigs_200m = model.delta_sigma(rs, mus)
 
             assert np.all(delta_sigs_200m < delta_sigs_500c)
+
+        def it_computes_stacked_delta_sigmas_with_the_right_shape(stacked_model):
+            stacked_model.stacker.dnumber_dlogmass = lambda : np.ones(
+                (stacked_model.mus.size, stacked_model.zs.size)
+            )
+
+            a_szs = np.linspace(-1, 1, 1)
+
+            rs = np.logspace(-1, 1, 4)
+
+            delta_sigs_stacked = stacked_model.stacked_delta_sigma(rs, a_szs)
+
+            assert delta_sigs_stacked.shape == (4, 1)
