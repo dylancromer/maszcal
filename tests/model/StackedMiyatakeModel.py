@@ -9,12 +9,12 @@ from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
 import seaborn as sns
 sns.set(style='whitegrid', font_scale=1.5, rc={"lines.linewidth": 2,'lines.markersize': 8.0,})
-from maszcal.model import StackedTestModel
+from maszcal.model import StackedMiyatakeModel
 
 
 mus = np.array([np.log(1e15)])
 zs = np.linspace(0, 2, 20)
-stacked_model = StackedTestModel(mus, zs, units=u.Msun/(u.pc**2), delta=500, mass_definition='crit')
+stacked_model = StackedMiyatakeModel(mus, zs, units=u.Msun/(u.pc**2), delta=500, mass_definition='crit')
 
 
 def test_delta_sigma_of_m():
@@ -42,7 +42,7 @@ def test_delta_sigma_of_r():
 
     a_szs = np.zeros(1)
 
-    stacked_model = StackedTestModel(mubins, zbins)
+    stacked_model = StackedMiyatakeModel(mubins, zbins)
 
     rs = np.logspace(-1, 2, 40)
 
@@ -87,7 +87,7 @@ def test_delta_sigma_of_r_nocomoving():
     mubins = np.linspace(np.log(1e14), np.log(1e16), 29)
     zbins = np.linspace(0, 2, 30)
 
-    stacked_model = StackedTestModel(mubins, zbins)
+    stacked_model = StackedMiyatakeModel(mubins, zbins)
     stacked_model.comoving_radii = False
 
     rs = np.logspace(-1, 2, 40)

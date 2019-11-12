@@ -76,7 +76,7 @@ def describe_lensing():
 
             assert np.all(esd_lensing_signal == esd_baryon_model)
 
-    def describe_stacked_test_lensing_signal():
+    def describe_miyatake_lensing_signal():
 
         def it_matches_the_underlying_model():
             mus = np.linspace(np.log(1e14), np.log(1e15), 10)
@@ -86,8 +86,8 @@ def describe_lensing():
             a_sz = -0.01
             params = np.array([[a_sz]])
 
-            lensing_signal = lensing.StackedTestLensingSignal(log_masses=mus, redshifts=redshifts)
-            test_model = model.StackedTestModel(mu_bins=mus, redshift_bins=redshifts)
+            lensing_signal = lensing.MiyatakeLensingSignal(log_masses=mus, redshifts=redshifts)
+            test_model = model.StackedMiyatakeModel(mu_bins=mus, redshift_bins=redshifts)
 
             esd_lensing_signal = lensing_signal.stacked_esd(rs, params)
             esd_test_model = test_model.stacked_delta_sigma(

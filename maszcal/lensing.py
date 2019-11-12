@@ -107,9 +107,9 @@ class StackedLensingSignal:
             return self.stacked_model.stacked_delta_sigma(rs, cons, a_szs)
 
 
-class StackedTestLensingSignal(StackedLensingSignal):
+class MiyatakeLensingSignal(StackedLensingSignal):
     def _init_stacked_model(self):
-        self.stacked_model = model.StackedTestModel(
+        self.stacked_model = model.StackedMiyatakeModel(
             self.log_masses,
             self.redshifts,
             cosmo_params=self.cosmo_params,

@@ -4,7 +4,7 @@ import json
 import pytest
 import numpy as np
 import astropy.units as u
-from maszcal.model import TestStacker
+from maszcal.model import MiyatakeStacker
 from maszcal.ioutils import NumpyEncoder
 
 
@@ -16,7 +16,7 @@ def describe_stacker():
         def stacker():
             mus = np.linspace(np.log(1e14), np.log(1e15), 10)
             redshifts = np.linspace(0, 1, 8)
-            return TestStacker(mus, redshifts, units=u.Msun/u.pc**2, delta=200)
+            return MiyatakeStacker(mus, redshifts, units=u.Msun/u.pc**2, delta=200)
 
         def prob_musz_given_mu_is_not_negative(stacker):
             mu_szs = np.linspace(np.log(1e12), np.log(1e16), 10)

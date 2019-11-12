@@ -234,7 +234,7 @@ class Stacker:
         return z_integral/self.number_sz(a_szs)
 
 
-class TestStacker(Stacker):
+class MiyatakeStacker(Stacker):
     '''
     Changes a method to allow use of a con-mass relation
     '''
@@ -260,6 +260,7 @@ class TestStacker(Stacker):
         )
 
         self.mass_definition = mass_definition
+        self.__test__ = False
 
     def stacked_delta_sigma(self, delta_sigmas, rs, a_szs):
         """
@@ -423,12 +424,12 @@ class StackedModel:
             return self.stacker.weak_lensing_avg_mass(a_szs)
 
 
-class StackedTestModel(StackedModel):
+class StackedMiyatakeModel(StackedModel):
     """
     Changes some methods to enable use of a concentration-mass relation
     """
     def _init_stacker(self):
-        self.stacker = TestStacker(
+        self.stacker = MiyatakeStacker(
             mu_bins=self.mus,
             redshift_bins=self.zs,
             cosmo_params=self.cosmo_params,
