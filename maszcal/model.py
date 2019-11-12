@@ -298,12 +298,13 @@ class MiyatakeStacker(Stacker):
 
     def _m500c(self, mus):
         masses = self.mass(mus)
+        mass_def = str(self.delta) + self.mass_definition[0]
 
         try:
-            masses_500c = self._con_model.convert_mass_def(masses, self.zs, self.mass_definition, '500c')
+            masses_500c = self._con_model.convert_mass_def(masses, self.zs, mass_def, '500c')
         except AttributeError:
             self._init_con_model()
-            masses_500c = self._con_model.convert_mass_def(masses, self.zs, self.mass_definition, '500c')
+            masses_500c = self._con_model.convert_mass_def(masses, self.zs, mass_def, '500c')
 
         return masses_500c
 
