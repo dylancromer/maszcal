@@ -20,15 +20,15 @@ def describe_gaussian_baryonic_model():
         def baryon_model():
             mus = np.linspace(np.log(1e14), np.log(1e15), 30)
             zs = np.linspace(0, 1, 20)
-            return GnfwBaryonModel(mus, zs)
+            return GnfwBaryonModel(mus, zs, mass_definition='crit', delta=500)
 
         def the_plots_look_right(baryon_model):
             radii = np.logspace(-1, 1, 30)
             mus = np.log(1e14)*np.ones(1)
-            cons = 3*np.ones(1)
-            alphas = np.ones(1)
-            betas = np.linspace(3, 5, 3)
-            gammas = np.ones(1)
+            cons = 2*np.ones(1)
+            alphas = 0.5*np.ones(1)
+            betas = np.linspace(2.8, 3.2, 3)
+            gammas = 0.5*np.ones(1)
 
             rhos = baryon_model.rho_bary(radii, mus, cons, alphas, betas, gammas)[:, 0, 0, :]
 
@@ -53,10 +53,10 @@ def describe_gaussian_baryonic_model():
         def the_plots_look_right(baryon_model):
             radii = np.logspace(-1, 1, 30)
             mus = np.log(1e14)*np.ones(1)
-            cons = 3*np.ones(1)
-            alphas = np.ones(1)
-            betas = np.linspace(3, 5, 3)
-            gammas = np.ones(1)
+            cons = 2*np.ones(1)
+            alphas = 0.5*np.ones(1)
+            betas = np.linspace(2.8, 3.2, 3)
+            gammas = 0.5*np.ones(1)
 
             esds = baryon_model.delta_sigma_bary(radii, mus, cons, alphas, betas, gammas)[0, 0, :, :]
 
@@ -80,10 +80,10 @@ def describe_gaussian_baryonic_model():
         def the_plots_look_right(baryon_model):
             radii = np.logspace(-1, 1, 30)
             mus = np.log(1e14)*np.ones(1)
-            cons = 3*np.ones(1)
-            alphas = np.ones(1)
-            betas = np.linspace(3, 5, 3)
-            gammas = np.ones(1)
+            cons = 2*np.ones(1)
+            alphas = 0.5*np.ones(1)
+            betas = np.linspace(2.8, 3.2, 3)
+            gammas = 0.5*np.ones(1)
 
             esds = baryon_model.delta_sigma_total(radii, mus, cons, alphas, betas, gammas)[0, 0, :, :]
 
@@ -106,11 +106,11 @@ def describe_gaussian_baryonic_model():
 
         def the_plots_look_right(baryon_model):
             radii = np.logspace(-1, 1, 30)
-            cons = 3*np.ones(1)
-            alphas = np.ones(1)
-            betas = np.linspace(1, 5, 5)
-            gammas = np.ones(1)
-            a_szs = -0.3*np.ones(1)
+            cons = 2*np.ones(1)
+            alphas = 0.5*np.ones(1)
+            betas = np.linspace(2.8, 3.2, 3)
+            gammas = 0.5*np.ones(1)
+            a_szs = 0.3*np.ones(1)
 
             esds = baryon_model.stacked_delta_sigma(radii, cons, alphas, betas, gammas, a_szs)
 

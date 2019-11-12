@@ -10,6 +10,9 @@ class FakeConModel:
     def c(self, masses, redshifts, mass_def):
         return np.ones((masses.size, redshifts.size))
 
+    def convert_mass_def(self, masses, redshifts, old_def, new_def):
+        return np.ones((masses.size, redshifts.size))
+
 
 def describe_stacked_model():
 
@@ -42,6 +45,7 @@ def describe_stacked_model():
             avg_wl_mass = stacked_model.weak_lensing_avg_mass(a_szs)
 
             assert avg_wl_mass.shape == (1,)
+            assert avg_wl_mass > 0
 
         def it_can_use_different_mass_definitions(mocker):
             mocker.patch('maszcal.model.ConModel', new=FakeConModel)

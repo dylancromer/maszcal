@@ -238,6 +238,29 @@ class TestStacker(Stacker):
     '''
     Changes a method to allow use of a con-mass relation
     '''
+    def __init__(
+            self,
+            mu_bins,
+            redshift_bins,
+            cosmo_params=maszcal.defaults.DefaultCosmology(),
+            selection_func_file=maszcal.defaults.DefaultSelectionFunc(),
+            lensing_weights_file=maszcal.defaults.DefaultLensingWeights(),
+            mass_definition='200m',
+            delta=None,
+            units=None,
+    ):
+        super().__init__(
+            mu_bins=mu_bins,
+            redshift_bins=redshift_bins,
+            cosmo_params=cosmo_params,
+            selection_func_file=selection_func_file,
+            lensing_weights_file=lensing_weights_file,
+            delta=delta,
+            units=units,
+        )
+
+        self.mass_definition = mass_definition
+
     def stacked_delta_sigma(self, delta_sigmas, rs, a_szs):
         """
         SHAPE r, params
@@ -267,6 +290,49 @@ class TestStacker(Stacker):
         )
 
         return z_integral/self.number_sz(a_szs)[None, :]
+
+    def _init_con_model(self):
+        mass_def = str(self.delta) + self.mass_definition[0]
+        self._con_model = ConModel(mass_def, cosmology=self.cosmo_params)
+
+    def _m500c(self, mus):
+        masses = self.mass(mus)
+
+        try:
+            masses_500c = self._con_model.convert_mass_def(masses, self.zs, self.mass_definition, '500c')
+        except AttributeError:
+            self._init_con_model()
+            masses_500c = self._con_model.convert_mass_def(masses, self.zs, self.mass_definition, '500c')
+
+        return masses_500c
+
+    def weak_lensing_avg_mass(self, a_szs):
+        masses_500c = self._m500c(self.mus)
+
+        dmu_szs = np.gradient(self.mu_szs)
+        mu_sz_integral = maszcal.mathutils.trapz_(
+            self._sz_measure(a_szs) * masses_500c[None, :, :, None],
+            axis=0,
+            dx=dmu_szs
+        )
+
+        dmus = np.gradient(self.mus)
+        mu_integral = maszcal.mathutils.trapz_(
+            self.dnumber_dlogmass()[..., None] * mu_sz_integral,
+            axis=0,
+            dx=dmus
+        )
+
+        dzs = np.gradient(self.zs)
+        z_integral = maszcal.mathutils.trapz_(
+            ((
+                self.lensing_weights(self.zs) * self.comoving_vol()
+            )[:, None] * mu_integral),
+            axis=0,
+            dx=dzs
+        )
+
+        return z_integral/self.number_sz(a_szs)
 
 
 class StackedModel:
@@ -369,6 +435,7 @@ class StackedTestModel(StackedModel):
             selection_func_file=self.selection_func_file,
             lensing_weights_file=self.lensing_weights_file,
             delta=self.delta,
+            mass_definition=self.mass_definition,
             units=self.units,
         )
 
