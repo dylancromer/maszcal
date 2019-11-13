@@ -106,6 +106,13 @@ class StackedLensingSignal:
             self._init_stacked_model()
             return self.stacked_model.stacked_delta_sigma(rs, cons, a_szs)
 
+    def avg_mass(self, a_szs):
+        try:
+            return self.stacked_model.weak_lensing_avg_mass(a_szs)
+        except AttributeError:
+            self._init_stacked_model()
+            return self.stacked_model.weak_lensing_avg_mass(a_szs)
+
 
 class MiyatakeLensingSignal(StackedLensingSignal):
     def _init_stacked_model(self):
@@ -128,6 +135,13 @@ class MiyatakeLensingSignal(StackedLensingSignal):
         except AttributeError:
             self._init_stacked_model()
             return self.stacked_model.stacked_delta_sigma(rs, a_szs)
+
+    def avg_mass(self, a_szs):
+        try:
+            return self.stacked_model.weak_lensing_avg_mass(a_szs)
+        except AttributeError:
+            self._init_stacked_model()
+            return self.stacked_model.weak_lensing_avg_mass(a_szs)
 
 
 class StackedBaryonLensingSignal:
@@ -186,6 +200,13 @@ class StackedBaryonLensingSignal:
         except AttributeError:
             self._init_baryon_model()
             return self.baryon_model.stacked_delta_sigma(rs, cons, alphas, betas, gammas, a_szs)
+
+    def avg_mass(self, a_szs):
+        try:
+            return self.baryon_model.weak_lensing_avg_mass(a_szs)
+        except AttributeError:
+            self._init_baryon_model()
+            return self.baryon_model.weak_lensing_avg_mass(a_szs)
 
 
 class SingleBaryonLensingSignal:
