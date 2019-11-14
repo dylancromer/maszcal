@@ -22,6 +22,7 @@ class Stacker:
             lensing_weights_file=maszcal.defaults.DefaultLensingWeights(),
             delta=None,
             units=None,
+            sz_scatter=None,
     ):
         self.mu_szs = mu_bins
         self.mus = mu_bins
@@ -54,7 +55,11 @@ class Stacker:
         else:
             raise ValueError('units must be specified')
 
-        self.sigma_muszmu = 0.2
+        if sz_scatter is not None:
+            self.sz_scatter = sz_scatter
+        else:
+            raise ValueError('sz_scatter must be specified')
+
         self.b_sz = 1
 
         self.max_k = 10
@@ -85,11 +90,11 @@ class Stacker:
         """
         SHAPE mu_sz, mu, params
         """
-        pref = 1/(np.sqrt(2*np.pi) * self.sigma_muszmu)
+        pref = 1/(np.sqrt(2*np.pi) * self.sz_scatter)
 
         diff = (mu_szs[:, None] - mus[None, :])[..., None] - a_szs[None, None, :]
 
-        exps = np.exp(-diff**2 / (2*(self.sigma_muszmu)**2))
+        exps = np.exp(-diff**2 / (2*(self.sz_scatter)**2))
 
         return pref*exps
 
@@ -248,6 +253,7 @@ class MiyatakeStacker(Stacker):
             mass_definition='200m',
             delta=None,
             units=None,
+            sz_scatter=None,
     ):
         super().__init__(
             mu_bins=mu_bins,
@@ -257,6 +263,7 @@ class MiyatakeStacker(Stacker):
             lensing_weights_file=lensing_weights_file,
             delta=delta,
             units=units,
+            sz_scatter=sz_scatter,
         )
 
         self.mass_definition = mass_definition
@@ -353,6 +360,7 @@ class StackedModel:
             comoving_radii=True,
             delta=200,
             mass_definition='mean',
+            sz_scatter=0.2,
     ):
 
         if isinstance(cosmo_params, maszcal.defaults.DefaultCosmology):
@@ -373,6 +381,8 @@ class StackedModel:
         self.units = units
         self.comoving_radii = comoving_radii
 
+        self.sz_scatter = sz_scatter
+
     def _init_nfw(self):
         self.nfw_model = maszcal.nfw.NfwModel(
             cosmo_params=self.cosmo_params,
@@ -391,6 +401,7 @@ class StackedModel:
             lensing_weights_file=self.lensing_weights_file,
             delta=self.delta,
             units=self.units,
+            sz_scatter=self.sz_scatter,
         )
 
     def mass(self, mus):
@@ -439,6 +450,7 @@ class StackedMiyatakeModel(StackedModel):
             delta=self.delta,
             mass_definition=self.mass_definition,
             units=self.units,
+            sz_scatter=self.sz_scatter,
         )
 
     def _init_con_model(self):
@@ -543,6 +555,7 @@ class GnfwBaryonModel:
             comoving_radii=True,
             delta=200,
             mass_definition='mean',
+            sz_scatter=0.2,
     ):
         if isinstance(cosmo_params, maszcal.defaults.DefaultCosmology):
             self.cosmo_params = CosmoParams()
@@ -561,6 +574,8 @@ class GnfwBaryonModel:
 
         self.units = units
         self.comoving_radii = comoving_radii
+
+        self.sz_scatter = sz_scatter
 
         self.baryon_frac = self.cosmo_params.omega_bary/self.cosmo_params.omega_matter
 
@@ -587,6 +602,7 @@ class GnfwBaryonModel:
             lensing_weights_file=self.lensing_weights_file,
             delta=self.delta,
             units=self.units,
+            sz_scatter=self.sz_scatter,
         )
 
     def mass(self, mu):
