@@ -64,6 +64,7 @@ class StackedLensingSignal:
             cosmo_params=defaults.DefaultCosmology(),
             selection_func_file=defaults.DefaultSelectionFunc(),
             lensing_weights_file=defaults.DefaultLensingWeights(),
+            sz_scatter=0.2,
     ):
         if not isinstance(log_masses, nothing.NoMasses):
             self.log_masses = log_masses
@@ -84,6 +85,8 @@ class StackedLensingSignal:
         self.selection_func_file = selection_func_file
         self.lensing_weights_file = lensing_weights_file
 
+        self.sz_scatter = sz_scatter
+
     def _init_stacked_model(self):
         self.stacked_model = model.StackedModel(
             self.log_masses,
@@ -95,6 +98,7 @@ class StackedLensingSignal:
             lensing_weights_file=self.lensing_weights_file,
             delta=self.delta,
             mass_definition=self.mass_definition,
+            sz_scatter=self.sz_scatter,
         )
 
     def stacked_esd(self, rs, params):
@@ -126,6 +130,7 @@ class MiyatakeLensingSignal(StackedLensingSignal):
             lensing_weights_file=self.lensing_weights_file,
             delta=self.delta,
             mass_definition=self.mass_definition,
+            sz_scatter=self.sz_scatter,
         )
 
     def stacked_esd(self, rs, params):
@@ -156,6 +161,7 @@ class StackedBaryonLensingSignal:
             cosmo_params=defaults.DefaultCosmology(),
             selection_func_file=defaults.DefaultSelectionFunc(),
             lensing_weights_file=defaults.DefaultLensingWeights(),
+            sz_scatter=0.2,
     ):
         if not isinstance(log_masses, nothing.NoMasses):
             self.log_masses = log_masses
@@ -176,6 +182,8 @@ class StackedBaryonLensingSignal:
         self.selection_func_file = selection_func_file
         self.lensing_weights_file = lensing_weights_file
 
+        self.sz_scatter = sz_scatter
+
     def _init_baryon_model(self):
         self.baryon_model = model.GnfwBaryonModel(
             self.log_masses,
@@ -187,6 +195,7 @@ class StackedBaryonLensingSignal:
             lensing_weights_file=self.lensing_weights_file,
             delta=self.delta,
             mass_definition=self.mass_definition,
+            sz_scatter=self.sz_scatter,
         )
 
     def stacked_esd(self, rs, params):

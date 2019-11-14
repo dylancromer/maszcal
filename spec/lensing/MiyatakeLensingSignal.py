@@ -18,7 +18,7 @@ class FakeStackedMiyatakeModel:
             comoving_radii=True,
             delta=200,
             mass_definition='mean',
-
+            sz_scatter=0.2,
     ):
         pass
 
