@@ -116,12 +116,10 @@ class Stacker:
     def dnumber_dlogmass(self):
         """
         SHAPE mu, z
-
-        UNITS h/Mpc
         """
         masses = self.mass(self.mus)
         overdensity = self.delta
-        rho_matter = self.cosmo_params.rho_crit * self.cosmo_params.omega_matter / self.cosmo_params.h**2
+        rho_matter = self.cosmo_params.rho_crit * self.cosmo_params.omega_matter
 
         try:
             power_spect = self.power_spect
