@@ -16,7 +16,15 @@ def describe_stacker():
         def stacker():
             mus = np.linspace(np.log(1e14), np.log(1e15), 10)
             redshifts = np.linspace(0, 1, 8)
-            return MiyatakeStacker(mus, redshifts, units=u.Msun/u.pc**2, delta=200, sz_scatter=0.2)
+            return MiyatakeStacker(
+                mus,
+                redshifts,
+                units=u.Msun/u.pc**2,
+                delta=200,
+                sz_scatter=0.2,
+                comoving=True,
+                mass_definition='mean',
+            )
 
         def prob_musz_given_mu_is_not_negative(stacker):
             mu_szs = np.linspace(np.log(1e12), np.log(1e16), 10)

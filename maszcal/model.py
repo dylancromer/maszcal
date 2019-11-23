@@ -2,7 +2,7 @@ import numpy as np
 import camb
 from astropy import units as u
 import projector
-from maszcal.tinker import dn_dlogM
+from maszcal.tinker import TinkerHmf
 from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
 from maszcal.concentration import ConModel
@@ -20,7 +20,9 @@ class Stacker:
             cosmo_params=maszcal.defaults.DefaultCosmology(),
             selection_func_file=maszcal.defaults.DefaultSelectionFunc(),
             lensing_weights_file=maszcal.defaults.DefaultLensingWeights(),
+            comoving=None,
             delta=None,
+            mass_definition=None,
             units=None,
             sz_scatter=None,
     ):
@@ -50,6 +52,11 @@ class Stacker:
         else:
             raise ValueError('delta must be specified')
 
+        if mass_definition is not None:
+            self.mass_definition = mass_definition
+        else:
+            raise ValueError('mass_definition must be specified')
+
         if units is not None:
             self.units = units
         else:
@@ -59,6 +66,11 @@ class Stacker:
             self.sz_scatter = sz_scatter
         else:
             raise ValueError('sz_scatter must be specified')
+
+        if comoving is not None:
+            self.comoving = comoving
+        else:
+            raise ValueError('comoving must be specified')
 
         self.b_sz = 1
 
@@ -113,13 +125,19 @@ class Stacker:
                                                                          maxkh=self.max_k,
                                                                          npoints=self.number_ks)
 
+    def _init_tinker_hmf(self):
+        self.mass_func = TinkerHmf(
+            delta=self.delta,
+            mass_definition=self.mass_definition,
+            astropy_cosmology=self.astropy_cosmology,
+            comoving=self.comoving,
+        )
+
     def dnumber_dlogmass(self):
         """
         SHAPE mu, z
         """
         masses = self.mass(self.mus)
-        overdensity = self.delta
-        rho_matter = self.cosmo_params.rho_crit * self.cosmo_params.omega_matter
 
         try:
             power_spect = self.power_spect
@@ -127,15 +145,11 @@ class Stacker:
             self.calc_power_spect()
             power_spect = self.power_spect
 
-        dn_dlogms = dn_dlogM(
-            masses,
-            self.zs,
-            rho_matter,
-            overdensity,
-            self.ks,
-            power_spect,
-            comoving=True
-        )
+        try:
+            dn_dlogms = self.mass_func.dn_dlnm(masses, self.zs, self.ks, power_spect)
+        except AttributeError:
+            self._init_tinker_hmf()
+            dn_dlogms = self.mass_func.dn_dlnm(masses, self.zs, self.ks, power_spect)
 
         return dn_dlogms
 
@@ -241,32 +255,6 @@ class MiyatakeStacker(Stacker):
     '''
     Changes a method to allow use of a con-mass relation
     '''
-    def __init__(
-            self,
-            mu_bins,
-            redshift_bins,
-            cosmo_params=maszcal.defaults.DefaultCosmology(),
-            selection_func_file=maszcal.defaults.DefaultSelectionFunc(),
-            lensing_weights_file=maszcal.defaults.DefaultLensingWeights(),
-            mass_definition='200m',
-            delta=None,
-            units=None,
-            sz_scatter=None,
-    ):
-        super().__init__(
-            mu_bins=mu_bins,
-            redshift_bins=redshift_bins,
-            cosmo_params=cosmo_params,
-            selection_func_file=selection_func_file,
-            lensing_weights_file=lensing_weights_file,
-            delta=delta,
-            units=units,
-            sz_scatter=sz_scatter,
-        )
-
-        self.mass_definition = mass_definition
-        self.__test__ = False
-
     def stacked_delta_sigma(self, delta_sigmas, rs, a_szs):
         """
         SHAPE r, params
@@ -397,7 +385,9 @@ class StackedModel:
             cosmo_params=self.cosmo_params,
             selection_func_file=self.selection_func_file,
             lensing_weights_file=self.lensing_weights_file,
+            comoving=self.comoving_radii,
             delta=self.delta,
+            mass_definition=self.mass_definition,
             units=self.units,
             sz_scatter=self.sz_scatter,
         )
@@ -445,6 +435,7 @@ class StackedMiyatakeModel(StackedModel):
             cosmo_params=self.cosmo_params,
             selection_func_file=self.selection_func_file,
             lensing_weights_file=self.lensing_weights_file,
+            comoving=self.comoving_radii,
             delta=self.delta,
             mass_definition=self.mass_definition,
             units=self.units,
@@ -598,7 +589,9 @@ class GnfwBaryonModel:
             cosmo_params=self.cosmo_params,
             selection_func_file=self.selection_func_file,
             lensing_weights_file=self.lensing_weights_file,
+            comoving=self.comoving_radii,
             delta=self.delta,
+            mass_definition=self.mass_definition,
             units=self.units,
             sz_scatter=self.sz_scatter,
         )

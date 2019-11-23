@@ -55,7 +55,7 @@ def describe_lensing():
             coarse_z_esd = coarse_z_signal.stacked_esd(rs, params)
             fine_z_esd = fine_z_signal.stacked_esd(rs, params)
 
-            assert np.allclose(coarse_z_esd, fine_z_esd, rtol=1e-3)
+            assert np.allclose(coarse_z_esd, fine_z_esd, rtol=1e-2)
 
 
     def describe_stacked_baryon_lensing_signal():
@@ -113,7 +113,7 @@ def describe_lensing():
             coarse_z_esd = coarse_z_signal.stacked_esd(rs, params)
             fine_z_esd = fine_z_signal.stacked_esd(rs, params)
 
-            assert np.allclose(coarse_z_esd, fine_z_esd, rtol=1e-3)
+            assert np.allclose(coarse_z_esd, fine_z_esd, rtol=1e-2)
 
     def describe_miyatake_lensing_signal():
 
@@ -158,4 +158,4 @@ def describe_lensing():
             coarse_z_esd = coarse_z_signal.stacked_esd(rs, a_szs)
             fine_z_esd = fine_z_signal.stacked_esd(rs, a_szs)
 
-            assert np.allclose(coarse_z_esd, fine_z_esd, rtol=1e-3)
+            assert np.allclose(coarse_z_esd, fine_z_esd, rtol=1e-2)
