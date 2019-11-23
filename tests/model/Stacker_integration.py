@@ -17,7 +17,7 @@ zs = np.linspace(0, 2, 20)
 
 
 def test_power_spectrum():
-    stacker = Stacker(mus, zs, delta=200, units=u.Msun/u.pc**2)
+    stacker = Stacker(mus, zs, delta=200, units=u.Msun/u.pc**2, sz_scatter=0.2)
     #Need to check plots on this one!
     stacker.calc_power_spect()
 
@@ -65,7 +65,7 @@ cosmo_params = CosmoParams(
     flat=False,
 )
 
-stacker = Stacker(mus, zs, delta=200, units=u.Msun/u.pc**2, cosmo_params=cosmo_params)
+stacker = Stacker(mus, zs, delta=200, units=u.Msun/u.pc**2, cosmo_params=cosmo_params, sz_scatter=0.2)
 
 
 def test_tinker_mf():
