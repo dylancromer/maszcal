@@ -1,13 +1,10 @@
-from __future__ import division
-from builtins import zip
-from builtins import range
-from past.utils import old_div
+from dataclasses import dataclass
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline as iuSpline
 from scipy.integrate import simps
 np.seterr(divide='ignore', invalid='ignore')
 
-# Tinker stuff
+
 tinker_data = np.transpose([[float(x) for x in line.split()]
                             for line in
     """200 0.186 1.47 2.57 1.19
@@ -88,11 +85,6 @@ def tinker_f(sigma, params):
     return A * ((sigma/b)**(-a) + 1) * np.exp(-c/sigma**2)
 
 
-def radius_from_mass(M, rho):
-    """
-    Convert mass M to radius R assuming density rho.
-    """
-    return (3*M / (4*np.pi*rho))**(1/3)
 
 
 def top_hatf(kR):
@@ -125,44 +117,6 @@ def fnl_correction(sigma2, fnl):
     del_cor = np.sqrt(1 - d_c*S3/3.0)
     ans = np.exp(S3 * d_c**3/(sigma2*6.0))*(d_c**2/(6.0*del_cor)*(-0.838*S3)+del_cor)
     return ans
-
-
-def dn_dlogM(M, z, rho, delta, k, P, comoving=False):
-    """
-    M      is  (nM)  or  (nM, nz)
-    z      is  (nz)
-    rho    is  (nz)
-    delta  is  (nz)  or  scalar
-    k      is  (nk)
-    P      is  (nz,nk)
-
-    Somewhat awkwardly, k and P are comoving.  rho really isn't.
-
-    return is  (nM,nz)
-    """
-    if M.ndim == 1:
-        M = M[:, None]
-
-    R = radius_from_mass(M, rho)
-    if not comoving:
-        R = R * np.transpose(1+z)
-
-    sigma = np.sqrt(sigma_sq_integral(R, P, k))
-
-    if R.shape[-1] == 1:
-        dlogs = -np.gradient(np.log(sigma[..., 0]))[:, None]
-    else:
-        dlogs = -np.gradient(np.log(sigma))[0]
-
-    tp = tinker_params(delta, z)
-    tf = tinker_f(sigma, tp)
-
-    if M.shape[-1] == 1:
-        dM = np.gradient(np.log(M[:, 0]))[:, None] * M
-    else:
-        dM = np.gradient(np.log(M))[0] * M
-
-    return tf * rho * dlogs / dM
 
 
 def dsigma_dkmax_dM(M, z, rho, k, P, comoving=False):
@@ -215,3 +169,69 @@ def tinker_bias(sig, delta):
     ans = 1. - A*nu**a / (nu**a + delc**a) + B*nu**b + C*nu**c
 
     return ans
+
+
+@dataclass
+class TinkerHmf:
+    ks: np.ndarray
+    power_spect: np.ndarray
+    delta: int
+    mass_definition: str
+    astropy_cosmology: object
+    comoving: bool
+
+    def radius_from_mass(self, masses, zs):
+        """
+        Convert mass M to radius R assuming density rho.
+        """
+        if self.comoving:
+            rhos = self._rhos_comoving()
+        else:
+            rhos - self._rhos_non_comoving()
+
+        return (3*masses / (4*np.pi*rhos))**(1/3)
+
+    def _get_delta_means(self, zs):
+        rho_ms = self.rho_def(zs, 'mean')
+        rho_defs = self.rho_def(zs, self.mass_definition)
+
+        return (self.delta * rho_ms)/rho_defs
+
+    def dn_dlnm(self, masses, zs):
+        delta_means = self._get_delta_means(masses, zs)
+        return self._dn_dlnm(masses, zs, delta_means, self.ks, self.power_spect)
+
+    def _dn_dlnm(self, masses, zs, delta_means, ks, power_spectrum):
+        """
+        M      is  (nM)  or  (nM, nz)
+        z      is  (nz)
+        rho    is  (nz)
+        delta  is  (nz)  or  scalar
+        k      is  (nk)
+        P      is  (nz,nk)
+
+        Somewhat awkwardly, k and P are comoving.  rho really isn't.
+
+        return is  (nM,nz)
+        """
+        if masses.ndim == 1:
+            masses = masses[:, None]
+
+        radii = self.radius_from_mass(masses, zs)
+
+        sigma = np.sqrt(sigma_sq_integral(radii, power_spectrum, ks))
+
+        if radii.shape[-1] == 1:
+            dlogs = -np.gradient(np.log(sigma[..., 0]))[:, None]
+        else:
+            dlogs = -np.gradient(np.log(sigma))[0]
+
+        tp = tinker_params(delta, zs)
+        tf = tinker_f(sigma, tp)
+
+        if masses.shape[-1] == 1:
+            dmasses = np.gradient(np.log(masses[:, 0]))[:, None] * masses
+        else:
+            dmasses = np.gradient(np.log(masses))[0] * masses
+
+        return tf * rho * dlogs / dmasses
