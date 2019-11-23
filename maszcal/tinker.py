@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import numpy as np
+import astropy.units as u
 from scipy.interpolate import InterpolatedUnivariateSpline as iuSpline
 from scipy.integrate import simps
 np.seterr(divide='ignore', invalid='ignore')
@@ -85,38 +86,28 @@ def tinker_f(sigma, params):
     return A * ((sigma/b)**(-a) + 1) * np.exp(-c/sigma**2)
 
 
-
-
-def top_hatf(kR):
+def top_hatf(kr):
     """
     Returns the Fourier transform of the spherical top-hat function
     evaluated at a given k*R.
     """
-    out = np.nan_to_num(3*(np.sin(kR) - (kR)*np.cos(kR))) / ((kR)**3)
-    return out
+    return np.nan_to_num(3*(np.sin(kr) - (kr)*np.cos(kr))) / ((kr)**3)
 
 
-def sigma_sq_integral(R_grid, power_spt, k_val):
+def sigma_sq_integral(rs, power_spect, ks):
     """
     Determines the sigma^2 parameter over the m-z grid by integrating
     over k.
     """
-    to_integ = np.array(
-        [
-            top_hatf(R_grid * k)**2 * np.tile(power_spt[:, i], (R_grid.shape[0], 1)) * k**2
-            for k, i in zip(k_val, np.arange(len(k_val)))
-        ]
-    )
-
-    return simps(to_integ/(2 * np.pi**2), x=k_val, axis=0)
+    integrand = top_hatf(rs[None, ...] * ks[:, None, None])**2 * (power_spect.T[:, None, :] * ks[:, None, None]**2)
+    return simps(integrand/(2 * np.pi**2), x=ks, axis=0)
 
 
 def fnl_correction(sigma2, fnl):
     d_c = 1.686
     S3 = 3.15e-4 * fnl / (sigma2**(0.838/2.0))
     del_cor = np.sqrt(1 - d_c*S3/3.0)
-    ans = np.exp(S3 * d_c**3/(sigma2*6.0))*(d_c**2/(6.0*del_cor)*(-0.838*S3)+del_cor)
-    return ans
+    return np.exp(S3 * d_c**3/(sigma2*6.0))*(d_c**2/(6.0*del_cor)*(-0.838*S3)+del_cor)
 
 
 def dsigma_dkmax_dM(M, z, rho, k, P, comoving=False):
@@ -173,33 +164,53 @@ def tinker_bias(sig, delta):
 
 @dataclass
 class TinkerHmf:
-    ks: np.ndarray
-    power_spect: np.ndarray
     delta: int
     mass_definition: str
     astropy_cosmology: object
     comoving: bool
 
+    def _rho_for_mass_func(self, zs):
+        if self.comoving:
+            rhos = (
+                self.astropy_cosmology.Om0
+                * self.astropy_cosmology.critical_density0
+                * np.ones(zs.shape)
+            ).to(u.Msun/u.Mpc**3).value
+        else:
+            rhos = (
+                self.astropy_cosmology.Om(zs)
+                * self.astropy_cosmology.critical_density0
+            ).to(u.Msun/u.Mpc**3).value
+
+        return rhos
+
     def radius_from_mass(self, masses, zs):
         """
         Convert mass M to radius R assuming density rho.
         """
-        if self.comoving:
-            rhos = self._rhos_comoving()
-        else:
-            rhos - self._rhos_non_comoving()
-
+        rhos = self._rho_for_mass_func(zs)
         return (3*masses / (4*np.pi*rhos))**(1/3)
 
+    def _rho_matter(self, zs):
+        return (
+            self.astropy_cosmology.Om(zs) * self.astropy_cosmology.critical_density0
+        ).to(u.Msun/u.Mpc**3).value
+
+    def _rho_crit(self, zs):
+        return self.astropy_cosmology.critical_density(zs).to(u.Msun/u.Mpc**3).value
+
     def _get_delta_means(self, zs):
-        rho_ms = self.rho_def(zs, 'mean')
-        rho_defs = self.rho_def(zs, self.mass_definition)
+        if self.mass_definition == 'mean':
+            delta_means = self.delta * np.ones(zs.shape)
+        else:
+            rho_ms = self._rho_matter(zs)
+            rho_cs = self._rho_crit(zs)
+            delta_means = (self.delta * rho_ms)/rho_cs
+        return delta_means
 
-        return (self.delta * rho_ms)/rho_defs
-
-    def dn_dlnm(self, masses, zs):
-        delta_means = self._get_delta_means(masses, zs)
-        return self._dn_dlnm(masses, zs, delta_means, self.ks, self.power_spect)
+    def dn_dlnm(self, masses, zs, ks, power_spect):
+        delta_means = self._get_delta_means(zs)  # converts delta_c to delta_m such that mass is the same
+        return self._dn_dlnm(masses, zs, delta_means, ks, power_spect)
 
     def _dn_dlnm(self, masses, zs, delta_means, ks, power_spectrum):
         """
@@ -226,7 +237,7 @@ class TinkerHmf:
         else:
             dlogs = -np.gradient(np.log(sigma))[0]
 
-        tp = tinker_params(delta, zs)
+        tp = tinker_params(delta_means, zs)
         tf = tinker_f(sigma, tp)
 
         if masses.shape[-1] == 1:
@@ -234,4 +245,4 @@ class TinkerHmf:
         else:
             dmasses = np.gradient(np.log(masses))[0] * masses
 
-        return tf * rho * dlogs / dmasses
+        return tf * self._rho_for_mass_func(zs) * dlogs / dmasses

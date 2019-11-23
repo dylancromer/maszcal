@@ -34,7 +34,7 @@ def get_camb_params(cosmology_params, max_k, zs):
     )
 
     params.set_matter_power(
-        redshifts=[0.0],
+        redshifts=zs,
         kmax=max_k,
         k_per_logint=None,
         nonlinear=False,
