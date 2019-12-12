@@ -31,7 +31,7 @@ def describe_tinker_hmf():
     def it_calculates_dn_dlnm(mass_func, ks_and_power_spect):
         ks, power_spect = ks_and_power_spect
         masses = np.array([1e15, 1e16])
-        zs = np.linspace(0, 1, 8)
+        zs = np.linspace(0, 2, 8)
         dn_dlnms = mass_func.dn_dlnm(masses, zs, ks, power_spect)
 
         assert dn_dlnms.shape == (2, 8)

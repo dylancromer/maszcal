@@ -37,8 +37,8 @@ def tinker_params_spline(delta, z=None):
         return A0, a0, b0, c0
 
     z = np.asarray(z)
-    A = A0 * (1 + z)**-.14
-    a = a0 * (1 + z)**-.06
+    A = A0 * (1 + z)**(-.14)
+    a = a0 * (1 + z)**(-.06)
     alpha = 10.**(-((.75/np.log10(delta/75.))**1.2))
     b = b0 * (1 + z)**(-alpha)
     c = np.zeros(np.shape(z)) + c0
@@ -205,7 +205,7 @@ class TinkerHmf:
         else:
             rho_ms = self._rho_matter(zs)
             rho_cs = self._rho_crit(zs)
-            delta_means = (self.delta * rho_ms)/rho_cs
+            delta_means = (self.delta * rho_cs)/rho_ms
         return delta_means
 
     def dn_dlnm(self, masses, zs, ks, power_spect):

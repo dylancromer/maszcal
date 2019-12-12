@@ -91,8 +91,8 @@ def test_tinker_mf():
                   * stacker.cosmo_params.omega_matter
                   / h**2)
 
-    stacker.mu_szs = np.linspace(np.log(1e10), np.log(1e16), 30)
-    stacker.mus = np.linspace(np.log(1e10), np.log(1e16), 30)
+    stacker.mu_szs = np.linspace(np.log(1e10), np.log(1e16), 100)
+    stacker.mus = np.linspace(np.log(1e10), np.log(1e16), 100)
 
     z = 0
     mink = 1e-4

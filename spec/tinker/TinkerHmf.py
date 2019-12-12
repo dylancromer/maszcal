@@ -16,10 +16,18 @@ def describe_tinker_hmf():
 
     def it_calculates_dn_dlnm(mass_func):
         masses = np.logspace(14, 15, 10)
-        zs = np.linspace(0, 1, 8)
+        zs = np.linspace(0, 2, 8)
         ks = np.logspace(-3, -1, 12)
         power_spect = np.ones((zs.size, ks.size))
 
         dn_dlnms = mass_func.dn_dlnm(masses, zs, ks, power_spect)
 
         assert not np.any(np.isnan(dn_dlnms))
+
+    def delta_ms_are_always_bigger_than_delta_cs(mass_func):
+        zs = np.linspace(0, 1.5, 100)
+
+        delta_ms = mass_func._get_delta_means(zs)
+
+        assert np.all(delta_ms > mass_func.delta)
+        assert np.all(delta_ms < 3200)
