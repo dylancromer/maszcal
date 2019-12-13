@@ -125,6 +125,9 @@ class Stacker:
                                                                          maxkh=self.max_k,
                                                                          npoints=self.number_ks)
 
+        if np.isnan(self.power_spect).any():
+            raise ValueError('Power spectrum contains NaN values.')
+
     def _init_tinker_hmf(self):
         self.mass_func = TinkerHmf(
             delta=self.delta,
@@ -150,6 +153,9 @@ class Stacker:
         except AttributeError:
             self._init_tinker_hmf()
             dn_dlogms = self.mass_func.dn_dlnm(masses, self.zs, self.ks, power_spect)
+
+        if np.isnan(dn_dlogms).any():
+            raise ValueError('Mass function has returned NaN values.')
 
         return dn_dlogms
 
@@ -220,6 +226,9 @@ class Stacker:
             dx=dzs
         )
 
+        if np.isnan(z_integral).any():
+            raise ValueError('Stacked delta sigmas contain NaN values.')
+
         return z_integral/self.number_sz(a_szs)[None, :]
 
     def weak_lensing_avg_mass(self, a_szs):
@@ -247,6 +256,9 @@ class Stacker:
             axis=0,
             dx=dzs
         )
+
+        if np.isnan(z_integral).any():
+            raise ValueError('Weak lensing average masses contain NaN values.')
 
         return z_integral/self.number_sz(a_szs)
 
@@ -282,6 +294,9 @@ class MiyatakeStacker(Stacker):
             axis=0,
             dx=dzs
         )
+
+        if np.isnan(z_integral).any():
+            raise ValueError('Stacked delta sigmas contain NaN values.')
 
         return z_integral/self.number_sz(a_szs)[None, :]
 
@@ -326,6 +341,9 @@ class MiyatakeStacker(Stacker):
             axis=0,
             dx=dzs
         )
+
+        if np.isnan(z_integral).any():
+            raise ValueError('Weak lensing average masses contain NaN values.')
 
         return z_integral/self.number_sz(a_szs)
 

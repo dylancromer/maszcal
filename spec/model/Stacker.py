@@ -80,3 +80,21 @@ def describe_stacker():
             delta_sigmas_of_mass = np.ones((stacker.mus.size, stacker.zs.size, rs.size, N_PARAMS))
 
             delta_sigmas = stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+
+        def it_complains_about_nans(stacker):
+            zs = np.linspace(0, 2, 8)
+            stacker.dnumber_dlogmass = lambda : np.full(
+                (stacker.mus.size, stacker.zs.size),
+                np.nan,
+            )
+
+            rs = np.logspace(-1, 1, 10)
+            cons = np.linspace(2, 4, 1)
+            a_szs = np.linspace(-1, 1, 1)
+            delta_sigmas_of_mass = np.ones((stacker.mus.size, zs.size, rs.size, cons.size))
+
+            with pytest.raises(ValueError):
+                stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+
+            with pytest.raises(ValueError):
+                stacker.weak_lensing_avg_mass(a_szs)

@@ -80,3 +80,24 @@ def describe_stacker():
             delta_sigmas_of_mass = np.ones((stacker.mus.size, stacker.zs.size, rs.size))
 
             delta_sigmas = stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+
+            assert delta_sigmas.shape == (21, N_PARAMS)
+
+        def it_complains_about_nans(stacker):
+            zs = np.linspace(0, 2, 8)
+
+            # Ugly mock of mass function
+            stacker.dnumber_dlogmass = lambda : np.full(
+                (stacker.mus.size, stacker.zs.size),
+                np.nan,
+            )
+
+            # Ugly mock of concentration model
+            stacker._m500c = lambda mus: np.exp(mus)
+
+            rs = np.logspace(-1, 1, 10)
+            a_szs = np.linspace(-1, 1, 2)
+            delta_sigmas_of_mass = np.ones((stacker.mus.size, zs.size, rs.size))
+
+            with pytest.raises(ValueError):
+                stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
