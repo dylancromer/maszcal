@@ -7,17 +7,6 @@ from maszcal.interpolate import SavedRbf
 from maszcal.interp_utils import cartesian_prod
 
 
-class FakeInterpolator:
-    def __init__(self, params, func_vals):
-        pass
-
-    def process(self):
-        pass
-
-    def interp(self, params):
-        return np.ones(params.shape[0])
-
-
 def describe_emulation():
 
     @pytest.fixture
@@ -97,6 +86,29 @@ def describe_emulator():
 
             assert np.allclose(test_value, np.ones(10), rtol=1e-2)
             assert test_value.shape == (10, 1)
+
+        def it_can_use_different_functions():
+            lensing_emulator = emulator.LensingEmulator(function='linear')
+
+            cons = np.linspace(2, 5, 5)
+            a_szs = np.linspace(-1, 1, 5)
+            params = cartesian_prod(cons, a_szs)
+
+            rs = np.logspace(-1, 1, 10)
+
+            func_vals = np.ones((10, 25))
+
+            lensing_emulator.emulate(rs, params, func_vals)
+
+            test_params = np.array([[3, 0]])
+
+            test_value = lensing_emulator.evaluate_on(test_params)
+
+            assert np.allclose(test_value, np.ones(10), rtol=1e-2)
+            assert test_value.shape == (10, 1)
+
+            for interpolator in lensing_emulator.interpolators:
+                assert interpolator.rbfi.function == 'linear'
 
     def describe_load_emulation():
 

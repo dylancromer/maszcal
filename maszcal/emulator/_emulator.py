@@ -6,7 +6,10 @@ import maszcal.ioutils as ioutils
 import maszcal.nothing as nothing
 
 
+@dataclass
 class LensingEmulator:
+    function: str = 'multiquadric'
+
     def load_emulation(
             self,
             emulation_file=nothing.NoFile(),
@@ -49,7 +52,7 @@ class LensingEmulator:
 
     def _emulate_single_radius(self, params, func_vals):
         interpolator = RbfInterpolator(params, func_vals)
-        interpolator.process()
+        interpolator.process(function=self.function)
         return interpolator
 
     def evaluate_on(self, params):

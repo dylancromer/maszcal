@@ -17,6 +17,7 @@ class BaryonicEmulationErrors:
     comoving: bool = True
     delta: int = 200
     mass_definition: str = 'mean'
+    rbf_function: str = 'multiquadric'
     cosmo_params: object = defaults.DefaultCosmology()
     selection_func_file: object = defaults.DefaultSelectionFunc()
     lensing_weights_file: object = defaults.DefaultLensingWeights()
@@ -78,7 +79,7 @@ class BaryonicEmulationErrors:
         return self.radii[:, None] * lensing_signal.stacked_esd(self.radii, params_to_interpolate)
 
     def _get_emulator(self, params_to_interpolate, function_to_interpolate):
-        emulator = self.emulator_class()
+        emulator = self.emulator_class(function=self.rbf_function)
         emulator.emulate(self.radii, params_to_interpolate, function_to_interpolate)
         return emulator
 

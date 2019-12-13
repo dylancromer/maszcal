@@ -1,10 +1,13 @@
+from dataclasses import dataclass
 import numpy as np
 import pytest
 import maszcal.check as check
 from maszcal.cosmology import CosmoParams
 
 
+@dataclass
 class PretendEmulator:
+    function: str = 'multiquadric'
     def emulate(self, radii, params, func_vals):
         self.radii = radii
 
