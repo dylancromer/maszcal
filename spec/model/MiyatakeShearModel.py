@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from maszcal.model import StackedMiyatakeModel
+from maszcal.model import MiyatakeShearModel
 
 
 class FakeConModel:
@@ -20,7 +20,7 @@ def describe_stacked_model():
 
         def it_requires_you_to_provide_mass_and_redshift():
             with pytest.raises(TypeError):
-                StackedMiyatakeModel()
+                MiyatakeShearModel()
 
     def describe_math_functions():
 
@@ -30,7 +30,7 @@ def describe_stacked_model():
             zs = np.linspace(0, 2, 8)
             mocker.patch('maszcal.model.ConModel', new=FakeConModel)
 
-            model = StackedMiyatakeModel(mus, zs)
+            model = MiyatakeShearModel(mus, zs)
             model._init_stacker()
 
             return model
@@ -56,13 +56,13 @@ def describe_stacked_model():
 
             delta = 500
             mass_def = 'crit'
-            model = StackedMiyatakeModel(mus, zs, delta=delta, mass_definition=mass_def)
+            model = MiyatakeShearModel(mus, zs, delta=delta, mass_definition=mass_def)
 
             delta_sigs_500c = model.delta_sigma(rs, mus)
 
             delta = 200
             kind = 'mean'
-            model = StackedMiyatakeModel(mus, zs, delta=delta, mass_definition=mass_def)
+            model = MiyatakeShearModel(mus, zs, delta=delta, mass_definition=mass_def)
 
             delta_sigs_200m = model.delta_sigma(rs, mus)
 

@@ -15,13 +15,13 @@ def describe_smolyak_interpolator():
         def nfw_lensing_signal():
             mus = np.linspace(32, 34, 10)
             zs = np.linspace(0, 2, 5)
-            return lensing.StackedLensingSignal(log_masses=mus, redshifts=zs)
+            return lensing.NfwLensingSignal(log_masses=mus, redshifts=zs)
 
         @pytest.fixture
         def bary_lensing_signal():
             mus = np.linspace(32, 34, 10)
             zs = np.linspace(0, 2, 5)
-            return lensing.StackedBaryonLensingSignal(log_masses=mus, redshifts=zs)
+            return lensing.BaryonLensingSignal(log_masses=mus, redshifts=zs)
 
         def it_interpolates_the_nfw_stack_correctly(nfw_lensing_signal):
             param_mins = np.array([1, -2])

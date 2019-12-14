@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import astropy.units as u
-from maszcal.model import GnfwBaryonModel
+from maszcal.model import BaryonShearModel
 
 
 class FakeProjector:
@@ -20,7 +20,7 @@ def describe_gaussian_baryonic_model():
             mocker.patch('maszcal.model.projector', new=FakeProjector)
             mus = np.linspace(np.log(1e14), np.log(1e16), 9)
             zs = np.linspace(0, 1, 8)
-            return GnfwBaryonModel(mus, zs)
+            return BaryonShearModel(mus, zs)
 
         def it_can_calculate_a_gnfw_rho(baryon_model):
             radii = np.logspace(-1, 1, 10)
@@ -127,7 +127,7 @@ def describe_gaussian_baryonic_model():
         def baryon_model():
             mus = np.linspace(np.log(1e14), np.log(1e16), 9)
             zs = np.linspace(0, 1, 8)
-            return GnfwBaryonModel(mus, zs, units=u.Msun/u.pc**2)
+            return BaryonShearModel(mus, zs, units=u.Msun/u.pc**2)
 
         def it_has_correct_units(baryon_model):
             radii = np.logspace(-1, 1, 10)

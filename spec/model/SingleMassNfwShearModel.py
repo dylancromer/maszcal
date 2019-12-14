@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import astropy.units as u
-from maszcal.model import SingleMassModel
+from maszcal.model import SingleMassNfwShearModel
 
 
 def describe_single_mass_model():
@@ -11,7 +11,7 @@ def describe_single_mass_model():
         @pytest.fixture
         def single_mass_model():
             redshift = 0.4*np.ones(1)
-            model = SingleMassModel(redshift=redshift)
+            model = SingleMassNfwShearModel(redshift=redshift)
             return model
 
         def it_can_calculate_delta_sigma_of_mass(single_mass_model):
@@ -25,7 +25,7 @@ def describe_single_mass_model():
 
         def it_can_use_different_units():
             redshift = 0.4*np.ones(1)
-            model = SingleMassModel(redshift=redshift, units=u.Msun/u.Mpc**2)
+            model = SingleMassNfwShearModel(redshift=redshift, units=u.Msun/u.Mpc**2)
 
             mu = np.array([np.log(1e15)])
             con = np.array([3])
@@ -43,13 +43,13 @@ def describe_single_mass_model():
             redshift = 0.4*np.ones(1)
             delta = 500
             mass_def = 'crit'
-            model = SingleMassModel(redshift=redshift, delta=delta, mass_definition=mass_def)
+            model = SingleMassNfwShearModel(redshift=redshift, delta=delta, mass_definition=mass_def)
 
             delta_sigs_500c = model.delta_sigma(rs, mu, con)
 
             delta = 200
             kind = 'mean'
-            model = SingleMassModel(redshift=redshift, delta=delta, mass_definition=mass_def)
+            model = SingleMassNfwShearModel(redshift=redshift, delta=delta, mass_definition=mass_def)
 
             delta_sigs_200m = model.delta_sigma(rs, mu, con)
 

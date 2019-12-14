@@ -6,7 +6,7 @@ from maszcal.cosmology import CosmoParams
 import maszcal.defaults as defaults
 
 
-class FakeSingleMassBaryonModel:
+class FakeSingleMassBaryonShearModel:
     def __init__(
             self,
             redshift,
@@ -51,7 +51,7 @@ def describe_single_mass_lensing_signal():
 
         @pytest.fixture
         def lensing_signal(mocker):
-            mocker.patch('maszcal.lensing.model.SingleMassBaryonModel', new=FakeSingleMassBaryonModel)
+            mocker.patch('maszcal.lensing.model.SingleMassBaryonShearModel', new=FakeSingleMassBaryonShearModel)
             redshift = np.array([0])
             return SingleBaryonLensingSignal(redshift=redshift)
 

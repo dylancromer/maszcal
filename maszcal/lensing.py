@@ -34,7 +34,7 @@ class SingleMassLensingSignal:
             raise TypeError('redshifts must have length 1 to calculate a single-mass-bin model')
 
     def _init_single_mass_model(self):
-        self.single_mass_model = model.SingleMassModel(
+        self.single_mass_model = model.SingleMassNfwShearModel(
             self.redshift,
             cosmo_params=self.cosmo_params,
             comoving_radii=self.comoving,
@@ -52,7 +52,7 @@ class SingleMassLensingSignal:
             return self.single_mass_model.delta_sigma(rs, log_masses, concentrations)
 
 
-class StackedLensingSignal:
+class NfwLensingSignal:
     def __init__(
             self,
             log_masses=nothing.NoMasses(),
@@ -88,7 +88,7 @@ class StackedLensingSignal:
         self.sz_scatter = sz_scatter
 
     def _init_stacked_model(self):
-        self.stacked_model = model.StackedModel(
+        self.stacked_model = model.NfwShearModel(
             self.log_masses,
             self.redshifts,
             cosmo_params=self.cosmo_params,
@@ -118,9 +118,9 @@ class StackedLensingSignal:
             return self.stacked_model.weak_lensing_avg_mass(a_szs)
 
 
-class MiyatakeLensingSignal(StackedLensingSignal):
+class MiyatakeLensingSignal(NfwLensingSignal):
     def _init_stacked_model(self):
-        self.stacked_model = model.StackedMiyatakeModel(
+        self.stacked_model = model.MiyatakeShearModel(
             self.log_masses,
             self.redshifts,
             cosmo_params=self.cosmo_params,
@@ -149,7 +149,7 @@ class MiyatakeLensingSignal(StackedLensingSignal):
             return self.stacked_model.weak_lensing_avg_mass(a_szs)
 
 
-class StackedBaryonLensingSignal:
+class BaryonLensingSignal:
     def __init__(
             self,
             log_masses=nothing.NoMasses(),
@@ -185,7 +185,7 @@ class StackedBaryonLensingSignal:
         self.sz_scatter = sz_scatter
 
     def _init_baryon_model(self):
-        self.baryon_model = model.GnfwBaryonModel(
+        self.baryon_model = model.BaryonShearModel(
             self.log_masses,
             self.redshifts,
             cosmo_params=self.cosmo_params,
@@ -247,7 +247,7 @@ class SingleBaryonLensingSignal:
             raise TypeError('redshifts must have length 1 to calculate a single-mass-bin model')
 
     def _init_single_mass_model(self):
-        self.single_mass_model = model.SingleMassBaryonModel(
+        self.single_mass_model = model.SingleMassBaryonShearModel(
             self.redshift,
             cosmo_params=self.cosmo_params,
             comoving_radii=self.comoving,

@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from maszcal.model import StackedModel
+from maszcal.model import NfwShearModel
 
 
 def describe_stacked_model():
@@ -9,7 +9,7 @@ def describe_stacked_model():
 
         def it_requires_you_to_provide_mass_and_redshift():
             with pytest.raises(TypeError):
-                StackedModel()
+                NfwShearModel()
 
     def describe_math_functions():
 
@@ -18,14 +18,14 @@ def describe_stacked_model():
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
             zs = np.linspace(0, 2, 8)
 
-            model = StackedModel(mus, zs)
+            model = NfwShearModel(mus, zs)
 
             return model
 
         def it_computes_weak_lensing_avg_mass():
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
             zs = np.linspace(0, 2, 8)
-            stacked_model = StackedModel(mus, zs)
+            stacked_model = NfwShearModel(mus, zs)
             stacked_model._init_stacker()
 
             stacked_model.stacker.dnumber_dlogmass = lambda : np.ones(
@@ -47,13 +47,13 @@ def describe_stacked_model():
 
             delta = 500
             mass_def = 'crit'
-            model = StackedModel(mus, zs, delta=delta, mass_definition=mass_def)
+            model = NfwShearModel(mus, zs, delta=delta, mass_definition=mass_def)
 
             delta_sigs_500c = model.delta_sigma(rs, mus, cons)
 
             delta = 200
             kind = 'mean'
-            model = StackedModel(mus, zs, delta=delta, mass_definition=mass_def)
+            model = NfwShearModel(mus, zs, delta=delta, mass_definition=mass_def)
 
             delta_sigs_200m = model.delta_sigma(rs, mus, cons)
 

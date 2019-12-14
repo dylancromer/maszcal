@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
-from maszcal.lensing import StackedLensingSignal
+from maszcal.lensing import NfwLensingSignal
 from maszcal.cosmology import CosmoParams
 import maszcal.defaults as defaults
 
 
-class FakeStackedModel:
+class FakeNfwShearModel:
     def __init__(
             self,
             mu_bins,
@@ -33,54 +33,54 @@ def describe_lensing_signal():
 
         def it_requires_redshifts():
             with pytest.raises(TypeError):
-                StackedLensingSignal()
+                NfwLensingSignal()
 
         def it_accepts_a_selection_func_file(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.model.StackedModel', new=FakeStackedModel)
+            mocker.patch('maszcal.lensing.model.NfwShearModel', new=FakeNfwShearModel)
             sel_func_file = 'test/file/here'
-            StackedLensingSignal(mus, zs, selection_func_file=sel_func_file)
+            NfwLensingSignal(mus, zs, selection_func_file=sel_func_file)
 
         def it_accepts_a_weights_file(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.model.StackedModel', new=FakeStackedModel)
+            mocker.patch('maszcal.lensing.model.NfwShearModel', new=FakeNfwShearModel)
             weights_file = 'test/file/here'
-            StackedLensingSignal(mus, zs, lensing_weights_file=weights_file)
+            NfwLensingSignal(mus, zs, lensing_weights_file=weights_file)
 
         def it_allows_a_different_mass_definition(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.model.StackedModel', new=FakeStackedModel)
+            mocker.patch('maszcal.lensing.model.NfwShearModel', new=FakeNfwShearModel)
 
             delta = 500
             mass_definition = 'crit'
 
-            StackedLensingSignal(mus, zs, delta=delta, mass_definition=mass_definition)
+            NfwLensingSignal(mus, zs, delta=delta, mass_definition=mass_definition)
 
         def it_can_use_a_different_cosmology(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.model.StackedModel', new=FakeStackedModel)
+            mocker.patch('maszcal.lensing.model.NfwShearModel', new=FakeNfwShearModel)
 
             cosmo = CosmoParams(neutrino_mass_sum=1)
-            StackedLensingSignal(mus, zs, cosmo_params=cosmo)
+            NfwLensingSignal(mus, zs, cosmo_params=cosmo)
 
     def describe_stacked_esd():
 
         @pytest.fixture
         def lensing_signal(mocker):
-            mocker.patch('maszcal.lensing.model.StackedModel', new=FakeStackedModel)
+            mocker.patch('maszcal.lensing.model.NfwShearModel', new=FakeNfwShearModel)
 
             mus = np.linspace(32, 34, 10)
             zs = np.linspace(0, 2, 5)
-            return StackedLensingSignal(log_masses=mus, redshifts=zs)
+            return NfwLensingSignal(log_masses=mus, redshifts=zs)
 
         def it_requires_masses():
             zs = np.ones(2)
             with pytest.raises(TypeError):
-                lensing_signal = StackedLensingSignal(redshifts=zs)
+                lensing_signal = NfwLensingSignal(redshifts=zs)
 
         def it_gives_a_stacked_model_for_the_esd(lensing_signal):
             rs = np.logspace(-1, 1, 10)
@@ -95,11 +95,11 @@ def describe_lensing_signal():
 
         @pytest.fixture
         def lensing_signal(mocker):
-            mocker.patch('maszcal.lensing.model.StackedModel', new=FakeStackedModel)
+            mocker.patch('maszcal.lensing.model.NfwShearModel', new=FakeNfwShearModel)
 
             mus = np.linspace(32, 34, 10)
             zs = np.linspace(0, 2, 5)
-            return StackedLensingSignal(log_masses=mus, redshifts=zs)
+            return NfwLensingSignal(log_masses=mus, redshifts=zs)
 
         def it_gives_the_avg_wl_mass_for_the_stack(lensing_signal):
             a_szs = np.linspace(-1, 1, 4)

@@ -13,13 +13,13 @@ def describe_lensing():
         def coarse_mu_signal():
             coarse_mus = np.linspace(np.log(5e13), np.log(5e15), 40)
             redshifts = np.linspace(0, 1.2, 16)
-            return lensing.StackedLensingSignal(log_masses=coarse_mus, redshifts=redshifts)
+            return lensing.NfwLensingSignal(log_masses=coarse_mus, redshifts=redshifts)
 
         @pytest.fixture
         def fine_mu_signal():
             fine_mus = np.linspace(np.log(5e13), np.log(5e15), 100)
             redshifts = np.linspace(0, 1.2, 16)
-            return lensing.StackedLensingSignal(log_masses=fine_mus, redshifts=redshifts)
+            return lensing.NfwLensingSignal(log_masses=fine_mus, redshifts=redshifts)
 
         def it_is_stable_at_40_bins_of_mu(coarse_mu_signal, fine_mu_signal):
             rs = np.logspace(-1, 1, 10)
@@ -37,13 +37,13 @@ def describe_lensing():
         def coarse_z_signal():
             mus = np.linspace(np.log(5e13), np.log(5e15), 40)
             coarse_zs = np.linspace(0, 1.2, 10)
-            return lensing.StackedLensingSignal(log_masses=mus, redshifts=coarse_zs)
+            return lensing.NfwLensingSignal(log_masses=mus, redshifts=coarse_zs)
 
         @pytest.fixture
         def fine_z_signal():
             mus = np.linspace(np.log(5e13), np.log(5e15), 40)
             fine_zs = np.linspace(0, 1.2, 100)
-            return lensing.StackedLensingSignal(log_masses=mus, redshifts=fine_zs)
+            return lensing.NfwLensingSignal(log_masses=mus, redshifts=fine_zs)
 
         def it_is_stable_at_10_bins_of_z(coarse_z_signal, fine_z_signal):
             rs = np.logspace(-1, 1, 10)
@@ -64,13 +64,13 @@ def describe_lensing():
         def coarse_mu_signal():
             coarse_mus = np.linspace(np.log(5e13), np.log(5e15), 40)
             redshifts = np.linspace(0, 1.2, 12)
-            return lensing.StackedBaryonLensingSignal(log_masses=coarse_mus, redshifts=redshifts)
+            return lensing.BaryonLensingSignal(log_masses=coarse_mus, redshifts=redshifts)
 
         @pytest.fixture
         def fine_mu_signal():
             fine_mus = np.linspace(np.log(5e13), np.log(5e15), 100)
             redshifts = np.linspace(0, 1.2, 12)
-            return lensing.StackedBaryonLensingSignal(log_masses=fine_mus, redshifts=redshifts)
+            return lensing.BaryonLensingSignal(log_masses=fine_mus, redshifts=redshifts)
 
         def it_is_stable_at_40_bins_of_mu(coarse_mu_signal, fine_mu_signal):
             rs = np.logspace(-1, 1, 8)
@@ -91,13 +91,13 @@ def describe_lensing():
         def coarse_z_signal():
             mus = np.linspace(np.log(5e13), np.log(5e15), 10)
             coarse_zs = np.linspace(0, 1.2, 10)
-            return lensing.StackedBaryonLensingSignal(log_masses=mus, redshifts=coarse_zs)
+            return lensing.BaryonLensingSignal(log_masses=mus, redshifts=coarse_zs)
 
         @pytest.fixture
         def fine_z_signal():
             mus = np.linspace(np.log(5e13), np.log(5e15), 10)
             fine_zs = np.linspace(0, 1.2, 100)
-            return lensing.StackedBaryonLensingSignal(log_masses=mus, redshifts=fine_zs)
+            return lensing.BaryonLensingSignal(log_masses=mus, redshifts=fine_zs)
 
         def it_is_stable_at_10_bins_of_z(coarse_z_signal, fine_z_signal):
             rs = np.logspace(-1, 1, 8)

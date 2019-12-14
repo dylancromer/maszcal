@@ -9,7 +9,7 @@ from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
 import seaborn as sns
 sns.set(style='whitegrid', font_scale=1.5, rc={"lines.linewidth": 2,'lines.markersize': 8.0,})
-from maszcal.model import SingleMassModel
+from maszcal.model import SingleMassNfwShearModel
 from maszcal.lensing import SingleMassLensingSignal
 
 
@@ -18,7 +18,7 @@ def describe_single_mass_bin():
     @pytest.fixture
     def single_mass_model():
         zs = np.ones(1)
-        return SingleMassModel(redshift=zs)
+        return SingleMassNfwShearModel(redshift=zs)
 
     @pytest.fixture
     def lensing_signal():
@@ -38,7 +38,7 @@ def describe_single_mass_bin():
 
     def the_plot_looks_correct():
         z = np.array([0.43])
-        single_mass_model = SingleMassModel(redshift=z, delta=500, mass_definition='crit')
+        single_mass_model = SingleMassNfwShearModel(redshift=z, delta=500, mass_definition='crit')
 
         rs = np.logspace(-1, 1, 50)
         mu = np.array([np.log(4.26e14)])

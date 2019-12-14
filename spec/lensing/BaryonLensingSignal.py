@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
-from maszcal.lensing import StackedBaryonLensingSignal
+from maszcal.lensing import BaryonLensingSignal
 from maszcal.cosmology import CosmoParams
 import maszcal.defaults as defaults
 
 
-class FakeGnfwBaryonModel:
+class FakeBaryonShearModel:
     def __init__(
             self,
             mu_bins,
@@ -33,54 +33,54 @@ def describe_lensing_signal():
 
         def it_requires_redshifts():
             with pytest.raises(TypeError):
-                StackedBaryonLensingSignal()
+                BaryonLensingSignal()
 
         def it_accepts_a_selection_func_file(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.model.GnfwBaryonModel', new=FakeGnfwBaryonModel)
+            mocker.patch('maszcal.lensing.model.BaryonShearModel', new=FakeBaryonShearModel)
             sel_func_file = 'test/file/here'
-            StackedBaryonLensingSignal(mus, zs, selection_func_file=sel_func_file)
+            BaryonLensingSignal(mus, zs, selection_func_file=sel_func_file)
 
         def it_accepts_a_weights_file(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.model.GnfwBaryonModel', new=FakeGnfwBaryonModel)
+            mocker.patch('maszcal.lensing.model.BaryonShearModel', new=FakeBaryonShearModel)
             weights_file = 'test/file/here'
-            StackedBaryonLensingSignal(mus, zs, lensing_weights_file=weights_file)
+            BaryonLensingSignal(mus, zs, lensing_weights_file=weights_file)
 
         def it_allows_a_different_mass_definition(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.model.GnfwBaryonModel', new=FakeGnfwBaryonModel)
+            mocker.patch('maszcal.lensing.model.BaryonShearModel', new=FakeBaryonShearModel)
 
             delta = 500
             mass_definition = 'crit'
 
-            StackedBaryonLensingSignal(mus, zs, delta=delta, mass_definition=mass_definition)
+            BaryonLensingSignal(mus, zs, delta=delta, mass_definition=mass_definition)
 
         def it_can_use_a_different_cosmology(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.model.GnfwBaryonModel', new=FakeGnfwBaryonModel)
+            mocker.patch('maszcal.lensing.model.BaryonShearModel', new=FakeBaryonShearModel)
 
             cosmo = CosmoParams(neutrino_mass_sum=1)
-            StackedBaryonLensingSignal(mus, zs, cosmo_params=cosmo)
+            BaryonLensingSignal(mus, zs, cosmo_params=cosmo)
 
     def describe_stacked_esd():
 
         @pytest.fixture
         def lensing_signal(mocker):
-            mocker.patch('maszcal.lensing.model.GnfwBaryonModel', new=FakeGnfwBaryonModel)
+            mocker.patch('maszcal.lensing.model.BaryonShearModel', new=FakeBaryonShearModel)
 
             mus = np.linspace(32, 34, 10)
             zs = np.linspace(0, 2, 5)
-            return StackedBaryonLensingSignal(log_masses=mus, redshifts=zs)
+            return BaryonLensingSignal(log_masses=mus, redshifts=zs)
 
         def it_requires_masses():
             zs = np.ones(2)
             with pytest.raises(TypeError):
-                lensing_signal = StackedBaryonLensingSignal(redshifts=zs)
+                lensing_signal = BaryonLensingSignal(redshifts=zs)
 
         def it_gives_a_stacked_model_for_the_esd(lensing_signal):
             rs = np.logspace(-1, 1, 10)
@@ -95,11 +95,11 @@ def describe_lensing_signal():
 
         @pytest.fixture
         def lensing_signal(mocker):
-            mocker.patch('maszcal.lensing.model.GnfwBaryonModel', new=FakeGnfwBaryonModel)
+            mocker.patch('maszcal.lensing.model.BaryonShearModel', new=FakeBaryonShearModel)
 
             mus = np.linspace(32, 34, 10)
             zs = np.linspace(0, 2, 5)
-            return StackedBaryonLensingSignal(log_masses=mus, redshifts=zs)
+            return BaryonLensingSignal(log_masses=mus, redshifts=zs)
 
         def it_gives_the_avg_wl_mass_for_the_stack(lensing_signal):
             a_szs = np.linspace(-1, 1, 4)

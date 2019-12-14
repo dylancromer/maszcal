@@ -39,8 +39,8 @@ def describe_lensing():
             a_sz = 0
             params = np.array([[con, a_sz]])
 
-            lensing_signal = lensing.StackedLensingSignal(log_masses=mus, redshifts=redshifts)
-            stacked_model = model.StackedModel(mu_bins=mus, redshift_bins=redshifts)
+            lensing_signal = lensing.NfwLensingSignal(log_masses=mus, redshifts=redshifts)
+            stacked_model = model.NfwShearModel(mu_bins=mus, redshift_bins=redshifts)
 
             esd_lensing_signal = lensing_signal.stacked_esd(rs, params)
             esd_stacked_model = stacked_model.stacked_delta_sigma(rs, np.array([con]), np.array([a_sz]))
@@ -61,8 +61,8 @@ def describe_lensing():
             a_sz = -0.01
             params = np.array([[con, alpha, beta, gamma, a_sz]])
 
-            lensing_signal = lensing.StackedBaryonLensingSignal(log_masses=mus, redshifts=redshifts)
-            baryon_model = model.GnfwBaryonModel(mu_bins=mus, redshift_bins=redshifts)
+            lensing_signal = lensing.BaryonLensingSignal(log_masses=mus, redshifts=redshifts)
+            baryon_model = model.BaryonShearModel(mu_bins=mus, redshift_bins=redshifts)
 
             esd_lensing_signal = lensing_signal.stacked_esd(rs, params)
             esd_baryon_model = baryon_model.stacked_delta_sigma(
@@ -87,7 +87,7 @@ def describe_lensing():
             params = np.array([[a_sz]])
 
             lensing_signal = lensing.MiyatakeLensingSignal(log_masses=mus, redshifts=redshifts)
-            test_model = model.StackedMiyatakeModel(mu_bins=mus, redshift_bins=redshifts)
+            test_model = model.MiyatakeShearModel(mu_bins=mus, redshift_bins=redshifts)
 
             esd_lensing_signal = lensing_signal.stacked_esd(rs, params)
             esd_test_model = test_model.stacked_delta_sigma(

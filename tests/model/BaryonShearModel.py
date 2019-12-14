@@ -9,7 +9,7 @@ from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
 import seaborn as sns
 sns.set(style='whitegrid', font_scale=1.5, rc={"lines.linewidth": 2,'lines.markersize': 8.0,})
-from maszcal.model import GnfwBaryonModel
+from maszcal.model import BaryonShearModel
 
 
 def describe_gaussian_baryonic_model():
@@ -20,7 +20,7 @@ def describe_gaussian_baryonic_model():
         def baryon_model():
             mus = np.linspace(np.log(1e14), np.log(1e15), 30)
             zs = np.linspace(0, 1, 20)
-            return GnfwBaryonModel(mus, zs, mass_definition='crit', delta=500)
+            return BaryonShearModel(mus, zs, mass_definition='crit', delta=500)
 
         def the_plots_look_right(baryon_model):
             radii = np.logspace(-1, 1, 30)
@@ -48,7 +48,7 @@ def describe_gaussian_baryonic_model():
         def baryon_model():
             mus = np.linspace(np.log(1e14), np.log(1e15), 30)
             zs = np.linspace(0, 1, 20)
-            return GnfwBaryonModel(mus, zs, units=u.Msun/u.pc**2)
+            return BaryonShearModel(mus, zs, units=u.Msun/u.pc**2)
 
         def the_plots_look_right(baryon_model):
             radii = np.logspace(-1, 1, 30)
@@ -75,7 +75,7 @@ def describe_gaussian_baryonic_model():
         def baryon_model():
             mus = np.linspace(np.log(1e14), np.log(1e15), 30)
             zs = np.linspace(0, 1, 20)
-            return GnfwBaryonModel(mus, zs, units=u.Msun/u.pc**2)
+            return BaryonShearModel(mus, zs, units=u.Msun/u.pc**2)
 
         def the_plots_look_right(baryon_model):
             radii = np.logspace(-1, 1, 30)
@@ -102,7 +102,7 @@ def describe_gaussian_baryonic_model():
         def baryon_model():
             mus = np.linspace(np.log(1e14), np.log(1e15), 30)
             zs = np.linspace(0, 1, 20)
-            return GnfwBaryonModel(mus, zs, units=u.Msun/u.pc**2)
+            return BaryonShearModel(mus, zs, units=u.Msun/u.pc**2)
 
         def the_plots_look_right(baryon_model):
             radii = np.logspace(-1, 1, 30)

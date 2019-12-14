@@ -22,7 +22,7 @@ class BaryonicEmulationErrors:
     selection_func_file: object = defaults.DefaultSelectionFunc()
     lensing_weights_file: object = defaults.DefaultLensingWeights()
     emulator_class: object = maszcal.emulator.LensingEmulator
-    lensing_signal_class: object = maszcal.lensing.StackedBaryonLensingSignal
+    lensing_signal_class: object = maszcal.lensing.BaryonLensingSignal
 
     @classmethod
     def _get_sampled_params(cls, param_mins, param_maxes, num_samples, sampling_method):

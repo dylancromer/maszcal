@@ -348,7 +348,7 @@ class MiyatakeStacker(Stacker):
         return z_integral/self.number_sz(a_szs)
 
 
-class StackedModel:
+class NfwShearModel:
     """
     Canonical variable order:
     mu_sz, mu, z, r, params
@@ -442,7 +442,7 @@ class StackedModel:
             return self.stacker.weak_lensing_avg_mass(a_szs)
 
 
-class StackedMiyatakeModel(StackedModel):
+class MiyatakeShearModel(NfwShearModel):
     """
     Changes some methods to enable use of a concentration-mass relation
     """
@@ -503,7 +503,7 @@ class StackedMiyatakeModel(StackedModel):
             return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
 
 
-class SingleMassModel:
+class SingleMassNfwShearModel:
     def __init__(
             self,
             redshift,
@@ -550,7 +550,7 @@ class SingleMassModel:
             return self.nfw_model.delta_sigma(rs, self.redshift, masses, concentrations)
 
 
-class GnfwBaryonModel:
+class BaryonShearModel:
     def __init__(
             self,
             mu_bins,
@@ -736,7 +736,7 @@ class GnfwBaryonModel:
             return self.stacker.weak_lensing_avg_mass(a_szs)
 
 
-class SingleMassBaryonModel:
+class SingleMassBaryonShearModel:
     def __init__(
             self,
             redshift,
