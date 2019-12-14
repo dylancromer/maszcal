@@ -25,7 +25,7 @@ def describe_tinker_hmf():
         assert not np.any(np.isnan(dn_dlnms))
 
     def delta_ms_are_always_bigger_than_delta_cs(mass_func):
-        zs = np.linspace(0, 1.5, 100)
+        zs = np.linspace(0, 10, 100)
 
         delta_ms = mass_func._get_delta_means(zs)
 
