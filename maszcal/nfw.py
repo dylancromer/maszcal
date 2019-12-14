@@ -51,7 +51,7 @@ class NfwModel:
 
     def _reference_density_nocomoving(self, zs):
         if self.mass_definition == 'mean':
-            rho_mass_def = self._astropy_cosmology.critical_density0 * self._astropy_cosmology.Om(zs)
+            rho_mass_def = self._astropy_cosmology.critical_density(zs) * self._astropy_cosmology.Om(zs)
         elif self.mass_definition == 'crit':
             rho_mass_def = self._astropy_cosmology.critical_density(zs)
 

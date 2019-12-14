@@ -169,6 +169,10 @@ class TinkerHmf:
     astropy_cosmology: object
     comoving: bool
 
+    def __post_init__(self):
+        if self.mass_definition not in ('mean', 'crit'):
+            raise ValueError('mass_definition must be \'mean\' or \'crit\'.')
+
     def _rho_for_mass_func(self, zs):
         if self.comoving:
             rhos = (
@@ -179,7 +183,7 @@ class TinkerHmf:
         else:
             rhos = (
                 self.astropy_cosmology.Om(zs)
-                * self.astropy_cosmology.critical_density0
+                * self.astropy_cosmology.critical_density(zs)
             ).to(u.Msun/u.Mpc**3).value
 
         return rhos
@@ -191,21 +195,11 @@ class TinkerHmf:
         rhos = self._rho_for_mass_func(zs)
         return (3*masses / (4*np.pi*rhos))**(1/3)
 
-    def _rho_matter(self, zs):
-        return (
-            self.astropy_cosmology.Om(zs) * self.astropy_cosmology.critical_density0
-        ).to(u.Msun/u.Mpc**3).value
-
-    def _rho_crit(self, zs):
-        return self.astropy_cosmology.critical_density(zs).to(u.Msun/u.Mpc**3).value
-
     def _get_delta_means(self, zs):
         if self.mass_definition == 'mean':
             delta_means = self.delta * np.ones(zs.shape)
-        else:
-            rho_ms = self._rho_matter(zs)
-            rho_cs = self._rho_crit(zs)
-            delta_means = (self.delta * rho_cs)/rho_ms
+        elif self.mass_definition == 'crit':
+            delta_means = self.delta / self.astropy_cosmology.Om(zs)
         return delta_means
 
     def dn_dlnm(self, masses, zs, ks, power_spect):
