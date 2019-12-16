@@ -47,7 +47,7 @@ def describe_lensing():
 
             assert np.all(esd_stacked_model == esd_lensing_signal)
 
-    def describe_stacked_baryon_lensing_signal():
+    def describe_baryon_cm_lensing_signal():
 
         def it_matches_the_underlying_model():
             mus = np.linspace(np.log(1e14), np.log(1e15), 10)
@@ -114,3 +114,31 @@ def describe_lensing():
             esd_nfw_cm = nfw_cm_model.stacked_delta_sigma(rs, np.array([a_sz]))
 
             assert np.all(esd_nfw_cm == esd_lensing_signal)
+
+    def describe_baryon_cm_lensing_signal():
+
+        def it_matches_the_underlying_model():
+            mus = np.linspace(np.log(1e14), np.log(1e15), 10)
+            redshifts = np.linspace(0, 2, 5)
+            rs = np.logspace(-1, 1, 5)
+
+            alpha = 1.1
+            beta = 4.2
+            gamma = 1.3
+            a_sz = -0.01
+            params = np.array([[alpha, beta, gamma, a_sz]])
+
+            lensing_signal = lensing.BaryonCmLensingSignal(log_masses=mus, redshifts=redshifts)
+            baryon_model = model.BaryonCmShearModel(mu_bins=mus, redshift_bins=redshifts)
+
+            esd_lensing_signal = lensing_signal.stacked_esd(rs, params)
+            esd_baryon_model = baryon_model.stacked_delta_sigma(
+                rs,
+                np.array([alpha]),
+                np.array([beta]),
+                np.array([gamma]),
+                np.array([a_sz]),
+            )
+
+            assert np.all(esd_lensing_signal == esd_baryon_model)
+

@@ -249,6 +249,40 @@ class BaryonLensingSignal:
             return self.baryon_model.weak_lensing_avg_mass(a_szs)
 
 
+class BaryonCmLensingSignal(BaryonLensingSignal):
+    def _init_stacked_model(self):
+        self.stacked_model = model.BaryonCmShearModel(
+            self.log_masses,
+            self.redshifts,
+            cosmo_params=self.cosmo_params,
+            units=self.units,
+            comoving_radii=self.comoving,
+            selection_func_file=self.selection_func_file,
+            lensing_weights_file=self.lensing_weights_file,
+            delta=self.delta,
+            mass_definition=self.mass_definition,
+            sz_scatter=self.sz_scatter,
+        )
+
+    def stacked_esd(self, rs, params):
+        alphas = params[:, 0].flatten()
+        betas = params[:, 1].flatten()
+        gammas = params[:, 2].flatten()
+        a_szs = params[:, 3].flatten()
+        try:
+            return self.stacked_model.stacked_delta_sigma(rs, alphas, betas, gammas, a_szs)
+        except AttributeError:
+            self._init_stacked_model()
+            return self.stacked_model.stacked_delta_sigma(rs, alphas, betas, gammas, a_szs)
+
+    def avg_mass(self, a_szs):
+        try:
+            return self.stacked_model.weak_lensing_avg_mass(a_szs)
+        except AttributeError:
+            self._init_stacked_model()
+            return self.stacked_model.weak_lensing_avg_mass(a_szs)
+
+
 class SingleBaryonLensingSignal:
     def __init__(
             self,
