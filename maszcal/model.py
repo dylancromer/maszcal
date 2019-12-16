@@ -864,6 +864,131 @@ class BaryonShearModel:
             return self.stacker.weak_lensing_avg_mass(a_szs)
 
 
+class BaryonCmShearModel(BaryonShearModel):
+    def _init_nfw(self):
+        self.nfw_model = maszcal.nfw.NfwCmModel(
+            cosmo_params=self.cosmo_params,
+            units=self.units,
+            delta=self.delta,
+            mass_definition=self.mass_definition,
+            comoving=self.comoving_radii,
+        )
+
+    def _init_con_model(self):
+        mass_def = str(self.delta) + self.mass_definition[0]
+        self._con_model = ConModel(mass_def, cosmology=self.cosmo_params)
+
+    def _con(self, masses):
+        mass_def = str(self.delta) + self.mass_definition[0]
+        try:
+            return self._con_model.c(masses, self.zs, mass_def)
+        except AttributeError:
+            self._init_con_model()
+            return self._con_model.c(masses, self.zs, mass_def)
+
+    def gnfw_shape(self, rs, mus, alphas, betas, gammas):
+        """
+        SHAPE mu, z, rs.shape, params
+        """
+        ys = (rs[None, None, ...]/maszcal.mathutils.atleast_kd(self._r_delta(mus), rs.ndim+2)) / self.CORE_RADIUS
+        ys = ys[..., None]
+
+        alphas = alphas.reshape((rs.ndim + 2)*(1,) + (alphas.size,))
+        betas = betas.reshape((rs.ndim + 2)*(1,) + (betas.size,))
+        gammas = gammas.reshape((rs.ndim + 2)*(1,) + (gammas.size,))
+
+        return 1 / (ys**gammas * (1 + ys**(1/alphas))**((betas-gammas) * alphas))
+
+    def _gnfw_norm(self, mus, alphas, betas, gammas):
+        """
+        SHAPE mu, z, params
+        """
+        rs = np.linspace(
+            self.MIN_INTEGRATION_RADIUS,
+            self.MAX_INTEGRATION_RADIUS,
+            self.NUM_INTEGRATION_RADII,
+        )
+
+        drs = np.gradient(rs)
+        top_integrand = self._rho_nfw(rs, mus)[..., None] * rs[None, None, :, None]**2
+        bottom_integrand = self.gnfw_shape(rs, mus, alphas, betas, gammas) * rs[None, None, :, None]**2
+
+        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-2)
+                /maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=-2))
+
+    def _rho_gnfw(self, rs, mus, alphas, betas, gammas):
+        norm = self._gnfw_norm(mus, alphas, betas, gammas)
+        norm = norm.reshape(rs.ndim*(1,) + norm.shape)
+        profile_shape = self.gnfw_shape(rs, mus, alphas, betas, gammas)
+
+        radius_axes = np.arange(profile_shape.ndim)[2:-1]
+        new_radius_axes = np.arange(radius_axes.size)
+        profile_shape = np.moveaxis(
+            profile_shape,
+            tuple(radius_axes),
+            tuple(new_radius_axes),
+        )
+
+        return norm * profile_shape
+
+    def _rho_nfw(self, rs, mus):
+        masses = self.mass(mus)
+        cons = self._con(masses)
+
+        try:
+            return self.nfw_model.rho(rs, self.zs, masses, cons)
+        except AttributeError:
+            self._init_nfw()
+            return self.nfw_model.rho(rs, self.zs, masses, cons)
+
+    def rho_bary(self, rs, mus, alphas, betas, gammas):
+        """
+        SHAPE r, mu, z, params
+        """
+        return self.baryon_frac * self._rho_gnfw(rs, mus, alphas, betas, gammas)
+
+    def rho_cdm(self, rs, mus):
+        """
+        SHAPE mu, z, r, params
+        """
+        return (1-self.baryon_frac) * self._rho_nfw(rs, mus)
+
+    def delta_sigma_cdm(self, rs, mus):
+        """
+        SHAPE mu, z, r, params
+        """
+        masses = self.mass(mus)
+        cons = self._con(masses)
+
+        try:
+            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
+        except AttributeError:
+            self._init_nfw()
+            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
+
+    def delta_sigma_bary(self, rs, mus, alphas, betas, gammas):
+        """
+        SHAPE mu, z, r, params
+        """
+        return np.moveaxis(
+            projector.esd(rs, lambda r: self.rho_bary(r, mus, alphas, betas, gammas)) * (u.Msun/u.Mpc**2).to(self.units),
+            0,
+            2,
+        )
+
+    def delta_sigma_total(self, rs, mus, alphas, betas, gammas):
+        return self.delta_sigma_bary(rs, mus, alphas, betas, gammas) + self.delta_sigma_cdm(rs, mus)[..., None]
+
+    def stacked_delta_sigma(self, rs, alphas, betas, gammas, a_szs):
+        delta_sigmas = self.delta_sigma_total(rs, self.mus, alphas, betas, gammas)
+
+        try:
+            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
+        except AttributeError:
+            self._init_stacker()
+            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
+
+
 class SingleMassBaryonShearModel:
     def __init__(
             self,
