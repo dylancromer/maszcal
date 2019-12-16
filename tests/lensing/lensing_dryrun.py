@@ -6,7 +6,7 @@ import maszcal.model as model
 
 def describe_lensing():
 
-    def describe_single_mass_lensing_signal():
+    def describe_single_mass_nfw_lensing_signal():
 
         def it_can_use_different_mass_definitions():
             mu = np.array([np.log(1e15)])
@@ -28,7 +28,7 @@ def describe_lensing():
 
             assert np.all(esd_200m < esd_500c)
 
-    def describe_stacked_lensing_signal():
+    def describe_nfw_lensing_signal():
 
         def it_matches_the_stacked_model():
             mus = np.linspace(np.log(1e14), np.log(1e15), 10)
@@ -96,3 +96,21 @@ def describe_lensing():
             )
 
             assert np.all(esd_lensing_signal == esd_test_model)
+
+    def describe_nfw_cm_lensing_signal():
+
+        def it_matches_the_stacked_model():
+            mus = np.linspace(np.log(1e14), np.log(1e15), 10)
+            redshifts = np.linspace(0, 2, 5)
+            rs = np.logspace(-1, 1, 5)
+
+            a_sz = 0
+            params = np.array([[a_sz]])
+
+            lensing_signal = lensing.NfwCmLensingSignal(log_masses=mus, redshifts=redshifts)
+            nfw_cm_model = model.NfwCmShearModel(mu_bins=mus, redshift_bins=redshifts)
+
+            esd_lensing_signal = lensing_signal.stacked_esd(rs, params)
+            esd_nfw_cm = nfw_cm_model.stacked_delta_sigma(rs, np.array([a_sz]))
+
+            assert np.all(esd_nfw_cm == esd_lensing_signal)
