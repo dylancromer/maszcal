@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import pytest
 import numpy as np
 import astropy.units as u
@@ -11,12 +12,22 @@ class FakeProjector:
         return np.ones(rhos.shape)
 
 
+@dataclass
+class FakeConModel:
+    mass_def: str
+    cosmology: object = 'blah'
+
+    def c(self, masses, zs, mass_def):
+        return 3*np.ones((masses.size, zs.size))
+
+
 def describe_gaussian_baryonic_model():
 
     def describe_math():
 
         @pytest.fixture
         def baryon_model(mocker):
+            mocker.patch('maszcal.model.ConModel', new=FakeConModel)
             mocker.patch('maszcal.model.projector', new=FakeProjector)
             mus = np.linspace(np.log(1e14), np.log(1e16), 9)
             zs = np.linspace(0, 1, 8)
@@ -117,7 +128,8 @@ def describe_gaussian_baryonic_model():
     def describe_units():
 
         @pytest.fixture
-        def baryon_model():
+        def baryon_model(mocker):
+            mocker.patch('maszcal.model.ConModel', new=FakeConModel)
             mus = np.linspace(np.log(1e14), np.log(1e16), 9)
             zs = np.linspace(0, 1, 8)
             return BaryonCmShearModel(mus, zs, units=u.Msun/u.pc**2)
