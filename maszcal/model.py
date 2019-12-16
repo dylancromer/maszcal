@@ -263,9 +263,79 @@ class Stacker:
         return z_integral/self.number_sz(a_szs)
 
 
-class MiyatakeStacker(Stacker):
+class CmStacker(Stacker):
     '''
-    Changes a method to allow use of a con-mass relation
+    Changes a method to allow use of a con-mass relation following Miyatake et al 2019
+    '''
+    def stacked_delta_sigma(self, delta_sigmas, rs, a_szs):
+        """
+        SHAPE r, params
+        """
+        dmu_szs = np.gradient(self.mu_szs)
+        mu_sz_integral = maszcal.mathutils.trapz_(
+            (self._sz_measure(a_szs)[:, :, :, None, :]
+             * delta_sigmas[None, ..., None]),
+            axis=0,
+            dx=dmu_szs,
+        )
+
+        dmus = np.gradient(self.mus)
+        mu_integral = maszcal.mathutils.trapz_(
+            self.dnumber_dlogmass()[..., None, None] * mu_sz_integral,
+            axis=0,
+            dx=dmus
+        )
+
+        dzs = np.gradient(self.zs)
+        z_integral = maszcal.mathutils.trapz_(
+            ((
+                self.lensing_weights(self.zs) * self.comoving_vol()
+             )[:, None, None] * mu_integral),
+            axis=0,
+            dx=dzs
+        )
+
+        if np.isnan(z_integral).any():
+            raise ValueError('Stacked delta sigmas contain NaN values.')
+
+        return z_integral/self.number_sz(a_szs)[None, :]
+
+    def weak_lensing_avg_mass(self, a_szs):
+        masses = self.mass(self.mus)
+
+        dmu_szs = np.gradient(self.mu_szs)
+        mu_sz_integral = maszcal.mathutils.trapz_(
+            self._sz_measure(a_szs) * masses[None, :, None, None],
+            axis=0,
+            dx=dmu_szs
+        )
+
+        dmus = np.gradient(self.mus)
+        mu_integral = maszcal.mathutils.trapz_(
+            self.dnumber_dlogmass()[..., None] * mu_sz_integral,
+            axis=0,
+            dx=dmus
+        )
+
+        dzs = np.gradient(self.zs)
+        z_integral = maszcal.mathutils.trapz_(
+            ((
+                self.lensing_weights(self.zs) * self.comoving_vol()
+            )[:, None] * mu_integral),
+            axis=0,
+            dx=dzs
+        )
+
+        if np.isnan(z_integral).any():
+            raise ValueError('Weak lensing average masses contain NaN values.')
+
+        return z_integral/self.number_sz(a_szs)
+
+
+class MiyatakeStacker(Stacker):
+
+    '''
+    Changes a method to allow use of a con-mass relation following Miyatake et al 2019
     '''
     def stacked_delta_sigma(self, delta_sigmas, rs, a_szs):
         """
@@ -442,6 +512,64 @@ class NfwShearModel:
             return self.stacker.weak_lensing_avg_mass(a_szs)
 
 
+class NfwCmShearModel(NfwShearModel):
+    def _init_stacker(self):
+        self.stacker = CmStacker(
+            mu_bins=self.mus,
+            redshift_bins=self.zs,
+            cosmo_params=self.cosmo_params,
+            selection_func_file=self.selection_func_file,
+            lensing_weights_file=self.lensing_weights_file,
+            comoving=self.comoving_radii,
+            delta=self.delta,
+            mass_definition=self.mass_definition,
+            units=self.units,
+            sz_scatter=self.sz_scatter,
+        )
+
+    def _init_con_model(self):
+        mass_def = str(self.delta) + self.mass_definition[0]
+        self._con_model = ConModel(mass_def, cosmology=self.cosmo_params)
+
+    def _con(self, masses):
+        mass_def = str(self.delta) + self.mass_definition[0]
+        try:
+            return self._con_model.c(masses, self.zs, mass_def)
+        except AttributeError:
+            self._init_con_model()
+            return self._con_model.c(masses, self.zs, mass_def)
+
+    def _init_nfw(self):
+        self.nfw_model = maszcal.nfw.NfwCmModel(
+            cosmo_params=self.cosmo_params,
+            units=self.units,
+            delta=self.delta,
+            mass_definition=self.mass_definition,
+            comoving=self.comoving_radii,
+        )
+
+    def delta_sigma(self, rs, mus):
+        """
+        SHAPE mu, z, r, params
+        """
+        masses = self.mass(mus)
+
+        try:
+            return self.nfw_model.delta_sigma(rs, self.zs, masses, self._con(masses))
+        except AttributeError:
+            self._init_nfw()
+            return self.nfw_model.delta_sigma(rs, self.zs, masses, self._con(masses))
+
+    def stacked_delta_sigma(self, rs, a_szs):
+        delta_sigmas = self.delta_sigma(rs, self.mus)
+
+        try:
+            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
+        except AttributeError:
+            self._init_stacker()
+            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
+
+
 class MiyatakeShearModel(NfwShearModel):
     """
     Changes some methods to enable use of a concentration-mass relation
@@ -473,7 +601,7 @@ class MiyatakeShearModel(NfwShearModel):
             return self._con_model.c(masses, self.zs, mass_def)
 
     def _init_nfw(self):
-        self.nfw_model = maszcal.nfw.NfwTestModel(
+        self.nfw_model = maszcal.nfw.NfwCmModel(
             cosmo_params=self.cosmo_params,
             units=self.units,
             delta=self.delta,

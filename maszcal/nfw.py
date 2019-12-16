@@ -143,7 +143,7 @@ class NfwModel:
         return prefactor[:, :, None, :] * postfactor
 
 
-class NfwTestModel(NfwModel):
+class NfwCmModel(NfwModel):
     """
     Overwrites some methods to make it work for a concentration-mass relation
     """

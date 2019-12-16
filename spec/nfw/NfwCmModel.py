@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 import astropy.units as u
 from maszcal.cosmology import CosmoParams
-from maszcal.nfw import NfwTestModel
+from maszcal.nfw import NfwCmModel
 
 
 def describe_nfw_model():
@@ -11,7 +11,7 @@ def describe_nfw_model():
     @pytest.fixture
     def nfw_model():
         cosmo = CosmoParams()
-        return NfwTestModel(cosmo_params=cosmo)
+        return NfwCmModel(cosmo_params=cosmo)
 
     def it_calculates_delta_sigma(nfw_model):
         rs = np.logspace(-1, 1, 10)
@@ -36,7 +36,7 @@ def describe_nfw_model():
             hubble_constant=70,
             h=0.7,
         )
-        return NfwTestModel(cosmo_params=cosmo)
+        return NfwCmModel(cosmo_params=cosmo)
 
     def it_can_use_different_cosmologies(nfw_model, nfw_model_alt_cosmo):
         rs = np.logspace(-1, 1, 10)
@@ -51,7 +51,7 @@ def describe_nfw_model():
         assert np.all(ds != ds_alt_cosmo)
 
     def it_can_use_different_units(nfw_model):
-        nfw_model_other_units = NfwTestModel(units=u.Msun/u.Mpc**2)
+        nfw_model_other_units = NfwCmModel(units=u.Msun/u.Mpc**2)
 
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 3)
@@ -65,7 +65,7 @@ def describe_nfw_model():
         assert np.all(ds_other_units > ds)
 
     def it_can_use_different_mass_definitions(nfw_model):
-        nfw_model_500c = NfwTestModel(delta=500, mass_definition='crit')
+        nfw_model_500c = NfwCmModel(delta=500, mass_definition='crit')
 
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 3)
@@ -80,10 +80,10 @@ def describe_nfw_model():
 
     def it_must_use_a_correct_mass_definition():
         with pytest.raises(ValueError):
-            NfwTestModel(mass_definition='oweijf')
+            NfwCmModel(mass_definition='oweijf')
 
     def it_can_use_comoving_coordinates(nfw_model):
-        nfw_model_nocomoving = NfwTestModel(units=u.Msun/u.pc**2, comoving=False)
+        nfw_model_nocomoving = NfwCmModel(units=u.Msun/u.pc**2, comoving=False)
 
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(1, 2, 3)
