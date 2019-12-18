@@ -8,7 +8,9 @@ import maszcal.lensing
 
 
 @dataclass
-class BaryonicEmulationErrors:
+class EmulationErrors:
+    lensing_signal_class: object
+    lensing_param_axes: dict
     radii: np.ndarray
     log_masses: np.ndarray
     redshifts: np.ndarray
@@ -22,7 +24,6 @@ class BaryonicEmulationErrors:
     selection_func_file: object = defaults.DefaultSelectionFunc()
     lensing_weights_file: object = defaults.DefaultLensingWeights()
     emulator_class: object = maszcal.emulator.LensingEmulator
-    lensing_signal_class: object = maszcal.lensing.BaryonLensingSignal
 
     @classmethod
     def _get_sampled_params(cls, param_mins, param_maxes, num_samples, sampling_method):
@@ -38,14 +39,12 @@ class BaryonicEmulationErrors:
         return sampler_func(param_mins, param_maxes, num_samples)
 
     @classmethod
-    def _get_params(cls, param_mins, param_maxes, num_samples, fixed_params, sampling_method):
-        PARAM_AXIS = {'con':0, 'alpha':1, 'beta':2, 'gamma':3, 'a_sz':4}
-
+    def _get_params(cls, lensing_param_axes, param_mins, param_maxes, num_samples, fixed_params, sampling_method):
         params = np.zeros((num_samples, 5))
         if fixed_params is not None:
-            fixed_param_axes = [PARAM_AXIS[param] for param in fixed_params.keys()]
+            fixed_param_axes = [lensing_param_axes[param] for param in fixed_params.keys()]
             for param, val in fixed_params.items():
-                params[:, PARAM_AXIS[param]] = val
+                params[:, lensing_param_axes[param]] = val
         else:
             fixed_param_axes = []
 
@@ -84,7 +83,7 @@ class BaryonicEmulationErrors:
         return emulator
 
     def _get_test_params(self, param_mins, param_maxes, fixed_params):
-        return self._get_params(param_mins, param_maxes, self.num_test_samples, fixed_params, 'rand')
+        return self._get_params(self.lensing_param_axes, param_mins, param_maxes, self.num_test_samples, fixed_params, 'rand')
 
     def _percent_at_error_level(self, error_level, errors):
         errors_above_level = errors[np.where(np.abs(errors) > error_level)]
@@ -121,7 +120,7 @@ class BaryonicEmulationErrors:
         self._check_num_of_params(param_mins, fixed_params)
         self._check_sampling_method(sampling_method)
 
-        params_to_interpolate = self._get_params(param_mins, param_maxes, num_samples, fixed_params, sampling_method)
+        params_to_interpolate = self._get_params(self.lensing_param_axes, param_mins, param_maxes, num_samples, fixed_params, sampling_method)
         function_to_interpolate = self._get_function_values(params_to_interpolate)
 
         emulator = self._get_emulator(params_to_interpolate, function_to_interpolate)

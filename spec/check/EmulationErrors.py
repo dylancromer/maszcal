@@ -44,7 +44,8 @@ def describe_emulation_errors():
 
             num_samples = 10
 
-            params = check.BaryonicEmulationErrors._get_params(
+            params = check.EmulationErrors._get_params(
+                {'con':0, 'alpha':1, 'beta':2, 'gamma':3, 'a_sz':4},
                 param_mins,
                 param_maxes,
                 num_samples,
@@ -61,7 +62,8 @@ def describe_emulation_errors():
 
             fixed_params = {'con': 3}
 
-            params = check.BaryonicEmulationErrors._get_params(
+            params = check.EmulationErrors._get_params(
+                {'con':0, 'alpha':1, 'beta':2, 'gamma':3, 'a_sz':4},
                 param_mins,
                 param_maxes,
                 num_samples,
@@ -82,13 +84,14 @@ def describe_emulation_errors():
 
             emulator_class = PretendEmulator
             lensing_signal_class = PretendLensingSignal
-            return check.BaryonicEmulationErrors(
-                rs,
-                mus,
-                zs,
-                10,
-                emulator_class=emulator_class,
+            return check.EmulationErrors(
                 lensing_signal_class=lensing_signal_class,
+                lensing_param_axes={'con':0, 'alpha':1, 'beta':2, 'gamma':3, 'a_sz':4},
+                radii=rs,
+                log_masses=mus,
+                redshifts=zs,
+                num_test_samples=10,
+                emulator_class=emulator_class,
             )
 
         def it_produces_an_error_percent_curve_that_is_monotonically_decreasing(emulation_errors):
@@ -122,7 +125,12 @@ def describe_emulation_errors():
             zs = np.linspace(0, 1, 6)
             num_test_samples = 10
             with pytest.raises(TypeError):
-                check.BaryonicEmulationErrors(radii=rs, log_masses=mus)
+                check.EmulationErrors(
+                    lensing_signal_class=PretendLensingSignal,
+                    lensing_param_axes={'con':0, 'alpha':1, 'beta':2, 'gamma':3, 'a_sz':4},
+                    radii=rs,
+                    log_masses=mus,
+                )
 
         def it_accepts_a_selection_func_file(mocker):
             rs = np.logspace(-1, 1, 5)
@@ -130,7 +138,13 @@ def describe_emulation_errors():
             zs = np.ones(5)
             num_test_samples = 10
             sel_func_file = 'test/file/here'
-            emu_errs = check.BaryonicEmulationErrors(rs, mus, zs, num_test_samples, selection_func_file=sel_func_file)
+            emu_errs = check.EmulationErrors(PretendLensingSignal,
+                                             {'con':0, 'alpha':1, 'beta':2, 'gamma':3, 'a_sz':4},
+                                             rs,
+                                             mus,
+                                             zs,
+                                             num_test_samples,
+                                             selection_func_file=sel_func_file)
 
             assert emu_errs.selection_func_file == sel_func_file
 
@@ -140,7 +154,13 @@ def describe_emulation_errors():
             zs = np.ones(5)
             num_test_samples = 10
             weights_file = 'test/file/here'
-            emu_errs = check.BaryonicEmulationErrors(rs, mus, zs, num_test_samples, lensing_weights_file=weights_file)
+            emu_errs = check.EmulationErrors(PretendLensingSignal,
+                                             {'con':0, 'alpha':1, 'beta':2, 'gamma':3, 'a_sz':4},
+                                             rs,
+                                             mus,
+                                             zs,
+                                             num_test_samples,
+                                             lensing_weights_file=weights_file)
 
             assert emu_errs.lensing_weights_file == weights_file
 
@@ -153,7 +173,14 @@ def describe_emulation_errors():
             delta = 500
             mass_definition = 'crit'
 
-            emu_errs = check.BaryonicEmulationErrors(rs, mus, zs, num_test_samples, delta=delta, mass_definition=mass_definition)
+            emu_errs = check.EmulationErrors(PretendLensingSignal,
+                                             {'con':0, 'alpha':1, 'beta':2, 'gamma':3, 'a_sz':4},
+                                             rs,
+                                             mus,
+                                             zs,
+                                             num_test_samples,
+                                             delta=delta,
+                                             mass_definition=mass_definition)
             assert emu_errs.mass_definition == mass_definition
 
         def it_can_use_a_different_cosmology(mocker):
@@ -163,7 +190,13 @@ def describe_emulation_errors():
             num_test_samples = 10
 
             cosmo = CosmoParams(neutrino_mass_sum=1)
-            emu_errs = check.BaryonicEmulationErrors(rs, mus, zs, num_test_samples, cosmo_params=cosmo)
+            emu_errs = check.EmulationErrors(PretendLensingSignal,
+                                             {'con':0, 'alpha':1, 'beta':2, 'gamma':3, 'a_sz':4},
+                                             rs,
+                                             mus,
+                                             zs,
+                                             num_test_samples,
+                                             cosmo_params=cosmo)
 
             assert emu_errs.cosmo_params == cosmo
 
@@ -177,13 +210,14 @@ def describe_emulation_errors():
 
             emulator_class = PretendEmulator
             lensing_signal_class = PretendLensingSignal
-            return check.BaryonicEmulationErrors(
-                rs,
-                mus,
-                zs,
-                10,
-                emulator_class=emulator_class,
+            return check.EmulationErrors(
                 lensing_signal_class=lensing_signal_class,
+                lensing_param_axes={'con':0, 'alpha':1, 'beta':2, 'gamma':3, 'a_sz':4},
+                radii=rs,
+                log_masses=mus,
+                redshifts=zs,
+                num_test_samples=10,
+                emulator_class=emulator_class,
             )
 
         def it_errors_if_you_have_mismatching_params_limits(emulation_errors):
