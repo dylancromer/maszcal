@@ -40,7 +40,8 @@ class EmulationErrors:
 
     @classmethod
     def _get_params(cls, lensing_param_axes, param_mins, param_maxes, num_samples, fixed_params, sampling_method):
-        params = np.zeros((num_samples, 5))
+        num_params = len(lensing_param_axes)
+        params = np.zeros((num_samples, num_params))
         if fixed_params is not None:
             fixed_param_axes = [lensing_param_axes[param] for param in fixed_params.keys()]
             for param, val in fixed_params.items():
@@ -48,7 +49,7 @@ class EmulationErrors:
         else:
             fixed_param_axes = []
 
-        free_param_mask = np.ones(5, dtype=bool)
+        free_param_mask = np.ones(num_params, dtype=bool)
         free_param_mask[fixed_param_axes] = False
 
         params[:, free_param_mask] = cls._get_sampled_params(
@@ -99,10 +100,11 @@ class EmulationErrors:
         else:
             num_of_fixed_params = len(fixed_params)
 
-        if param_limits.size + num_of_fixed_params != 5:
+        if param_limits.size + num_of_fixed_params != len(self.lensing_param_axes):
             raise ValueError('Total number of parameters incorrect: '\
                              'length of param_mins/param_maxes and '\
-                             'length of fixed_params must sum to 5')
+                             'length of fixed_params must sum to the length'\
+                             'of lensing_param_axes')
 
     def _check_sampling_method(self, sampling_method):
         if sampling_method not in ['lh', 'sym', 'rand']:

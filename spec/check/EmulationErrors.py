@@ -94,6 +94,24 @@ def describe_emulation_errors():
                 emulator_class=emulator_class,
             )
 
+        @pytest.fixture
+        def emulation_errors_alt():
+            rs = np.logspace(-1, 1, 5)
+            mus = np.linspace(np.log(1e14), np.log(1e16), 6)
+            zs = np.linspace(0, 1, 6)
+
+            emulator_class = PretendEmulator
+            lensing_signal_class = PretendLensingSignal
+            return check.EmulationErrors(
+                lensing_signal_class=lensing_signal_class,
+                lensing_param_axes={'con':0, 'alpha':1, 'beta':2},
+                radii=rs,
+                log_masses=mus,
+                redshifts=zs,
+                num_test_samples=10,
+                emulator_class=emulator_class,
+            )
+
         def it_produces_an_error_percent_curve_that_is_monotonically_decreasing(emulation_errors):
             CON_MIN = 1
             CON_MAX = 2
@@ -116,6 +134,30 @@ def describe_emulation_errors():
             )
 
             assert np.all(error_fracs[1:] <= error_fracs[:-1])
+
+        def it_works_with_other_lensing_signals(emulation_errors_alt):
+            CON_MIN = 1
+            CON_MAX = 2
+            BETA_MIN = 2
+            BETA_MAX = 3
+
+            param_mins = np.array([CON_MIN, BETA_MIN])
+            param_maxes = np.array([CON_MAX, BETA_MAX])
+
+            fixed_params = {'alpha': 0.88}
+
+            num_samples = 10
+
+            error_levels, error_fracs = emulation_errors_alt.get_emulation_errors(
+                param_mins,
+                param_maxes,
+                num_samples,
+                sampling_method='lh',
+                fixed_params=fixed_params,
+            )
+
+            assert np.all(error_fracs[1:] <= error_fracs[:-1])
+
 
     def describe_init():
 
