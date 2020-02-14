@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from maszcal.data.template import WeakLensingData
+from maszcal.data.templates import WeakLensingData
 
 
 def describe_weak_lensing_data():
