@@ -15,7 +15,13 @@ def describe_select_model():
             wl_signals=np.ones((10, 1)),
         )
 
-    def it_returns_an_nfw_single_mass_model_when_asked_for_one(data):
+    def it_returns_the_right_model_when_asked(data):
         model = select_model(data=data, model='nfw', cm_relation=False, emulation=False, stacked=False)
-
         assert isinstance(model, maszcal.lensing.SingleMassNfwLensingSignal)
+
+        model = select_model(data=data, model='baryon', cm_relation=False, emulation=False, stacked=False)
+        assert isinstance(model, maszcal.lensing.SingleBaryonLensingSignal)
+
+    def it_errors_properly_when_a_bad_model_is_selected(data):
+        with pytest.raises(ValueError):
+            select_model(data=data, model='iuerie3ewfhjebf', cm_relation=False, emulation=False, stacked=False)

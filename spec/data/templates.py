@@ -21,6 +21,21 @@ def describe_weak_lensing_data():
             with pytest.raises(TypeError):
                 WeakLensingData()
 
+    def describe_select_redshift_index():
+
+        @pytest.fixture
+        def wl_data():
+            return WeakLensingData(
+                radii=np.logspace(-1, 1, 10),
+                redshifts=np.linspace(0, 1, 5),
+                wl_signals=np.ones((10, 5, 3)),
+            )
+
+        def it_returns_a_new_weak_lensing_data_instance_with_the_selected_redshift(wl_data):
+            wl_at_redshift_index_3 = wl_data.select_redshift_index(3)
+            assert isinstance(wl_at_redshift_index_3, WeakLensingData)
+            assert wl_at_redshift_index_3.redshifts == np.array([wl_data.redshifts[3]])
+
     def describe__data_are_consistent():
 
         @pytest.fixture

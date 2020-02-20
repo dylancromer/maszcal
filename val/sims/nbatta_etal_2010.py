@@ -14,32 +14,45 @@ def describe_nbatta_sim():
             return maszcal.data.sims.NBatta2010()
 
         def using_gnfw_reduces_bias(sim_data):
-            nfw_model = maszcal.analysis.select_model(model='nfw', cm_relation=True, emulation=False, stacked=False)
             NUM_THREADS = 12
 
             nfw_params_shape = (1, sim_data.radii.size, sim_data.redshifts.size)
             nfw_fits = np.zeros(nfw_params_shape)
             for i, z in enumerate(sim_data.redshifts):
-                def _pool_func(data): return nfw_model.get_best_fit(data, z)
-                pool = pp.ProcessPool(NUM_THREADS)
-                nfw_fits[:, :, i] = np.array(
-                    pool.map(_pool_func, sim_data.wl_signals[:, :, i].T),
-                ).T
-                pool.close()
-                pool.join()
+                nfw_model = maszcal.analysis.select_model(
+                    data=sim_data.select_redshift_index(i),
+                    model='nfw',
+                    cm_relation=True,
+                    emulation=False,
+                    stacked=False
+                )
 
-            gnfw_model = maszcal.analysis.select_model(model='gnfw', cm_relation=False, emulation=False, stacked=False)
+                #def _pool_func(data): return nfw_model.get_best_fit(data, z)
+                #pool = pp.ProcessPool(NUM_THREADS)
+                #nfw_fits[:, :, i] = np.array(
+                #    pool.map(_pool_func, sim_data.wl_signals[:, :, i].T),
+                #).T
+                #pool.close()
+                #pool.join()
 
             gnfw_params_shape = (4, sim_data.radii.size, sim_data.redshifts.size)
             gnfw_fits = np.zeros(gnfw_params_shape)
             for i, z in enumerate(sim_data.redshifts):
-                def _pool_func(data): return gnfw_model.get_best_fit(data, z)
-                pool = pp.ProcessPool(NUM_THREADS)
-                gnfw_fits[:, :, i] = np.array(
-                    pool.map(_pool_func, sim_data.wl_signals[:, :, i].T),
-                ).T
-                pool.close()
-                pool.join()
+                gnfw_model = maszcal.analysis.select_model(
+                    data=sim_data.select_redshift_index(i),
+                    model='gnfw',
+                    cm_relation=False,
+                    emulation=False,
+                    stacked=False,
+                )
+
+                #def _pool_func(data): return gnfw_model.get_best_fit(data, z)
+                #pool = pp.ProcessPool(NUM_THREADS)
+                #gnfw_fits[:, :, i] = np.array(
+                #    pool.map(_pool_func, sim_data.wl_signals[:, :, i].T),
+                #).T
+                #pool.close()
+                #pool.join()
 
             nfw_masses = nfw_model.get_masses_from_params(nfw_fits)
             nfw_bias = _calc_bias(nfw_masses, sim_data.masses)

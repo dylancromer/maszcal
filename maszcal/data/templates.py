@@ -16,3 +16,12 @@ class WeakLensingData:
         condition_1 = wl_signals.shape[:2] == radii.shape + redshifts.shape
         condition_2 = wl_signals.ndim <= 3
         return condition_1 and condition_2
+
+    def select_redshift_index(self, redshift_index):
+        new_redshift = np.array([self.redshifts[redshift_index]])
+        new_wl_signals = self.wl_signals[:, redshift_index:redshift_index+1, :]
+        return WeakLensingData(
+            radii=self.radii,
+            redshifts=new_redshift,
+            wl_signals=new_wl_signals,
+        )
