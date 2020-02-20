@@ -4,7 +4,7 @@ from maszcal.data.templates import WeakLensingData
 
 
 class NBatta2010(WeakLensingData):
-    def __init__(self, data_dir='data/NBatta2010'):
+    def __init__(self, data_dir='data/NBatta2010/'):
         self.cosmology = self._init_cosmology()
 
         rs, wl_signals, zs = self._load_data(data_dir)

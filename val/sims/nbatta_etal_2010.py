@@ -1,5 +1,7 @@
 import pytest
-import maszcal.data
+import numpy as np
+import pathos.pools as pp
+import maszcal.data.sims
 import maszcal.analysis
 
 
@@ -9,18 +11,19 @@ def describe_nbatta_sim():
 
         @pytest.fixture
         def sim_data():
-            return maszcal.data.NBatta2010()
+            return maszcal.data.sims.NBatta2010()
 
         def using_gnfw_reduces_bias(sim_data):
             nfw_model = maszcal.analysis.select_model(model='nfw', cm_relation=True, emulation=False, stacked=False)
+            NUM_THREADS = 12
 
             nfw_params_shape = (1, sim_data.radii.size, sim_data.redshifts.size)
             nfw_fits = np.zeros(nfw_params_shape)
             for i, z in enumerate(sim_data.redshifts):
                 def _pool_func(data): return nfw_model.get_best_fit(data, z)
-                pool = Pool(NUM_THREADS)
+                pool = pp.ProcessPool(NUM_THREADS)
                 nfw_fits[:, :, i] = np.array(
-                    pool.map(_pool_func, sim_data.wl_signal[:, :, i].T),
+                    pool.map(_pool_func, sim_data.wl_signals[:, :, i].T),
                 ).T
                 pool.close()
                 pool.join()
@@ -31,9 +34,9 @@ def describe_nbatta_sim():
             gnfw_fits = np.zeros(gnfw_params_shape)
             for i, z in enumerate(sim_data.redshifts):
                 def _pool_func(data): return gnfw_model.get_best_fit(data, z)
-                pool = Pool(NUM_THREADS)
+                pool = pp.ProcessPool(NUM_THREADS)
                 gnfw_fits[:, :, i] = np.array(
-                    pool.map(_pool_func, sim_data.wl_signal[:, :, i].T),
+                    pool.map(_pool_func, sim_data.wl_signals[:, :, i].T),
                 ).T
                 pool.close()
                 pool.join()
