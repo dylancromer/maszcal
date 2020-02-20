@@ -52,6 +52,12 @@ class NBatta2010(WeakLensingData):
         ### h M_sun / pc
         return rs, wl_esds
 
+    def _reduce_radii(self, radii):
+        if np.all(radii[:, 0] == radii.T):
+            return radii[:, 0]
+        else:
+            raise ValueError('radii are different for different clusters')
+
     def _load_data(self, data_dir):
         NUM_SNAPS = 55 - 41
         NUM_CLUSTERS = 100
@@ -63,5 +69,8 @@ class NBatta2010(WeakLensingData):
         for i, snap in enumerate(range(41, 55)):
             zs[i] = self.__load_cluster_redshift(data_dir, snap)
             rs, wl_esds[..., i] = self.__load_wl_signal_and_radii(data_dir, snap, NUM_CLUSTERS, NUM_RADII)
+
+        wl_esds = np.moveaxis(wl_esds, 2, 1)
+        rs = self._reduce_radii(rs)
 
         return rs, wl_esds, zs
