@@ -5,7 +5,7 @@ import maszcal.model as model
 import maszcal.defaults as defaults
 
 
-class SingleMassLensingSignal:
+class SingleMassNfwLensingSignal:
     def __init__(
             self,
             redshift=nothing.NoRedshifts(),
