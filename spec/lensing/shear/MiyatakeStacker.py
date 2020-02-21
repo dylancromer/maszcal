@@ -3,7 +3,7 @@ import json
 import pytest
 import numpy as np
 import astropy.units as u
-from maszcal.shear import MiyatakeStacker
+from maszcal.lensing.shear import MiyatakeStacker
 from maszcal.ioutils import NumpyEncoder
 
 

@@ -49,7 +49,7 @@ def describe_single_mass_lensing_signal():
 
         @pytest.fixture
         def lensing_signal(mocker):
-            mocker.patch('maszcal.lensing.maszcal.shear.SingleMassNfwShearModel', new=FakeSingleMassNfwShearModel)
+            mocker.patch('maszcal.lensing.maszcal.lensing.shear.SingleMassNfwShearModel', new=FakeSingleMassNfwShearModel)
             redshift = np.array([0])
             return SingleMassNfwLensingSignal(redshift=redshift)
 

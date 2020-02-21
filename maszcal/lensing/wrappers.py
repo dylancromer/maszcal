@@ -1,7 +1,7 @@
 import numpy as np
 import astropy.units as u
 import maszcal.nothing as nothing
-import maszcal.shear
+import maszcal.lensing.shear
 import maszcal.defaults as defaults
 
 
@@ -34,7 +34,7 @@ class SingleMassNfwLensingSignal:
             raise TypeError('redshifts must have length 1 to calculate a single-mass-bin model')
 
     def _init_single_mass_model(self):
-        self.single_mass_model = maszcal.shear.SingleMassNfwShearModel(
+        self.single_mass_model = maszcal.lensing.shear.SingleMassNfwShearModel(
             self.redshift,
             cosmo_params=self.cosmo_params,
             comoving_radii=self.comoving,
@@ -88,7 +88,7 @@ class NfwLensingSignal:
         self.sz_scatter = sz_scatter
 
     def _init_stacked_model(self):
-        self.stacked_model = maszcal.shear.NfwShearModel(
+        self.stacked_model = maszcal.lensing.shear.NfwShearModel(
             self.log_masses,
             self.redshifts,
             cosmo_params=self.cosmo_params,
@@ -120,7 +120,7 @@ class NfwLensingSignal:
 
 class NfwCmLensingSignal(NfwLensingSignal):
     def _init_stacked_model(self):
-        self.stacked_model = maszcal.shear.NfwCmShearModel(
+        self.stacked_model = maszcal.lensing.shear.NfwCmShearModel(
             self.log_masses,
             self.redshifts,
             cosmo_params=self.cosmo_params,
@@ -151,7 +151,7 @@ class NfwCmLensingSignal(NfwLensingSignal):
 
 class MiyatakeLensingSignal(NfwLensingSignal):
     def _init_stacked_model(self):
-        self.stacked_model = maszcal.shear.MiyatakeShearModel(
+        self.stacked_model = maszcal.lensing.shear.MiyatakeShearModel(
             self.log_masses,
             self.redshifts,
             cosmo_params=self.cosmo_params,
@@ -216,7 +216,7 @@ class BaryonLensingSignal:
         self.sz_scatter = sz_scatter
 
     def _init_baryon_model(self):
-        self.baryon_model = maszcal.shear.BaryonShearModel(
+        self.baryon_model = maszcal.lensing.shear.BaryonShearModel(
             self.log_masses,
             self.redshifts,
             cosmo_params=self.cosmo_params,
@@ -251,7 +251,7 @@ class BaryonLensingSignal:
 
 class BaryonCmLensingSignal(BaryonLensingSignal):
     def _init_stacked_model(self):
-        self.stacked_model = maszcal.shear.BaryonCmShearModel(
+        self.stacked_model = maszcal.lensing.shear.BaryonCmShearModel(
             self.log_masses,
             self.redshifts,
             cosmo_params=self.cosmo_params,
@@ -312,7 +312,7 @@ class SingleBaryonLensingSignal:
             raise TypeError('redshifts must have length 1 to calculate a single-mass-bin model')
 
     def _init_single_mass_model(self):
-        self.single_mass_model = maszcal.shear.SingleMassBaryonShearModel(
+        self.single_mass_model = maszcal.lensing.shear.SingleMassBaryonShearModel(
             self.redshift,
             cosmo_params=self.cosmo_params,
             comoving_radii=self.comoving,

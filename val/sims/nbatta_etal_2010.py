@@ -13,7 +13,7 @@ def describe_nbatta_sim():
         def sim_data():
             return maszcal.data.sims.NBatta2010()
 
-        def using_gnfw_reduces_bias(sim_data):
+        def using_baryon_reduces_bias(sim_data):
             NUM_THREADS = 12
 
             nfw_params_shape = (1, sim_data.radii.size, sim_data.redshifts.size)
@@ -35,20 +35,20 @@ def describe_nbatta_sim():
                 #pool.close()
                 #pool.join()
 
-            gnfw_params_shape = (4, sim_data.radii.size, sim_data.redshifts.size)
-            gnfw_fits = np.zeros(gnfw_params_shape)
+            baryon_params_shape = (4, sim_data.radii.size, sim_data.redshifts.size)
+            baryon_fits = np.zeros(baryon_params_shape)
             for i, z in enumerate(sim_data.redshifts):
-                gnfw_model = maszcal.analysis.select_model(
+                baryon_model = maszcal.analysis.select_model(
                     data=sim_data.select_redshift_index(i),
-                    model='gnfw',
+                    model='baryon',
                     cm_relation=False,
                     emulation=False,
                     stacked=False,
                 )
 
-                #def _pool_func(data): return gnfw_model.get_best_fit(data, z)
+                #def _pool_func(data): return baryon_model.get_best_fit(data, z)
                 #pool = pp.ProcessPool(NUM_THREADS)
-                #gnfw_fits[:, :, i] = np.array(
+                #baryon_fits[:, :, i] = np.array(
                 #    pool.map(_pool_func, sim_data.wl_signals[:, :, i].T),
                 #).T
                 #pool.close()
@@ -57,11 +57,11 @@ def describe_nbatta_sim():
             nfw_masses = nfw_model.get_masses_from_params(nfw_fits)
             nfw_bias = _calc_bias(nfw_masses, sim_data.masses)
 
-            gnfw_masses = gnfw_model.get_masses_from_params(gnfw_fits)
-            gnfw_bias = _calc_bias(gnfw_masses, sim_data.masses)
+            baryon_masses = baryon_model.get_masses_from_params(baryon_fits)
+            baryon_bias = _calc_bias(baryon_masses, sim_data.masses)
 
             #TODO: make save_data save all possible variable parameters for the fit with the data
-            save_data({'nfw-bias_nbatta-2010_single-mass': nfw_bias, 'gnfw-bias_nbatta-2010_single-mass': gnfw_bias})
-            _plot_biases({'NFW only': nfw_bias, 'Baryons': gnfw_bias})
+            save_data({'nfw-bias_nbatta-2010_single-mass': nfw_bias, 'baryon-bias_nbatta-2010_single-mass': baryon_bias})
+            _plot_biases({'NFW only': nfw_bias, 'Baryons': baryon_bias})
 
-            assert gnfw_bias.mean() < nfw_bias.mean()
+            assert baryon_bias.mean() < nfw_bias.mean()

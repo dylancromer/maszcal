@@ -38,21 +38,21 @@ def describe_lensing_signal():
         def it_accepts_a_selection_func_file(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.maszcal.shear.BaryonCmShearModel', new=FakeBaryonCmShearModel)
+            mocker.patch('maszcal.lensing.maszcal.lensing.shear.BaryonCmShearModel', new=FakeBaryonCmShearModel)
             sel_func_file = 'test/file/here'
             BaryonCmLensingSignal(mus, zs, selection_func_file=sel_func_file)
 
         def it_accepts_a_weights_file(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.maszcal.shear.BaryonCmShearModel', new=FakeBaryonCmShearModel)
+            mocker.patch('maszcal.lensing.maszcal.lensing.shear.BaryonCmShearModel', new=FakeBaryonCmShearModel)
             weights_file = 'test/file/here'
             BaryonCmLensingSignal(mus, zs, lensing_weights_file=weights_file)
 
         def it_allows_a_different_mass_definition(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.maszcal.shear.BaryonCmShearModel', new=FakeBaryonCmShearModel)
+            mocker.patch('maszcal.lensing.maszcal.lensing.shear.BaryonCmShearModel', new=FakeBaryonCmShearModel)
 
             delta = 500
             mass_definition = 'crit'
@@ -62,7 +62,7 @@ def describe_lensing_signal():
         def it_can_use_a_different_cosmology(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.maszcal.shear.BaryonCmShearModel', new=FakeBaryonCmShearModel)
+            mocker.patch('maszcal.lensing.maszcal.lensing.shear.BaryonCmShearModel', new=FakeBaryonCmShearModel)
 
             cosmo = CosmoParams(neutrino_mass_sum=1)
             BaryonCmLensingSignal(mus, zs, cosmo_params=cosmo)
@@ -71,7 +71,7 @@ def describe_lensing_signal():
 
         @pytest.fixture
         def lensing_signal(mocker):
-            mocker.patch('maszcal.lensing.maszcal.shear.BaryonCmShearModel', new=FakeBaryonCmShearModel)
+            mocker.patch('maszcal.lensing.maszcal.lensing.shear.BaryonCmShearModel', new=FakeBaryonCmShearModel)
 
             mus = np.linspace(32, 34, 10)
             zs = np.linspace(0, 2, 5)
@@ -95,7 +95,7 @@ def describe_lensing_signal():
 
         @pytest.fixture
         def lensing_signal(mocker):
-            mocker.patch('maszcal.lensing.maszcal.shear.BaryonCmShearModel', new=FakeBaryonCmShearModel)
+            mocker.patch('maszcal.lensing.maszcal.lensing.shear.BaryonCmShearModel', new=FakeBaryonCmShearModel)
 
             mus = np.linspace(32, 34, 10)
             zs = np.linspace(0, 2, 5)

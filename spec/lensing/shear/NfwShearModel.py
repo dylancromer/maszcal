@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from maszcal.shear import NfwShearModel
+from maszcal.lensing.shear import NfwShearModel
 
 
 def describe_stacked_model():

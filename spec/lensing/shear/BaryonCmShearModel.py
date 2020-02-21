@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import pytest
 import numpy as np
 import astropy.units as u
-from maszcal.shear import BaryonCmShearModel
+from maszcal.lensing.shear import BaryonCmShearModel
 
 
 class FakeProjector:
@@ -27,8 +27,8 @@ def describe_gaussian_baryonic_model():
 
         @pytest.fixture
         def baryon_model(mocker):
-            mocker.patch('maszcal.shear.ConModel', new=FakeConModel)
-            mocker.patch('maszcal.shear.projector', new=FakeProjector)
+            mocker.patch('maszcal.lensing.shear.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.lensing.shear.projector', new=FakeProjector)
             mus = np.linspace(np.log(1e14), np.log(1e16), 9)
             zs = np.linspace(0, 1, 8)
             return BaryonCmShearModel(mus, zs)
@@ -129,7 +129,7 @@ def describe_gaussian_baryonic_model():
 
         @pytest.fixture
         def baryon_model(mocker):
-            mocker.patch('maszcal.shear.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.lensing.shear.ConModel', new=FakeConModel)
             mus = np.linspace(np.log(1e14), np.log(1e16), 9)
             zs = np.linspace(0, 1, 8)
             return BaryonCmShearModel(mus, zs, units=u.Msun/u.pc**2)

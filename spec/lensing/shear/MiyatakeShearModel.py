@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from maszcal.shear import MiyatakeShearModel
+from maszcal.lensing.shear import MiyatakeShearModel
 
 
 class FakeConModel:
@@ -28,7 +28,7 @@ def describe_stacked_model():
         def stacked_model(mocker):
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
             zs = np.linspace(0, 2, 8)
-            mocker.patch('maszcal.shear.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.lensing.shear.ConModel', new=FakeConModel)
 
             model = MiyatakeShearModel(mus, zs)
             model._init_stacker()
@@ -48,7 +48,7 @@ def describe_stacked_model():
             assert avg_wl_mass > 0
 
         def it_can_use_different_mass_definitions(mocker):
-            mocker.patch('maszcal.shear.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.lensing.shear.ConModel', new=FakeConModel)
             rs = np.logspace(-1, 1, 10)
 
             mus = np.linspace(np.log(1e12), np.log(1e15), 20)
