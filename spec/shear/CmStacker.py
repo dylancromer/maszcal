@@ -1,10 +1,9 @@
-
 import os
 import json
 import pytest
 import numpy as np
 import astropy.units as u
-from maszcal.model import MiyatakeStacker
+from maszcal.shear import CmStacker
 from maszcal.ioutils import NumpyEncoder
 
 
@@ -16,7 +15,7 @@ def describe_stacker():
         def stacker():
             mus = np.linspace(np.log(1e14), np.log(1e15), 10)
             redshifts = np.linspace(0, 1, 8)
-            return MiyatakeStacker(
+            return CmStacker(
                 mus,
                 redshifts,
                 units=u.Msun/u.pc**2,
@@ -83,6 +82,19 @@ def describe_stacker():
 
             assert delta_sigmas.shape == (21, N_PARAMS)
 
+        def it_can_compute_wl_avg_masses(stacker):
+            zs = np.linspace(0, 2, 8)
+
+            stacker.dnumber_dlogmass = lambda : np.ones(
+                (stacker.mus.size, stacker.zs.size)
+            )
+
+            a_szs = np.linspace(-1, 1, 4)
+
+            avg_masses = stacker.weak_lensing_avg_mass(a_szs)
+
+            assert avg_masses.shape == (4,)
+
         def it_complains_about_nans(stacker):
             zs = np.linspace(0, 2, 8)
 
@@ -91,9 +103,6 @@ def describe_stacker():
                 (stacker.mus.size, stacker.zs.size),
                 np.nan,
             )
-
-            # Ugly mock of concentration model
-            stacker._m500c = lambda mus: np.exp(mus)
 
             rs = np.logspace(-1, 1, 10)
             a_szs = np.linspace(-1, 1, 2)

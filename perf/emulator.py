@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from maszcal.interp_utils import cartesian_prod
-from maszcal.lensing import StackedLensingSignal
+from maszcal.lensing import NfwLensingSignal
 from maszcal.emulator import LensingEmulator
 
 
@@ -26,7 +26,7 @@ def describe_lensing_signal():
         redshifts = np.linspace(0, 2, 30)
         log_masses = np.linspace(np.log(1e14), np.log(1e16), 30)
 
-        lsignal = StackedLensingSignal(log_masses=log_masses, redshifts=redshifts)
+        lsignal = NfwLensingSignal(log_masses=log_masses, redshifts=redshifts)
 
         cons = np.linspace(2, 5, 10)
         a_szs = np.linspace(-1.2, 1.2, 10)
@@ -46,7 +46,7 @@ def describe_lensing_signal():
         redshifts = np.linspace(0, 2, 30)
         log_masses = np.linspace(np.log(1e14), np.log(1e16), 30)
 
-        lsignal = StackedLensingSignal(log_masses=log_masses, redshifts=redshifts)
+        lsignal = NfwLensingSignal(log_masses=log_masses, redshifts=redshifts)
 
         cons = np.linspace(2, 5, 10)
         a_szs = np.linspace(-1.2, 1.2, 10)

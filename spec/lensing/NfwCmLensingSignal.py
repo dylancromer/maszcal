@@ -39,21 +39,21 @@ def describe_lensing_signal():
         def it_accepts_a_selection_func_file(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.model.NfwCmShearModel', new=FakeNfwCmShearModel)
+            mocker.patch('maszcal.lensing.maszcal.shear.NfwCmShearModel', new=FakeNfwCmShearModel)
             sel_func_file = 'test/file/here'
             NfwCmLensingSignal(mus, zs, selection_func_file=sel_func_file)
 
         def it_accepts_a_weights_file(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.model.NfwCmShearModel', new=FakeNfwCmShearModel)
+            mocker.patch('maszcal.lensing.maszcal.shear.NfwCmShearModel', new=FakeNfwCmShearModel)
             weights_file = 'test/file/here'
             NfwCmLensingSignal(mus, zs, lensing_weights_file=weights_file)
 
         def it_allows_a_different_mass_definition(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.model.NfwCmShearModel', new=FakeNfwCmShearModel)
+            mocker.patch('maszcal.lensing.maszcal.shear.NfwCmShearModel', new=FakeNfwCmShearModel)
 
             delta = 500
             mass_definition = 'crit'
@@ -63,7 +63,7 @@ def describe_lensing_signal():
         def it_can_use_a_different_cosmology(mocker):
             mus = np.ones(10)
             zs = np.ones(5)
-            mocker.patch('maszcal.lensing.model.NfwCmShearModel', new=FakeNfwCmShearModel)
+            mocker.patch('maszcal.lensing.maszcal.shear.NfwCmShearModel', new=FakeNfwCmShearModel)
 
             cosmo = CosmoParams(neutrino_mass_sum=1)
             NfwCmLensingSignal(mus, zs, cosmo_params=cosmo)
@@ -72,7 +72,7 @@ def describe_lensing_signal():
 
         @pytest.fixture
         def lensing_signal(mocker):
-            mocker.patch('maszcal.lensing.model.NfwCmShearModel', new=FakeNfwCmShearModel)
+            mocker.patch('maszcal.lensing.maszcal.shear.NfwCmShearModel', new=FakeNfwCmShearModel)
 
             mus = np.linspace(32, 34, 10)
             zs = np.linspace(0, 2, 5)
@@ -95,7 +95,7 @@ def describe_lensing_signal():
 
         @pytest.fixture
         def lensing_signal(mocker):
-            mocker.patch('maszcal.lensing.model.NfwCmShearModel', new=FakeNfwCmShearModel)
+            mocker.patch('maszcal.lensing.maszcal.shear.NfwCmShearModel', new=FakeNfwCmShearModel)
 
             mus = np.linspace(32, 34, 10)
             zs = np.linspace(0, 2, 5)

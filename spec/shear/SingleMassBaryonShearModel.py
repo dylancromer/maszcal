@@ -1,8 +1,7 @@
-
 import pytest
 import numpy as np
 import astropy.units as u
-from maszcal.model import SingleMassBaryonShearModel
+from maszcal.shear import SingleMassBaryonShearModel
 
 
 def describe_single_mass_model():

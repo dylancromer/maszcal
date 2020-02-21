@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import pytest
 import numpy as np
-from maszcal.model import NfwCmShearModel
+from maszcal.shear import NfwCmShearModel
 
 
 @dataclass
@@ -33,7 +33,7 @@ def describe_stacked_model():
             return model
 
         def it_computes_stacked_delta_sigma(mocker):
-            mocker.patch('maszcal.model.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.shear.ConModel', new=FakeConModel)
 
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
             zs = np.linspace(0, 2, 8)
@@ -52,7 +52,7 @@ def describe_stacked_model():
             assert avg_wl_mass.shape == (rs.size, a_szs.size)
 
         def it_computes_weak_lensing_avg_mass(mocker):
-            mocker.patch('maszcal.model.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.shear.ConModel', new=FakeConModel)
 
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
             zs = np.linspace(0, 2, 8)
@@ -70,7 +70,7 @@ def describe_stacked_model():
             assert avg_wl_mass.shape == (3,)
 
         def it_can_use_different_mass_definitions(mocker):
-            mocker.patch('maszcal.model.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.shear.ConModel', new=FakeConModel)
 
             rs = np.logspace(-1, 1, 10)
 

@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import astropy.units as u
-from maszcal.model import SingleMassNfwShearModel
+from maszcal.shear import SingleMassNfwShearModel
 
 
 def describe_single_mass_model():

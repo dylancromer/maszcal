@@ -1,7 +1,7 @@
 
 import pytest
 import numpy as np
-from maszcal.lensing import SingleMassLensingSignal
+from maszcal.lensing import SingleMassNfwLensingSignal
 from maszcal.interp_utils import cartesian_prod
 
 
@@ -26,7 +26,7 @@ def describe_lensing_signal():
         @pytest.fixture
         def lsignal():
             redshift = np.array([0.4])
-            return SingleMassLensingSignal(redshift=redshift)
+            return SingleMassNfwLensingSignal(redshift=redshift)
 
         def its_fast_for_1_mass_and_con(benchmark, lsignal, radii, params_1):
             benchmark(lsignal.esd, radii, params_1)

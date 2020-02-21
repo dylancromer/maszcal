@@ -3,7 +3,7 @@ import json
 import pytest
 import numpy as np
 import astropy.units as u
-from maszcal.model import Stacker
+from maszcal.shear import MiyatakeStacker
 from maszcal.ioutils import NumpyEncoder
 
 
@@ -15,7 +15,7 @@ def describe_stacker():
         def stacker():
             mus = np.linspace(np.log(1e14), np.log(1e15), 10)
             redshifts = np.linspace(0, 1, 8)
-            return Stacker(
+            return MiyatakeStacker(
                 mus,
                 redshifts,
                 units=u.Msun/u.pc**2,
@@ -57,10 +57,9 @@ def describe_stacker():
             )
 
             rs = np.logspace(-1, 1, 21)
-            cons = np.linspace(2, 4, 1)
             a_szs = np.linspace(-1, 1, 1)
 
-            delta_sigmas_of_mass = np.ones((stacker.mus.size, zs.size, rs.size, cons.size))
+            delta_sigmas_of_mass = np.ones((stacker.mus.size, zs.size, rs.size))
 
             delta_sigmas = stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
 
@@ -77,24 +76,27 @@ def describe_stacker():
                 (stacker.mus.size, stacker.zs.size)
             )
 
-            delta_sigmas_of_mass = np.ones((stacker.mus.size, stacker.zs.size, rs.size, N_PARAMS))
+            delta_sigmas_of_mass = np.ones((stacker.mus.size, stacker.zs.size, rs.size))
 
             delta_sigmas = stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
 
+            assert delta_sigmas.shape == (21, N_PARAMS)
+
         def it_complains_about_nans(stacker):
             zs = np.linspace(0, 2, 8)
+
+            # Ugly mock of mass function
             stacker.dnumber_dlogmass = lambda : np.full(
                 (stacker.mus.size, stacker.zs.size),
                 np.nan,
             )
 
+            # Ugly mock of concentration model
+            stacker._m500c = lambda mus: np.exp(mus)
+
             rs = np.logspace(-1, 1, 10)
-            cons = np.linspace(2, 4, 1)
-            a_szs = np.linspace(-1, 1, 1)
-            delta_sigmas_of_mass = np.ones((stacker.mus.size, zs.size, rs.size, cons.size))
+            a_szs = np.linspace(-1, 1, 2)
+            delta_sigmas_of_mass = np.ones((stacker.mus.size, zs.size, rs.size))
 
             with pytest.raises(ValueError):
                 stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
-
-            with pytest.raises(ValueError):
-                stacker.weak_lensing_avg_mass(a_szs)
