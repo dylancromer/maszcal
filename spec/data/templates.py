@@ -13,6 +13,7 @@ def describe_weak_lensing_data():
                 radii=np.logspace(-1, 1, 10),
                 redshifts=np.linspace(0, 1, 5),
                 wl_signals=np.ones((10, 5, 3)),
+                covariances=np.ones((10, 10, 3)),
             )
 
         def it_must_be_inited_with_data(wl_data):
@@ -29,6 +30,7 @@ def describe_weak_lensing_data():
                 radii=np.logspace(-1, 1, 10),
                 redshifts=np.linspace(0, 1, 5),
                 wl_signals=np.ones((10, 5, 3)),
+                covariances=np.ones((10, 10, 3)),
             )
 
         def it_returns_a_new_weak_lensing_data_instance_with_the_selected_redshift(wl_data):
@@ -48,20 +50,24 @@ def describe_weak_lensing_data():
             radii = np.logspace(-1, 1, num_radii)
             redshifts = np.linspace(0, 1, num_redshifts)
 
-            wl_wrong_radii = np.ones((wrong_num_radii, num_redshifts))
-            wl_wrong_redshifts = np.ones((num_radii, wrong_num_redshifts))
-            wl_wrong_both = np.ones((wrong_num_radii, wrong_num_redshifts))
+            wl_wrong_radii = np.ones((wrong_num_radii, num_redshifts, 1))
+            wl_wrong_redshifts = np.ones((num_radii, wrong_num_redshifts, 1))
+            wl_wrong_both = np.ones((wrong_num_radii, wrong_num_redshifts, 1))
+            wl_wrong_covariance = np.ones((num_radii, num_redshifts, 2))
 
-            return radii, redshifts, wl_wrong_radii, wl_wrong_redshifts, wl_wrong_both
+            return radii, redshifts, wl_wrong_radii, wl_wrong_redshifts, wl_wrong_both, wl_wrong_covariance
 
         def it_makes_sure_the_data_shapes_are_consistent(mismatched_data):
-            radii, redshifts, wl_wrong_radii, wl_wrong_redshifts, wl_wrong_both = mismatched_data
+            radii, redshifts, wl_wrong_radii, wl_wrong_redshifts, wl_wrong_both, wl_wrong_covariance = mismatched_data
+            num_radii = radii.size
+            num_clusters = 1
 
             with pytest.raises(ValueError):
                 WeakLensingData(
                     radii=radii,
                     redshifts=redshifts,
                     wl_signals=wl_wrong_radii,
+                    covariances=np.ones((num_radii, num_radii, num_clusters)),
                 )
 
             with pytest.raises(ValueError):
@@ -69,6 +75,7 @@ def describe_weak_lensing_data():
                     radii=radii,
                     redshifts=redshifts,
                     wl_signals=wl_wrong_redshifts,
+                    covariances=np.ones((num_radii, num_radii, num_clusters)),
                 )
 
             with pytest.raises(ValueError):
@@ -76,4 +83,13 @@ def describe_weak_lensing_data():
                     radii=radii,
                     redshifts=redshifts,
                     wl_signals=wl_wrong_both,
+                    covariances=np.ones((num_radii, num_radii, num_clusters)),
+                )
+
+            with pytest.raises(ValueError):
+                WeakLensingData(
+                    radii=radii,
+                    redshifts=redshifts,
+                    wl_signals=wl_wrong_covariance,
+                    covariances=np.ones((num_radii, num_radii, num_clusters)),
                 )

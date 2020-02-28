@@ -4,15 +4,21 @@ from maszcal.data.templates import WeakLensingData
 
 
 class NBatta2010(WeakLensingData):
-    def __init__(self, data_dir='data/NBatta2010/'):
+    def __init__(self, data_dir='data/NBatta2010/', covariances=None):
         self.cosmology = self._init_cosmology()
 
         rs, wl_signals, zs = self._load_data(data_dir)
+
+        if covariances is None:
+            covariance = 0.01 * np.identity(rs.size)
+            num_clusters = wl_signals.shape[2]
+            covariances = np.stack(num_clusters*(covariance,), axis=-1)
 
         super().__init__(
             radii=rs,
             redshifts=zs,
             wl_signals=wl_signals,
+            covariances=covariances,
         )
 
     def _init_cosmology(self):
