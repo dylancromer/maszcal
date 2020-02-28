@@ -12,7 +12,8 @@ def describe_select_model():
         return maszcal.data.templates.WeakLensingData(
             radii=np.logspace(-1, 0, 10),
             redshifts=np.zeros(1),
-            wl_signals=np.ones((10, 1)),
+            wl_signals=np.ones((10, 1, 1)),
+            covariances=np.ones((10, 10, 1)),
         )
 
     def it_returns_the_right_model_when_asked(data):
