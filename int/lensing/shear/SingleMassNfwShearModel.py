@@ -9,8 +9,8 @@ from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
 import seaborn as sns
 sns.set(style='whitegrid', font_scale=1.5, rc={"lines.linewidth": 2,'lines.markersize': 8.0,})
-from maszcal.model import SingleMassNfwShearModel
-from maszcal.lensing import SingleMassLensingSignal
+from maszcal.lensing.shear import SingleMassNfwShearModel
+from maszcal.lensing import SingleMassNfwLensingSignal
 
 
 def describe_single_mass_bin():
@@ -23,7 +23,7 @@ def describe_single_mass_bin():
     @pytest.fixture
     def lensing_signal():
         zs = np.ones(1)
-        return SingleMassLensingSignal(redshift=zs)
+        return SingleMassNfwLensingSignal(redshift=zs)
 
     def both_classes_give_the_same_thing(lensing_signal, single_mass_model):
         rs = np.logspace(-2, 1, 50)

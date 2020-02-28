@@ -9,17 +9,16 @@ from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
 import seaborn as sns
 sns.set(style='whitegrid', font_scale=1.5, rc={"lines.linewidth": 2,'lines.markersize': 8.0,})
-from maszcal.model import MiyatakeShearModel
+from maszcal.lensing.shear import NfwCmShearModel
 
 
-def describe_miyatake_shear_model():
+def describe_nfw_cm_shear_model():
 
     @pytest.fixture
     def stacked_model():
         mus = np.array([np.log(1e15)])
         zs = np.linspace(0, 2, 20)
-        return MiyatakeShearModel(mus, zs, units=u.Msun/(u.pc**2), delta=500, mass_definition='crit')
-
+        return NfwCmShearModel(mus, zs, units=u.Msun/(u.pc**2), delta=500, mass_definition='crit')
 
     def test_delta_sigma_of_m(stacked_model):
         rs = np.logspace(-1, 2, 40)
@@ -36,17 +35,17 @@ def describe_miyatake_shear_model():
         plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
         plt.xscale('log')
 
-        plt.savefig('figs/test/delta_sigma_r_m_with_miyatake.svg')
+        plt.savefig('figs/test/delta_sigma_r_m_cm_relation.svg')
         plt.gcf().clear()
 
 
     def test_delta_sigma_of_r(stacked_model):
-        mubins = np.linspace(np.log(1e14), np.log(1e16), 29)
+        mubins = np.linspace(np.log(1e14), np.log(1e16), 30)
         zbins = np.linspace(0, 2, 30)
 
         a_szs = np.zeros(1)
 
-        stacked_model = MiyatakeShearModel(mubins, zbins)
+        stacked_model = NfwCmShearModel(mubins, zbins)
 
         rs = np.logspace(-1, 2, 40)
 
@@ -54,14 +53,14 @@ def describe_miyatake_shear_model():
 
         stacked_model.params = params
 
-        delta_sigmas = stacked_model.stacked_delta_sigma(rs, a_szs)
+        delta_sigmas = stacked_model.stacked_delta_sigma(rs, a_szs)[:,0]
 
-        plt.plot(rs, rs[:, None] * delta_sigmas)
+        plt.plot(rs, rs * delta_sigmas)
         plt.xlabel(r'$ r $')
         plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
         plt.xscale('log')
 
-        plt.savefig('figs/test/delta_sigma_r_with_miyatake.svg')
+        plt.savefig('figs/test/delta_sigma_r_cm_relation.svg')
         plt.gcf().clear()
 
 
@@ -83,27 +82,27 @@ def describe_miyatake_shear_model():
         plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
         plt.xscale('log')
 
-        plt.savefig('figs/test/delta_sigma_r_m_comoving_false_with_miyatake.svg')
+        plt.savefig('figs/test/delta_sigma_r_m_comoving_false_cm_relation.svg')
         plt.gcf().clear()
 
 
     def test_delta_sigma_of_r_nocomoving(stacked_model):
-        mubins = np.linspace(np.log(1e14), np.log(1e16), 29)
+        mubins = np.linspace(np.log(1e14), np.log(1e16), 30)
         zbins = np.linspace(0, 2, 30)
 
-        stacked_model = MiyatakeShearModel(mubins, zbins)
+        stacked_model = NfwCmShearModel(mubins, zbins)
         stacked_model.comoving_radii = False
 
         rs = np.logspace(-1, 2, 40)
 
         a_szs = np.zeros(1)
 
-        delta_sigmas = stacked_model.stacked_delta_sigma(rs, a_szs)
+        delta_sigmas = stacked_model.stacked_delta_sigma(rs, a_szs)[:,0]
 
-        plt.plot(rs, rs[:, None] * delta_sigmas)
+        plt.plot(rs, rs * delta_sigmas)
         plt.xlabel(r'$ r $')
         plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
         plt.xscale('log')
 
-        plt.savefig('figs/test/delta_sigma_r_comoving_false_with_miyatake.svg')
+        plt.savefig('figs/test/delta_sigma_r_comoving_false_cm_relation.svg')
         plt.gcf().clear()
