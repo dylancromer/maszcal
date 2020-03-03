@@ -6,27 +6,7 @@ from maszcal.cosmology import CosmoParams
 
 def describe_con_model():
 
-    def describe_init():
-
-        @pytest.fixture
-        def custom_cosmo():
-            return CosmoParams(neutrino_mass_sum=0.10)
-
-        def it_can_accept_a_custom_cosmology(custom_cosmo):
-            con_model = ConModel(mass_def='200m', cosmology=custom_cosmo)
-
     def describe_c():
-
-        def it_calculates_a_concentration_from_a_mass():
-            con_model = ConModel(mass_def='200m')
-
-            masses = np.logspace(14, 16, 3)
-
-            redshifts = np.linspace(0, 2, 3)
-
-            cons = con_model.c(masses, redshifts, '200c')
-
-            assert np.all(cons > 0)
 
         def it_converts_the_masses_appropriately():
             con_model = ConModel(mass_def='500c')

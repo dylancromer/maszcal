@@ -40,15 +40,6 @@ def describe_emulation():
             return emulator.Emulation(radii=np.array([1]),
                              saved_rbfs=[saved_rbf])
 
-        def it_save_a_file_with_the_emulation(emulation):
-            SAVED_FILE = 'data/test/emulation.test.json'
-
-            emulation.save(SAVED_FILE)
-
-            assert os.path.isfile(SAVED_FILE)
-
-            os.remove(SAVED_FILE)
-
         def it_can_load_a_saved_emulation_file(emulation):
             SAVED_FILE = 'data/test/emulation.test.json'
 
@@ -86,61 +77,6 @@ def describe_emulator():
 
             assert np.allclose(test_value, np.ones(10), rtol=1e-2)
             assert test_value.shape == (10, 1)
-
-        def it_can_use_different_functions():
-            lensing_emulator = emulator.LensingEmulator(function='linear')
-
-            cons = np.linspace(2, 5, 5)
-            a_szs = np.linspace(-1, 1, 5)
-            params = cartesian_prod(cons, a_szs)
-
-            rs = np.logspace(-1, 1, 10)
-
-            func_vals = np.ones((10, 25))
-
-            lensing_emulator.emulate(rs, params, func_vals)
-
-            test_params = np.array([[3, 0]])
-
-            test_value = lensing_emulator.evaluate_on(test_params)
-
-            assert np.allclose(test_value, np.ones(10), rtol=1e-2)
-            assert test_value.shape == (10, 1)
-
-            for interpolator in lensing_emulator.interpolators:
-                assert interpolator.rbfi.function == 'linear'
-
-    def describe_load_emulation():
-
-        @pytest.fixture
-        def lensing_emulator():
-            lensing_emulator = emulator.LensingEmulator()
-            return lensing_emulator
-
-        @pytest.fixture
-        def saved_rbf():
-            return SavedRbf(dimension=1,
-                            norm='euclidean',
-                            function='multiquadric',
-                            data=np.ones(10),
-                            coords=np.linspace(0, 1, 10),
-                            epsilon=1,
-                            smoothness=0,
-                            nodes=np.ones(10))
-
-        @pytest.fixture
-        def emulation(saved_rbf):
-            return emulator.Emulation(radii=np.linspace(0, 1, 2),
-                                      saved_rbfs=[saved_rbf, saved_rbf])
-
-        def it_can_accept_a_saved_emulation(lensing_emulator, emulation):
-            lensing_emulator.load_emulation(saved_emulation=emulation)
-            assert lensing_emulator.interpolators is not None
-            assert lensing_emulator.interpolators[0].rbfi is not None
-
-        def it_fails_if_you_dont_give_it_a_file_or_emulation(lensing_emulator):
-            with pytest.raises(TypeError):
-                lensing_emulator.load_emulation()
 
     def describe_save_emulation():
 

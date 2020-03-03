@@ -30,44 +30,6 @@ class FakeMiyatakeShearModel:
 
 def describe_lensing_signal():
 
-    def describe_init():
-
-        def it_requires_redshifts():
-            with pytest.raises(TypeError):
-                MiyatakeLensingSignal()
-
-        def it_accepts_a_selection_func_file(mocker):
-            mus = np.ones(10)
-            zs = np.ones(5)
-            mocker.patch('maszcal.lensing.maszcal.lensing.shear.MiyatakeShearModel', new=FakeMiyatakeShearModel)
-            sel_func_file = 'test/file/here'
-            MiyatakeLensingSignal(mus, zs, selection_func_file=sel_func_file)
-
-        def it_accepts_a_weights_file(mocker):
-            mus = np.ones(10)
-            zs = np.ones(5)
-            mocker.patch('maszcal.lensing.maszcal.lensing.shear.MiyatakeShearModel', new=FakeMiyatakeShearModel)
-            weights_file = 'test/file/here'
-            MiyatakeLensingSignal(mus, zs, lensing_weights_file=weights_file)
-
-        def it_allows_a_different_mass_definition(mocker):
-            mus = np.ones(10)
-            zs = np.ones(5)
-            mocker.patch('maszcal.lensing.maszcal.lensing.shear.MiyatakeShearModel', new=FakeMiyatakeShearModel)
-
-            delta = 500
-            mass_definition = 'crit'
-
-            MiyatakeLensingSignal(mus, zs, delta=delta, mass_definition=mass_definition)
-
-        def it_can_use_a_different_cosmology(mocker):
-            mus = np.ones(10)
-            zs = np.ones(5)
-            mocker.patch('maszcal.lensing.maszcal.lensing.shear.MiyatakeShearModel', new=FakeMiyatakeShearModel)
-
-            cosmo = CosmoParams(neutrino_mass_sum=1)
-            MiyatakeLensingSignal(mus, zs, cosmo_params=cosmo)
-
     def describe_stacked_esd():
 
         @pytest.fixture

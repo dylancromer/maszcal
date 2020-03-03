@@ -24,24 +24,6 @@ class FakeSingleMassBaryonShearModel:
 
 def describe_single_mass_lensing_signal():
 
-    def describe_init():
-
-        def it_requires_redshifts():
-            with pytest.raises(TypeError):
-                SingleBaryonLensingSignal()
-
-        def it_allows_a_different_mass_definition(mocker):
-            zs = np.ones(1)
-            delta = 500
-            mass_definition = 'crit'
-
-            SingleBaryonLensingSignal(zs, delta=delta, mass_definition=mass_definition)
-
-        def it_can_use_a_different_cosmology(mocker):
-            zs = np.ones(1)
-            cosmo = CosmoParams(neutrino_mass_sum=1)
-            SingleBaryonLensingSignal(zs, cosmo_params=cosmo)
-
     def describe_esd():
 
         def it_fails_if_there_are_too_many_redshifts():

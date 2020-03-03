@@ -5,12 +5,6 @@ from maszcal.lensing.shear import NfwShearModel
 
 def describe_stacked_model():
 
-    def describe_init():
-
-        def it_requires_you_to_provide_mass_and_redshift():
-            with pytest.raises(TypeError):
-                NfwShearModel()
-
     def describe_math_functions():
 
         @pytest.fixture
