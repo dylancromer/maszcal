@@ -43,6 +43,6 @@ def describe_nfw_single_mass():
             )
 
         def it_gets_the_best_fit_for_the_input_data(nfw_model, data):
-            best_fit = nfw_model.get_best_fit(data, data.redshifts)
+            best_fit = nfw_model.get_best_fit(data)
 
             assert np.allclose(best_fit, np.array([3, 1e14]))

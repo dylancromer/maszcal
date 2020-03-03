@@ -27,7 +27,7 @@ def describe_nbatta_sim():
                     stacked=False
                 )
 
-                #def _pool_func(data): return nfw_model.get_best_fit(data, z)
+                #def _pool_func(data): return nfw_model.get_best_fit(data)
                 #pool = pp.ProcessPool(NUM_THREADS)
                 #nfw_fits[:, :, i] = np.array(
                 #    pool.map(_pool_func, sim_data.wl_signals[:, :, i].T),
@@ -46,7 +46,7 @@ def describe_nbatta_sim():
                     stacked=False,
                 )
 
-                #def _pool_func(data): return baryon_model.get_best_fit(data, z)
+                #def _pool_func(data): return baryon_model.get_best_fit(data)
                 #pool = pp.ProcessPool(NUM_THREADS)
                 #baryon_fits[:, :, i] = np.array(
                 #    pool.map(_pool_func, sim_data.wl_signals[:, :, i].T),
