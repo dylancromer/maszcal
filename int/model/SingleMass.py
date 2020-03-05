@@ -18,44 +18,25 @@ class FakeSingleMassNfwLensingSignal:
         self.redshift = redshift
 
     def esd(self, rs, params):
-        return np.ones((1, 1, rs.size, 1))
-
-
-def fake_minimizer(func, param_mins, param_maxes, method):
-    return np.array([3, np.log(1e14)])
+        return rs[:, None, None] + params[None, 0, None]**2 + params[None, 1, None]**2
 
 
 def describe_single_mass():
-
-    def describe_esd():
-
-        @pytest.fixture
-        def nfw_model():
-            return maszcal.model.SingleMass(lensing_signal_class=FakeSingleMassNfwLensingSignal)
-
-        def it_calculates_an_esd(nfw_model):
-            rs = np.logspace(-1, 1, 4)
-            params = np.array([3, np.log(1e14)])
-
-            esd = nfw_model.esd(rs, params)
-
-            assert np.all(esd == np.ones((1, 1, rs.size, 1)))
-            assert esd.shape == (1, 1, 4, 1)
 
     def describe_get_best_fit():
 
         @pytest.fixture
         def nfw_model():
-            return maszcal.model.SingleMass(
-                lensing_signal_class=FakeSingleMassNfwLensingSignal,
-                minimize_func=fake_minimizer,
-            )
+            return maszcal.model.SingleMass(lensing_signal_class=SingleMassNfwLensingSignal)
 
         @pytest.fixture
-        def data(nfw_model):
+        def data_and_true_params(nfw_model):
             rs = np.logspace(-1, 1, 4)
             zs = np.zeros(1)
-            params = np.array([3, np.log(1e14)])
+
+            con = 5 * np.random.rand()
+            mu = np.random.rand() + np.log(1e13)
+            params = np.array([con, mu])
 
             esd = nfw_model.esd(rs, params)
             covariance = np.identity(4)/1e6
@@ -65,12 +46,14 @@ def describe_single_mass():
                 redshifts=zs,
                 wl_signals=esd[0, 0, :, :],
                 covariances=covariance,
-            )
+            ), params
 
-        def it_gets_the_best_fit_for_the_input_data(nfw_model, data):
+        def it_gets_the_best_fit_for_the_input_data(nfw_model, data_and_true_params):
+            data, true_params = data_and_true_params
+
             param_mins = np.array([0, np.log(5e12)])
             param_maxes = np.array([6, np.log(5e15)])
 
             best_fit = nfw_model.get_best_fit(data, param_mins, param_maxes)
 
-            assert np.allclose(best_fit, np.array([3, np.log(1e14)]))
+            assert np.allclose(best_fit, true_params)

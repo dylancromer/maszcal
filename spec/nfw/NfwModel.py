@@ -21,6 +21,7 @@ def describe_nfw_model():
         ds = nfw_model.delta_sigma(rs, zs, masses, cons)
 
         assert np.all(ds > 0)
+        assert ds.shape == (5, 3, 10, 6)
 
     @pytest.fixture
     def nfw_model_alt_cosmo():

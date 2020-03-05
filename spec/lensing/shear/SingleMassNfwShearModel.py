@@ -22,6 +22,7 @@ def describe_single_mass_model():
             delta_sigs = single_mass_model.delta_sigma(rs, mu, con)
 
             assert np.all(delta_sigs > 0)
+            assert delta_sigs.shape == (1, 1, 5, 1)
 
         def it_can_use_different_units():
             redshift = 0.4*np.ones(1)

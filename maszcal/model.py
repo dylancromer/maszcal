@@ -10,7 +10,8 @@ import maszcal.fitutils
 class SingleMass:
     lensing_signal_class: object
     log_likelihood_func: object = maszcal.likelihoods.log_gaussian_shape
-    optimize_method: str = 'global-differential-evolution'
+    minimize_func: object = maszcal.fitutils.global_minimize
+    minimize_method: str = 'global-differential-evolution'
 
     def __post_init__(self):
         self._init_lensing_signal_class()
@@ -28,14 +29,16 @@ class SingleMass:
         #XXX XXX XXX
 
     def esd(self, rs, params):
-        return self.lensing_signal_model.esd(rs, params)
+        return self.lensing_signal_model.esd(rs, params[None, :])
 
     def log_likelihood(self, params, data):
-        prediction = self.esd(data.radii, params)
-        return self.log_likelihood_func(prediction, data.wl_signals, data.covariances)
-
-    def _minimize(self, func_to_minimize, param_mins, param_maxes):
-        return maszcal.fitutils.minimize(func_to_minimize, param_mins, param_maxes, method=self.optimize_method)
+        prediction = self.esd(data.radii, params).flatten()
+        return self.log_likelihood_func(prediction, data.wl_signals.flatten(), data.covariances)
 
     def get_best_fit(self, data, param_mins, param_maxes):
-        return self._minimize(lambda params: -self.log_likelihood(params, data), param_mins, param_maxes)
+        return self.minimize_func(
+            lambda params: -self.log_likelihood(params, data),
+            param_mins,
+            param_maxes,
+            self.minimize_method,
+        )

@@ -15,7 +15,7 @@ class WeakLensingData:
 
     def _data_are_consistent(self):
         wl_radii_and_redshifts_match = self.wl_signals.shape[:2] == self.radii.shape + self.redshifts.shape
-        wl_correct_dim = self.wl_signals.ndim >= 3
+        wl_correct_dim = self.wl_signals.ndim >= 2
         cov_matches_radii = self.covariances.shape[:2] == (self.radii.size, self.radii.size)
 
         return wl_radii_and_redshifts_match and wl_correct_dim and cov_matches_radii

@@ -642,7 +642,7 @@ class SingleMassNfwShearModel:
             cosmo_params=maszcal.defaults.DefaultCosmology(),
     ):
 
-        self.redshift = np.array([redshift])
+        self.redshift = redshift
         self.units = units
         self.comoving_radii = comoving_radii
         self.delta = delta
@@ -668,7 +668,6 @@ class SingleMassNfwShearModel:
         return np.exp(mu)
 
     def delta_sigma(self, rs, mus, concentrations):
-
         masses = self.mass(mus)
 
         try:
@@ -999,7 +998,7 @@ class SingleMassBaryonShearModel:
             mass_definition='mean',
             cosmo_params=maszcal.defaults.DefaultCosmology(),
     ):
-        self.redshift = np.array([redshift])
+        self.redshift = redshift
         self.units = units
         self.comoving_radii = comoving_radii
         self.delta = delta
