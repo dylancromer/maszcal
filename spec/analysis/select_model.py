@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 import maszcal.data.templates
+import maszcal.model
 import maszcal.lensing
 from maszcal.analysis import select_model
 
@@ -18,10 +19,15 @@ def describe_select_model():
 
     def it_returns_the_right_model_when_asked(data):
         model = select_model(data=data, model='nfw', cm_relation=False, emulation=False, stacked=False)
-        assert isinstance(model, maszcal.lensing.SingleMassNfwLensingSignal)
+        assert isinstance(model, maszcal.model.SingleMass)
+        assert model.lensing_signal_class is maszcal.lensing.SingleMassNfwLensingSignal
 
-        model = select_model(data=data, model='baryon', cm_relation=False, emulation=False, stacked=False)
-        assert isinstance(model, maszcal.lensing.SingleBaryonLensingSignal)
+        model = select_model(data=data, model='nfw', cm_relation=True, emulation=False, stacked=False)
+        assert isinstance(model, maszcal.model.SingleMass)
+        assert model.lensing_signal_class is maszcal.lensing.SingleMassNfwLensingSignal
+
+        # model = select_model(data=data, model='baryon', cm_relation=False, emulation=False, stacked=False)
+        # assert isinstance(model, maszcal.lensing.SingleBaryonLensingSignal)
 
     def it_errors_properly_when_a_bad_model_is_selected(data):
         with pytest.raises(ValueError):

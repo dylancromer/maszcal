@@ -9,6 +9,7 @@ import maszcal.fitutils
 @dataclass
 class SingleMass:
     lensing_signal_class: object
+    cm_relation: bool
     log_likelihood_func: object = maszcal.likelihoods.log_gaussian_shape
     minimize_func: object = maszcal.fitutils.global_minimize
     minimize_method: str = 'global-differential-evolution'
@@ -29,6 +30,9 @@ class SingleMass:
         #XXX XXX XXX
 
     def esd(self, rs, params):
+        if self.cm_relation:
+            params = np.concatenate([np.array([3]), params])
+
         return self.lensing_signal_model.esd(rs, params[None, :])
 
     def log_likelihood(self, params, data):

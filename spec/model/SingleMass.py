@@ -31,7 +31,10 @@ def describe_single_mass():
 
         @pytest.fixture
         def nfw_model():
-            return maszcal.model.SingleMass(lensing_signal_class=FakeSingleMassNfwLensingSignal)
+            return maszcal.model.SingleMass(
+                lensing_signal_class=FakeSingleMassNfwLensingSignal,
+                cm_relation=False,
+            )
 
         def it_calculates_an_esd(nfw_model):
             rs = np.logspace(-1, 1, 4)
@@ -48,6 +51,7 @@ def describe_single_mass():
         def nfw_model():
             return maszcal.model.SingleMass(
                 lensing_signal_class=FakeSingleMassNfwLensingSignal,
+                cm_relation=False,
                 minimize_func=fake_minimizer,
             )
 
@@ -74,3 +78,21 @@ def describe_single_mass():
             best_fit = nfw_model.get_best_fit(data, param_mins, param_maxes)
 
             assert np.allclose(best_fit, np.array([3, np.log(1e14)]))
+
+    def describe_cm_relation():
+
+        @pytest.fixture
+        def nfw_model():
+            return maszcal.model.SingleMass(
+                lensing_signal_class=SingleMassNfwLensingSignal,
+                cm_relation=True,
+            )
+
+        def it_can_use_a_cm_relation_for_the_esd(nfw_model):
+            rs = np.logspace(-1, 1, 4)
+            params = np.array([np.log(1e14)])
+
+            esd = nfw_model.esd(rs, params)
+
+            assert np.all(esd > 0)
+            assert esd.shape == (1, 1, 4, 1)
