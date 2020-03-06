@@ -11,3 +11,10 @@ def describe_nbatta2010():
     def it_errors_if_the_files_are_missing():
         with pytest.raises(OSError):
             nbatta = NBatta2010(data_dir='data/test/i_am_not_a_real_directory_hopefully/')
+
+    def it_can_cut_the_radii():
+        nbatta = NBatta2010(data_dir='data/NBatta2010/')
+        assert nbatta.radii.size == 40
+
+        nbatta_cut = nbatta.cut_radii(0.125, 3)
+        assert nbatta_cut.radii.size == 24

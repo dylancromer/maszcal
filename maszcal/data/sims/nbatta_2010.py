@@ -4,21 +4,15 @@ from maszcal.data.templates import WeakLensingData
 
 
 class NBatta2010(WeakLensingData):
-    def __init__(self, data_dir='data/NBatta2010/', covariances=None):
+    def __init__(self, data_dir='data/NBatta2010/'):
         self.cosmology = self._init_cosmology()
 
         rs, wl_signals, zs = self._load_data(data_dir)
-
-        if covariances is None:
-            covariance = 0.01 * np.identity(rs.size)
-            num_clusters = wl_signals.shape[2]
-            covariances = np.stack(num_clusters*(covariance,), axis=-1)
 
         super().__init__(
             radii=rs,
             redshifts=zs,
             wl_signals=wl_signals,
-            covariances=covariances,
         )
 
     def _init_cosmology(self):
@@ -63,6 +57,14 @@ class NBatta2010(WeakLensingData):
             return radii[:, 0]
         else:
             raise ValueError('radii are different for different clusters')
+
+    def cut_radii(self, lower_radius, upper_radius):
+        cut_indices = np.where((lower_radius <= self.radii) & (self.radii <= upper_radius))
+        return WeakLensingData(
+            radii=self.radii[cut_indices],
+            redshifts=self.redshifts,
+            wl_signals=self.wl_signals[cut_indices],
+        )
 
     def _load_data(self, data_dir):
         NUM_SNAPS = 55 - 41
