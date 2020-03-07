@@ -89,7 +89,7 @@ def _calculate_baryon_fits(i, z, sim_data):
 
     def _pool_func(data): return _get_best_fit(data, sim_data.radii, esd_model_func, BARYON_PARAM_MINS, BARYON_PARAM_MAXES)
 
-    pool = pp.ProcessPool(NUM_THREADS)
+    pool = pp.ProcessPool(NUM_THREADS//2)
     best_fit_chunk = np.array(
         pool.map(_pool_func, sim_data.wl_signals[:, i, :].T),
     ).T
@@ -119,14 +119,14 @@ def _save(array, name):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
     filename = name + '_' + timestamp
 
-    DIR = 'data/NBatta2010/single-mass-bin-fits'
+    DIR = 'data/NBatta2010/single-mass-bin-fits/'
 
     header = _generate_header()
 
     nothing = np.array([])
 
-    np.savetxt(filename + '.header.txt', nothing, header=header)
-    np.save(filename + '.npy', array)
+    np.savetxt(DIR + filename + '.header.txt', nothing, header=header)
+    np.save(DIR + filename + '.npy', array)
 
 
 def describe_nbatta_sim():
@@ -142,13 +142,15 @@ def describe_nbatta_sim():
 
             nfw_params_shape = (2, num_clusters, sim_data.redshifts.size)
             nfw_fits = np.zeros(nfw_params_shape)
+
             for i, z in enumerate(sim_data.redshifts):
                 nfw_fits[:, :, i] = _calculate_nfw_fits(i, z, sim_data)
 
             _save(nfw_fits, 'nfw-free-c')
 
-            baryon_params_shape = (4, sim_data.radii.size, sim_data.redshifts.size)
+            baryon_params_shape = (4, num_clusters, sim_data.redshifts.size)
             baryon_fits = np.zeros(baryon_params_shape)
+
             for i, z in enumerate(sim_data.redshifts):
                 baryon_fits[:, :, i] = _calculate_baryon_fits(i, z, sim_data)
 
