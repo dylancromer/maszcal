@@ -18,3 +18,18 @@ def describe_nbatta2010():
 
         nbatta_cut = nbatta.cut_radii(0.125, 3)
         assert nbatta_cut.radii.size == 24
+
+    def describe_from_data():
+
+        @pytest.fixture
+        def nbatta():
+            return NBatta2010(data_dir='data/NBatta2010/')
+
+        def it_can_init_from_preloaded_data(nbatta):
+            NBatta2010.from_data(
+                radii=nbatta.radii,
+                redshifts=nbatta.redshifts,
+                wl_signals=nbatta.wl_signals,
+                masses=nbatta.masses,
+                cosmology=nbatta.cosmology,
+            )

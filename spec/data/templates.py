@@ -13,6 +13,7 @@ def describe_weak_lensing_data():
                 radii=np.logspace(-1, 1, 10),
                 redshifts=np.linspace(0, 1, 5),
                 wl_signals=np.ones((10, 5, 3)),
+                masses = np.ones((5, 3)),
             )
 
         def it_must_be_inited_with_data(wl_data):
@@ -29,6 +30,7 @@ def describe_weak_lensing_data():
                 radii=np.logspace(-1, 1, 10),
                 redshifts=np.linspace(0, 1, 5),
                 wl_signals=np.ones((10, 5, 3)),
+                masses = np.ones((5, 3)),
             )
 
         def it_returns_a_new_weak_lensing_data_instance_with_the_selected_redshift(wl_data):
@@ -64,6 +66,7 @@ def describe_weak_lensing_data():
                     radii=radii,
                     redshifts=redshifts,
                     wl_signals=wl_wrong_radii,
+                    masses = np.ones((5, 3)),
                 )
 
             with pytest.raises(ValueError):
@@ -71,6 +74,7 @@ def describe_weak_lensing_data():
                     radii=radii,
                     redshifts=redshifts,
                     wl_signals=wl_wrong_redshifts,
+                    masses = np.ones((5, 3)),
                 )
 
             with pytest.raises(ValueError):
@@ -78,4 +82,5 @@ def describe_weak_lensing_data():
                     radii=radii,
                     redshifts=redshifts,
                     wl_signals=wl_wrong_both,
+                    masses = np.ones((5, 3)),
                 )
