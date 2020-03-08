@@ -10,10 +10,10 @@ import maszcal.fitutils
 
 
 NUM_THREADS = 12
-NFW_PARAM_MINS = np.array([np.log(1e12), 0])
-NFW_PARAM_MAXES = np.array([np.log(5e15), 6])
-BARYON_PARAM_MINS = np.array([np.log(1e12), 0, 0.1, 2])
-BARYON_PARAM_MAXES = np.array([np.log(5e15), 6, 1.9, 6])
+NFW_PARAM_MINS = np.array([np.log(3e12), 0])
+NFW_PARAM_MAXES = np.array([np.log(8e15), 6])
+BARYON_PARAM_MINS = np.array([np.log(3e12), 0, 0.01, 1])
+BARYON_PARAM_MAXES = np.array([np.log(8e15), 6, 3, 7])
 LOWER_RADIUS_CUT = 0.125
 UPPER_RADIUS_CUT = 3
 
@@ -57,6 +57,7 @@ def _calculate_nfw_fits(i, z, sim_data):
         redshift=np.array([z]),
         delta=500,
         mass_definition='crit',
+        cosmo_params=sim_data.cosmology,
     )
 
     def esd_model_func(radii, params): return  nfw_model.esd(radii, params[None, :])
@@ -80,6 +81,7 @@ def _calculate_baryon_fits(i, z, sim_data):
         redshift=np.array([z]),
         delta=500,
         mass_definition='crit',
+        cosmo_params=sim_data.cosmology,
     )
 
     def esd_model_func(radii, params):
