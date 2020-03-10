@@ -14,6 +14,6 @@ def describe_log_gaussian_shape():
         fisher = np.linalg.inv(cov)
         should_be = -(diff @ fisher @ diff.T)/2
 
-        actually_is = maszcal.likelihoods.log_gaussian_shape(model, data, cov)
+        actually_is = maszcal.likelihoods.log_gaussian_shape(model, data, fisher)
 
         assert np.all(should_be == actually_is)
