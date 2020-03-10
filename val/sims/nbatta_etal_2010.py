@@ -9,11 +9,11 @@ import maszcal.likelihoods
 import maszcal.fitutils
 
 
-NUM_THREADS = 12
-NFW_PARAM_MINS = np.array([np.log(3e12), 0])
-NFW_PARAM_MAXES = np.array([np.log(8e15), 6])
-BARYON_PARAM_MINS = np.array([np.log(3e12), 0, 0.01, 1])
-BARYON_PARAM_MAXES = np.array([np.log(8e15), 6, 3, 7])
+NUM_THREADS = 6
+NFW_PARAM_MINS = np.array([np.log(5e11), 0])
+NFW_PARAM_MAXES = np.array([np.log(1e16), 6])
+BARYON_PARAM_MINS = np.array([np.log(5e11), 0, 0.01, 2])
+BARYON_PARAM_MAXES = np.array([np.log(1e16), 6, 1.9, 7])
 LOWER_RADIUS_CUT = 0.125
 UPPER_RADIUS_CUT = 3
 
@@ -38,21 +38,22 @@ def _get_cov_from_act(radii):
     return np.diagflat(diag_interpolator(radii))
 
 
-def _log_like(params, radii, esd_model_func, esd_data):
+def _log_like(params, radii, esd_model_func, esd_data, fisher_matrix):
+    if np.any(params) < 0:
+        return -np.inf()
+
     esd_model = esd_model_func(radii, params).flatten()
     esd_data = esd_data.flatten()
 
-    ACT_COVARIANCE = _get_cov_from_act(radii) / 100
-
-    return maszcal.likelihoods.log_gaussian_shape(esd_model, esd_data, ACT_COVARIANCE)
+    return maszcal.likelihoods.log_gaussian_shape(radii*esd_model, radii*esd_data, fisher_matrix)
 
 
-def _get_best_fit(esd_data, radii, esd_model_func, param_mins, param_maxes):
-    def func_to_minimize(params): return -_log_like(params, radii, esd_model_func, esd_data)
+def _get_best_fit(esd_data, radii, esd_model_func, fisher_matrix, param_mins, param_maxes):
+    def func_to_minimize(params): return -_log_like(params, radii, esd_model_func, esd_data, fisher_matrix)
     return maszcal.fitutils.global_minimize(func_to_minimize, param_mins, param_maxes, 'global-differential-evolution')
 
 
-def _calculate_nfw_fits(i, z, sim_data):
+def _calculate_nfw_fits(i, z, sim_data, fisher_matrix):
     nfw_model = maszcal.lensing.SingleMassNfwLensingSignal(
         redshift=np.array([z]),
         delta=500,
@@ -62,7 +63,7 @@ def _calculate_nfw_fits(i, z, sim_data):
 
     def esd_model_func(radii, params): return  nfw_model.esd(radii, params[None, :])
 
-    def _pool_func(data): return _get_best_fit(data, sim_data.radii, esd_model_func, NFW_PARAM_MINS, NFW_PARAM_MAXES)
+    def _pool_func(data): return _get_best_fit(data, sim_data.radii, esd_model_func, fisher_matrix, NFW_PARAM_MINS, NFW_PARAM_MAXES)
 
     pool = pp.ProcessPool(NUM_THREADS)
     best_fit_chunk = np.array(
@@ -76,7 +77,7 @@ def _calculate_nfw_fits(i, z, sim_data):
     return best_fit_chunk
 
 
-def _calculate_baryon_fits(i, z, sim_data):
+def _calculate_baryon_fits(i, z, sim_data, fisher_matrix):
     baryon_model = maszcal.lensing.SingleBaryonLensingSignal(
         redshift=np.array([z]),
         delta=500,
@@ -89,9 +90,9 @@ def _calculate_baryon_fits(i, z, sim_data):
         params = np.concatenate((params, gamma))
         return baryon_model.esd(radii, params[None, :])
 
-    def _pool_func(data): return _get_best_fit(data, sim_data.radii, esd_model_func, BARYON_PARAM_MINS, BARYON_PARAM_MAXES)
+    def _pool_func(data): return _get_best_fit(data, sim_data.radii, esd_model_func, fisher_matrix, BARYON_PARAM_MINS, BARYON_PARAM_MAXES)
 
-    pool = pp.ProcessPool(NUM_THREADS//2)
+    pool = pp.ProcessPool(NUM_THREADS)
     best_fit_chunk = np.array(
         pool.map(_pool_func, sim_data.wl_signals[:, i, :].T),
     ).T
@@ -145,8 +146,13 @@ def describe_nbatta_sim():
             nfw_params_shape = (2, num_clusters, sim_data.redshifts.size)
             nfw_fits = np.zeros(nfw_params_shape)
 
+            ACT_COVARIANCE = _get_cov_from_act(sim_data.radii) / 100
+            act_r_esd_cov = np.diagflat(sim_data.radii).T @ ACT_COVARIANCE @ np.diagflat(sim_data.radii)
+            act_fisher = np.linalg.inv(act_r_esd_cov)
+
+
             for i, z in enumerate(sim_data.redshifts):
-                nfw_fits[:, :, i] = _calculate_nfw_fits(i, z, sim_data)
+                nfw_fits[:, :, i] = _calculate_nfw_fits(i, z, sim_data, act_fisher)
 
             _save(nfw_fits, 'nfw-free-c')
 
@@ -154,6 +160,6 @@ def describe_nbatta_sim():
             baryon_fits = np.zeros(baryon_params_shape)
 
             for i, z in enumerate(sim_data.redshifts):
-                baryon_fits[:, :, i] = _calculate_baryon_fits(i, z, sim_data)
+                baryon_fits[:, :, i] = _calculate_baryon_fits(i, z, sim_data, act_fisher)
 
             _save(baryon_fits, 'bary-free-c')
