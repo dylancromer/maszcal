@@ -68,7 +68,7 @@ def describe_single_mass():
                 radii=rs,
                 redshifts=zs,
                 wl_signals=esd[0, 0, :, :],
-                covariances=covariance,
+                masses=np.ones((1, 1))
             )
 
         def it_gets_the_best_fit_for_the_input_data(nfw_model, data):
