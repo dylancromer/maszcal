@@ -9,11 +9,11 @@ import maszcal.likelihoods
 import maszcal.fitutils
 
 
-NUM_THREADS = 6
-NFW_PARAM_MINS = np.array([np.log(5e11), 0])
-NFW_PARAM_MAXES = np.array([np.log(1e16), 6])
-BARYON_PARAM_MINS = np.array([np.log(5e11), 0, 0.01, 2])
-BARYON_PARAM_MAXES = np.array([np.log(1e16), 6, 1.9, 7])
+NUM_THREADS = 8
+NFW_PARAM_MINS = np.array([np.log(6e12), 0])
+NFW_PARAM_MAXES = np.array([np.log(5e15), 6])
+BARYON_PARAM_MINS = np.array([np.log(6e12), 0, 2])
+BARYON_PARAM_MAXES = np.array([np.log(5e15), 6, 7])
 LOWER_RADIUS_CUT = 0.125
 UPPER_RADIUS_CUT = 3
 
@@ -86,8 +86,9 @@ def _calculate_baryon_fits(i, z, sim_data, fisher_matrix):
     )
 
     def esd_model_func(radii, params):
+        alpha = np.array([0.9])
         gamma = np.array([0.2])
-        params = np.concatenate((params, gamma))
+        params = np.concatenate((params[:2], alpha, params[2:], gamma))
         return baryon_model.esd(radii, params[None, :])
 
     def _pool_func(data): return _get_best_fit(data, sim_data.radii, esd_model_func, fisher_matrix, BARYON_PARAM_MINS, BARYON_PARAM_MAXES)
@@ -156,7 +157,7 @@ def describe_nbatta_sim():
 
             _save(nfw_fits, 'nfw-free-c')
 
-            baryon_params_shape = (4, num_clusters, sim_data.redshifts.size)
+            baryon_params_shape = (3, num_clusters, sim_data.redshifts.size)
             baryon_fits = np.zeros(baryon_params_shape)
 
             for i, z in enumerate(sim_data.redshifts):
