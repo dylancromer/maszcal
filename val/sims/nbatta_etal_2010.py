@@ -2,40 +2,32 @@ import datetime
 import pytest
 import numpy as np
 import pathos.pools as pp
-from scipy.interpolate import interp1d
 import maszcal.data.sims
+import maszcal.data.obs
 import maszcal.lensing
 import maszcal.likelihoods
 import maszcal.fitutils
+import maszcal.concentration
 
 
 NUM_THREADS = 8
+
 NFW_PARAM_MINS = np.array([np.log(6e12), 0])
 NFW_PARAM_MAXES = np.array([np.log(5e15), 6])
+
+CM_PARAM_MINS = np.array([np.log(6e12)])
+CM_PARAM_MAXES = np.array([np.log(5e15)])
+
 BARYON_PARAM_MINS = np.array([np.log(6e12), 0, 2])
 BARYON_PARAM_MAXES = np.array([np.log(5e15), 6, 7])
+
+BARYON_CM_PARAM_MINS = np.array([np.log(6e12), 2])
+BARYON_CM_PARAM_MAXES = np.array([np.log(5e15), 7])
+
 LOWER_RADIUS_CUT = 0.125
 UPPER_RADIUS_CUT = 3
 
-
-def _load_act_covariance():
-    ACT_DIR = 'data/act-hsc/'
-    act_rs, _, act_errs = np.loadtxt(ACT_DIR + 'deltaSigma.dat', unpack=True, skiprows=1, usecols=[0,3,4])
-    full_err_cov = np.loadtxt(ACT_DIR + 'cov_lss_stacked.dat')
-    con_err_cov = np.loadtxt(ACT_DIR + 'con_cov.txt')
-    cov_full = (act_errs * np.identity(len(act_errs)) * act_errs) + full_err_cov + con_err_cov
-    return act_rs, cov_full
-
-
-def _get_cov_from_act(radii):
-    act_rs, act_cov = _load_act_covariance()
-
-    act_diag = np.diag(act_cov)
-
-    _diag_interpolator = interp1d(act_rs, np.log(act_diag), kind='linear')
-    diag_interpolator = lambda r: np.exp(_diag_interpolator(r))
-
-    return np.diagflat(diag_interpolator(radii))
+COVARIANCE_REDUCTION_FACTOR = 1/400
 
 
 def _log_like(params, radii, esd_model_func, esd_data, fisher_matrix):
@@ -53,6 +45,18 @@ def _get_best_fit(esd_data, radii, esd_model_func, fisher_matrix, param_mins, pa
     return maszcal.fitutils.global_minimize(func_to_minimize, param_mins, param_maxes, 'global-differential-evolution')
 
 
+def _pool_map(func, array):
+    pool = pp.ProcessPool(NUM_THREADS)
+    mapped_array = np.array(
+        pool.map(func, array),
+    ).T
+    pool.close()
+    pool.join()
+    pool.terminate()
+    pool.restart()
+    return mapped_array
+
+
 def _calculate_nfw_fits(i, z, sim_data, fisher_matrix):
     nfw_model = maszcal.lensing.SingleMassNfwLensingSignal(
         redshift=np.array([z]),
@@ -65,16 +69,27 @@ def _calculate_nfw_fits(i, z, sim_data, fisher_matrix):
 
     def _pool_func(data): return _get_best_fit(data, sim_data.radii, esd_model_func, fisher_matrix, NFW_PARAM_MINS, NFW_PARAM_MAXES)
 
-    pool = pp.ProcessPool(NUM_THREADS)
-    best_fit_chunk = np.array(
-        pool.map(_pool_func, sim_data.wl_signals[:, i, :].T),
-    ).T
-    pool.close()
-    pool.join()
-    pool.terminate()
-    pool.restart()
+    return _pool_map(_pool_func, sim_data.wl_signals[:, i, :].T)
 
-    return best_fit_chunk
+
+def _calculate_cm_fits(i, z, sim_data, fisher_matrix):
+    nfw_model = maszcal.lensing.SingleMassNfwLensingSignal(
+        redshift=np.array([z]),
+        delta=500,
+        mass_definition='crit',
+        cosmo_params=sim_data.cosmology,
+    )
+
+    def esd_model_func(radii, mus):
+        masses = np.exp(mus)
+        con_model = maszcal.concentration.ConModel('500c', cosmology=sim_data.cosmology)
+        cons = con_model.c(masses, np.array([z]), '500c').flatten()
+        params = np.stack((mus, cons)).T
+        return nfw_model.esd(radii, params)
+
+    def _pool_func(data): return _get_best_fit(data, sim_data.radii, esd_model_func, fisher_matrix, CM_PARAM_MINS, CM_PARAM_MAXES)
+
+    return _pool_map(_pool_func, sim_data.wl_signals[:, i, :].T)
 
 
 def _calculate_baryon_fits(i, z, sim_data, fisher_matrix):
@@ -93,16 +108,34 @@ def _calculate_baryon_fits(i, z, sim_data, fisher_matrix):
 
     def _pool_func(data): return _get_best_fit(data, sim_data.radii, esd_model_func, fisher_matrix, BARYON_PARAM_MINS, BARYON_PARAM_MAXES)
 
-    pool = pp.ProcessPool(NUM_THREADS)
-    best_fit_chunk = np.array(
-        pool.map(_pool_func, sim_data.wl_signals[:, i, :].T),
-    ).T
-    pool.close()
-    pool.join()
-    pool.terminate()
-    pool.restart()
+    return _pool_map(_pool_func, sim_data.wl_signals[:, i, :].T)
 
-    return best_fit_chunk
+
+def _calculate_baryon_cm_fits(i, z, sim_data, fisher_matrix):
+    baryon_model = maszcal.lensing.SingleBaryonLensingSignal(
+        redshift=np.array([z]),
+        delta=500,
+        mass_definition='crit',
+        cosmo_params=sim_data.cosmology,
+    )
+
+    def esd_model_func(radii, params):
+        mu = params[0:1]
+        alpha = np.array([0.9])
+        beta = params[1:2]
+        gamma = np.array([0.2])
+
+        mass = np.exp(mu)
+        con_model = maszcal.concentration.ConModel('500c', cosmology=sim_data.cosmology)
+        con = con_model.c(mass, np.array([z]), '500c').flatten()
+
+        params = np.concatenate((mu, con, alpha, beta, gamma))
+        params = params[None, :]
+        return baryon_model.esd(radii, params)
+
+    def _pool_func(data): return _get_best_fit(data, sim_data.radii, esd_model_func, fisher_matrix, BARYON_CM_PARAM_MINS, BARYON_CM_PARAM_MAXES)
+
+    return _pool_map(_pool_func, sim_data.wl_signals[:, i, :].T)
 
 
 def _generate_header():
@@ -110,8 +143,12 @@ def _generate_header():
     configs = [
         f'NFW_PARAM_MINS = {NFW_PARAM_MINS}',
         f'NFW_PARAM_MAXES = {NFW_PARAM_MAXES}',
+        f'CM_PARAM_MINS = {CM_PARAM_MINS}',
+        f'CM_PARAM_MAXES = {CM_PARAM_MAXES}',
         f'BARYON_PARAM_MINS = {BARYON_PARAM_MINS}',
         f'BARYON_PARAM_MAXES = {BARYON_PARAM_MAXES}',
+        f'BARYON_CM_PARAM_MINS = {BARYON_CM_PARAM_MINS}',
+        f'BARYON_CM_PARAM_MAXES = {BARYON_CM_PARAM_MAXES}',
         f'LOWER_RADIUS_CUT = {LOWER_RADIUS_CUT}',
         f'UPPER_RADIUS_CUT = {UPPER_RADIUS_CUT}',
     ]
@@ -144,23 +181,34 @@ def describe_nbatta_sim():
         def using_baryon_reduces_bias(sim_data):
             num_clusters = sim_data.wl_signals.shape[-1]
 
-            nfw_params_shape = (2, num_clusters, sim_data.redshifts.size)
-            nfw_fits = np.zeros(nfw_params_shape)
-
-            ACT_COVARIANCE = _get_cov_from_act(sim_data.radii) / 100
-            act_r_esd_cov = np.diagflat(sim_data.radii).T @ ACT_COVARIANCE @ np.diagflat(sim_data.radii)
+            act_covariance = maszcal.data.obs.ActHsc2018.covariance('data/act-hsc/', sim_data.radii) * COVARIANCE_REDUCTION_FACTOR
+            act_r_esd_cov = np.diagflat(sim_data.radii).T @ act_covariance @ np.diagflat(sim_data.radii)
             act_fisher = np.linalg.inv(act_r_esd_cov)
 
-
+            nfw_params_shape = (NFW_PARAM_MINS.size, num_clusters, sim_data.redshifts.size)
+            nfw_fits = np.zeros(nfw_params_shape)
             for i, z in enumerate(sim_data.redshifts):
                 nfw_fits[:, :, i] = _calculate_nfw_fits(i, z, sim_data, act_fisher)
 
             _save(nfw_fits, 'nfw-free-c')
 
-            baryon_params_shape = (3, num_clusters, sim_data.redshifts.size)
-            baryon_fits = np.zeros(baryon_params_shape)
+            cm_params_shape = (CM_PARAM_MINS.size, num_clusters, sim_data.redshifts.size)
+            cm_fits = np.zeros(cm_params_shape)
+            for i, z in enumerate(sim_data.redshifts):
+                cm_fits[:, :, i] = _calculate_cm_fits(i, z, sim_data, act_fisher)
 
+            _save(cm_fits, 'nfw-cm')
+
+            baryon_params_shape = (BARYON_PARAM_MINS.size, num_clusters, sim_data.redshifts.size)
+            baryon_fits = np.zeros(baryon_params_shape)
             for i, z in enumerate(sim_data.redshifts):
                 baryon_fits[:, :, i] = _calculate_baryon_fits(i, z, sim_data, act_fisher)
 
             _save(baryon_fits, 'bary-free-c')
+
+            baryon_cm_params_shape = (BARYON_CM_PARAM_MINS.size, num_clusters, sim_data.redshifts.size)
+            baryon_cm_fits = np.zeros(baryon_cm_params_shape)
+            for i, z in enumerate(sim_data.redshifts):
+                baryon_cm_fits[:, :, i] = _calculate_baryon_cm_fits(i, z, sim_data, act_fisher)
+
+            _save(baryon_cm_fits, 'bary-cm')
