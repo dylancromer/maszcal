@@ -1,5 +1,5 @@
 import datetime
-import pytest
+import time
 import numpy as np
 import pathos.pools as pp
 import maszcal.data.sims
@@ -30,6 +30,17 @@ UPPER_RADIUS_CUT = 3
 COVARIANCE_REDUCTION_FACTOR = 1/400
 
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
 def _log_like(params, radii, esd_model_func, esd_data, fisher_matrix):
     if np.any(params) < 0:
         return -np.inf()
@@ -57,7 +68,7 @@ def _pool_map(func, array):
     return mapped_array
 
 
-def _calculate_nfw_fits(i, z, sim_data, fisher_matrix):
+def calculate_nfw_fits(i, z, sim_data, fisher_matrix):
     nfw_model = maszcal.lensing.SingleMassNfwLensingSignal(
         redshift=np.array([z]),
         delta=500,
@@ -72,7 +83,7 @@ def _calculate_nfw_fits(i, z, sim_data, fisher_matrix):
     return _pool_map(_pool_func, sim_data.wl_signals[:, i, :].T)
 
 
-def _calculate_cm_fits(i, z, sim_data, fisher_matrix):
+def calculate_cm_fits(i, z, sim_data, fisher_matrix):
     nfw_model = maszcal.lensing.SingleMassNfwLensingSignal(
         redshift=np.array([z]),
         delta=500,
@@ -92,7 +103,7 @@ def _calculate_cm_fits(i, z, sim_data, fisher_matrix):
     return _pool_map(_pool_func, sim_data.wl_signals[:, i, :].T)
 
 
-def _calculate_baryon_fits(i, z, sim_data, fisher_matrix):
+def calculate_baryon_fits(i, z, sim_data, fisher_matrix):
     baryon_model = maszcal.lensing.SingleBaryonLensingSignal(
         redshift=np.array([z]),
         delta=500,
@@ -111,7 +122,7 @@ def _calculate_baryon_fits(i, z, sim_data, fisher_matrix):
     return _pool_map(_pool_func, sim_data.wl_signals[:, i, :].T)
 
 
-def _calculate_baryon_cm_fits(i, z, sim_data, fisher_matrix):
+def calculate_baryon_cm_fits(i, z, sim_data, fisher_matrix):
     baryon_model = maszcal.lensing.SingleBaryonLensingSignal(
         redshift=np.array([z]),
         delta=500,
@@ -156,7 +167,7 @@ def _generate_header():
     return ''.join(header)
 
 
-def _save(array, name):
+def save(array, name):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
     filename = name + '_' + timestamp
 
@@ -170,45 +181,80 @@ def _save(array, name):
     np.save(DIR + filename + '.npy', array)
 
 
-def describe_nbatta_sim():
+def get_sim_data():
+    return maszcal.data.sims.NBatta2010().cut_radii(LOWER_RADIUS_CUT, UPPER_RADIUS_CUT)
 
-    def describe_impact_of_baryons():
 
-        @pytest.fixture
-        def sim_data():
-            return maszcal.data.sims.NBatta2010().cut_radii(LOWER_RADIUS_CUT, UPPER_RADIUS_CUT)
+def run_validation(sim_data=get_sim_data()):
+    num_clusters = sim_data.wl_signals.shape[-1]
 
-        def using_baryon_reduces_bias(sim_data):
-            num_clusters = sim_data.wl_signals.shape[-1]
+    act_covariance = maszcal.data.obs.ActHsc2018.covariance('data/act-hsc/', sim_data.radii) * COVARIANCE_REDUCTION_FACTOR
+    act_r_esd_cov = np.diagflat(sim_data.radii).T @ act_covariance @ np.diagflat(sim_data.radii)
+    act_fisher = np.linalg.inv(act_r_esd_cov)
 
-            act_covariance = maszcal.data.obs.ActHsc2018.covariance('data/act-hsc/', sim_data.radii) * COVARIANCE_REDUCTION_FACTOR
-            act_r_esd_cov = np.diagflat(sim_data.radii).T @ act_covariance @ np.diagflat(sim_data.radii)
-            act_fisher = np.linalg.inv(act_r_esd_cov)
 
-            nfw_params_shape = (NFW_PARAM_MINS.size, num_clusters, sim_data.redshifts.size)
-            nfw_fits = np.zeros(nfw_params_shape)
-            for i, z in enumerate(sim_data.redshifts):
-                nfw_fits[:, :, i] = _calculate_nfw_fits(i, z, sim_data, act_fisher)
+    print('Optimizing with NFWs...')
 
-            _save(nfw_fits, 'nfw-free-c')
+    start_time = time.time()
 
-            cm_params_shape = (CM_PARAM_MINS.size, num_clusters, sim_data.redshifts.size)
-            cm_fits = np.zeros(cm_params_shape)
-            for i, z in enumerate(sim_data.redshifts):
-                cm_fits[:, :, i] = _calculate_cm_fits(i, z, sim_data, act_fisher)
+    nfw_params_shape = (NFW_PARAM_MINS.size, num_clusters, sim_data.redshifts.size)
+    nfw_fits = np.zeros(nfw_params_shape)
+    for i, z in enumerate(sim_data.redshifts):
+        nfw_fits[:, :, i] = calculate_nfw_fits(i, z, sim_data, act_fisher)
 
-            _save(cm_fits, 'nfw-cm')
+    save(nfw_fits, 'nfw-free-c')
 
-            baryon_params_shape = (BARYON_PARAM_MINS.size, num_clusters, sim_data.redshifts.size)
-            baryon_fits = np.zeros(baryon_params_shape)
-            for i, z in enumerate(sim_data.redshifts):
-                baryon_fits[:, :, i] = _calculate_baryon_fits(i, z, sim_data, act_fisher)
+    delta_t = round(time.time() - start_time)
+    print(f'Finished in {delta_t} seconds.')
+    print('Optimizing with NFW c(m)...')
 
-            _save(baryon_fits, 'bary-free-c')
+    start_time = time.time()
 
-            baryon_cm_params_shape = (BARYON_CM_PARAM_MINS.size, num_clusters, sim_data.redshifts.size)
-            baryon_cm_fits = np.zeros(baryon_cm_params_shape)
-            for i, z in enumerate(sim_data.redshifts):
-                baryon_cm_fits[:, :, i] = _calculate_baryon_cm_fits(i, z, sim_data, act_fisher)
+    cm_params_shape = (CM_PARAM_MINS.size, num_clusters, sim_data.redshifts.size)
+    cm_fits = np.zeros(cm_params_shape)
+    for i, z in enumerate(sim_data.redshifts):
+        cm_fits[:, :, i] = calculate_cm_fits(i, z, sim_data, act_fisher)
 
-            _save(baryon_cm_fits, 'bary-cm')
+    save(cm_fits, 'nfw-cm')
+
+    delta_t = round(time.time() - start_time)
+    print(f'Finished in {delta_t} seconds.')
+    print('Optimizing with baryons...')
+
+    start_time = time.time()
+
+    baryon_params_shape = (BARYON_PARAM_MINS.size, num_clusters, sim_data.redshifts.size)
+    baryon_fits = np.zeros(baryon_params_shape)
+    for i, z in enumerate(sim_data.redshifts):
+        baryon_fits[:, :, i] = calculate_baryon_fits(i, z, sim_data, act_fisher)
+
+    save(baryon_fits, 'bary-free-c')
+
+    delta_t = round(time.time() - start_time)
+    print(f'Finished in {delta_t} seconds.')
+    print('Optimizing with baryons c(m)...')
+
+    start_time = time.time()
+
+    baryon_cm_params_shape = (BARYON_CM_PARAM_MINS.size, num_clusters, sim_data.redshifts.size)
+    baryon_cm_fits = np.zeros(baryon_cm_params_shape)
+    for i, z in enumerate(sim_data.redshifts):
+        baryon_cm_fits[:, :, i] = calculate_baryon_cm_fits(i, z, sim_data, act_fisher)
+
+    save(baryon_cm_fits, 'bary-cm')
+
+    delta_t = round(time.time() - start_time)
+    print(f'Finished in {delta_t} seconds.')
+
+
+def main():
+    start_time = time.time()
+    print('Beginning validation:')
+    run_validation()
+    delta_t = round(time.time() - start_time)
+    print(bcolors.OKGREEN + '--- Validation complete ---' + bcolors.ENDC)
+    print(f'Total elapsed time: {delta_t} seconds')
+
+
+if __name__ == '__main__':
+    main()
