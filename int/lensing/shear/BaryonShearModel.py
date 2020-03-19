@@ -82,18 +82,18 @@ def describe_gnfw_baryonic_model():
             mus = np.linspace(np.log(1e14), np.log(1e15), 30)
             zs = np.linspace(0, 1, 20)
             model = BaryonShearModel(mus, zs, units=u.Msun/u.pc**2)
-            model.CORE_RADIUS = 1
+            model.CORE_RADIUS = 1/2 # 1/concentration to be used
             return model
 
         def it_can_recreate_an_nfw_model(baryon_model_):
             radii = np.logspace(-1, 1, 30)
             mus = np.log(1e14)*np.ones(1)
-            cons = 2*np.ones(1)
+            cons = 2*np.ones(1) # It is critical this concentration match the core radius above
             alphas = np.ones(1)
             betas = 3*np.ones(1)
             gammas = np.ones(1)
 
-            assert baryon_model_.CORE_RADIUS == 1
+            assert np.all(baryon_model_.CORE_RADIUS == 1/cons)
 
             esds_bary = baryon_model_.delta_sigma_bary(radii,
                                                        mus,
@@ -113,7 +113,7 @@ def describe_gnfw_baryonic_model():
                                                      mus,
                                                      cons)/(1-baryon_model_.baryon_frac)
 
-            assert np.allclose(esds_bary, esds_nfw)
+            assert np.allclose(esds_bary, esds_nfw, rtol=1e-2)
 
         def the_plots_look_right(baryon_model):
             radii = np.logspace(-1, 1, 30)
