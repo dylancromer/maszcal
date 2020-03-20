@@ -94,11 +94,10 @@ def calculate_baryon_fits(i, z, sim_data, fisher_matrix):
     )
 
     def esd_model_func(radii, true_mass, params):
-        alpha = np.array([0.9])
         gamma = np.array([0.2])
         mass = np.array([true_mass])
         mu = np.log(mass)
-        params = np.concatenate((mu, params[:1], alpha, params[1:], gamma))
+        params = np.concatenate((mu, params, gamma))
         return baryon_model.esd(radii, params[None, :])
 
     def _pool_func(data, true_mass):
@@ -116,7 +115,7 @@ def calculate_baryon_cm_fits(i, z, sim_data, fisher_matrix):
     )
 
     def esd_model_func(radii, true_mass, params):
-        alpha = np.array([0.9])
+        alpha = params[0:1]
         beta = params[1:2]
         gamma = np.array([0.2])
 

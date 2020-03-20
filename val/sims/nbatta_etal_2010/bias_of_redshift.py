@@ -43,7 +43,7 @@ class bcolors:
 
 def _log_like(params, radii, esd_model_func, esd_data, fisher_matrix):
     if np.any(params) < 0:
-        return -np.inf()
+        return -np.inf
 
     esd_model = esd_model_func(radii, params).flatten()
     esd_data = esd_data.flatten()
