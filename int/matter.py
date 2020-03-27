@@ -43,3 +43,12 @@ def describe_power():
         plt.ylabel(r'$ P(z, k) $')
         plt.savefig('figs/test/nonlinear_matter_power_spect.svg')
         plt.gcf().clear()
+
+        plt.plot(ks, lin_spect[0, :])
+        plt.plot(ks, nonlin_spect[0, :])
+        plt.xscale('log')
+        plt.yscale('log')
+        plt.xlabel(r'$ k/h $')
+        plt.ylabel(r'$ P(z, k) $')
+        plt.savefig('figs/test/linear_nonlinear_matter_power_comparison.svg')
+        plt.gcf().clear()
