@@ -1,12 +1,12 @@
 import numpy as np
-import camb
 from astropy import units as u
 import projector
 from maszcal.tinker import TinkerHmf
-from maszcal.cosmo_utils import get_camb_params, get_astropy_cosmology
+from maszcal.cosmo_utils import get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
 from maszcal.concentration import ConModel
 import maszcal.nfw
+import maszcal.matter
 import maszcal.mathutils
 import maszcal.ioutils
 import maszcal.defaults
@@ -25,10 +25,12 @@ class Stacker:
             mass_definition=None,
             units=None,
             sz_scatter=None,
+            matter_power_class=maszcal.matter.Power,
     ):
         self.mu_szs = mu_bins
         self.mus = mu_bins
         self.zs = redshift_bins
+        self.matter_power_class = matter_power_class
 
         if isinstance(cosmo_params, maszcal.defaults.DefaultCosmology):
             self.cosmo_params = CosmoParams()
@@ -74,9 +76,7 @@ class Stacker:
 
         self.b_sz = 1
 
-        self.max_k = 10
-        self.min_k = 1e-4
-        self.number_ks = 400
+        self.ks = np.logspace(-4, 1, 400)
 
         self.constants = Constants()
         self._CUTOFF_MASS = 2e14
@@ -117,13 +117,8 @@ class Stacker:
         return np.exp(mus)
 
     def calc_power_spect(self):
-        params = get_camb_params(self.cosmo_params, self.max_k, self.zs)
-
-        results = camb.get_results(params)
-
-        self.ks, _, self.power_spect = results.get_matter_power_spectrum(minkh=self.min_k,
-                                                                         maxkh=self.max_k,
-                                                                         npoints=self.number_ks)
+        power = self.matter_power_class(cosmo_params=self.cosmo_params)
+        self.power_spect = power.spectrum(self.ks, self.zs, is_nonlinear=False)
 
         if np.isnan(self.power_spect).any():
             raise ValueError('Power spectrum contains NaN values.')

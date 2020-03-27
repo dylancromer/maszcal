@@ -34,7 +34,7 @@ def test_power_spectrum():
 
     power_spect_redshift0 = stacker.power_spect
     plt.plot(ks, power_spect_redshift0.T)
-    plt.xlabel(r'$ k/h $')
+    plt.xlabel(r'$ k $')
     plt.ylabel(r'$ P(z=0, k) $')
     plt.xscale('log')
     plt.yscale('log')
@@ -98,8 +98,7 @@ def test_tinker_mf():
     mink = 1e-4
     maxks = [1, 3, 5, 10]
     for maxk in maxks:
-        stacker.min_k = mink
-        stacker.max_k = maxk
+        stacker.ks = np.logspace(np.log10(mink), np.log10(maxk), 400)
 
         stacker.calc_power_spect()
 
@@ -112,7 +111,7 @@ def test_tinker_mf():
         plt.plot(masses, masses**2 * dn_dms / rho_matter, label=plotlabel)
 
     plt.title(rf'$z = {z}$, ppf {used_ppf}')
-    plt.xlabel(r'$ M \; (M_{\odot}/h) $')
+    plt.xlabel(r'$ M \; (M_{\odot}) $')
     plt.ylabel(r'$ M^2/\rho_m \; dn/dM$')
     plt.legend(loc='best')
     plt.ylim((4e-4, 3e-1))

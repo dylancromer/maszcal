@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import os
 import json
 import pytest
@@ -5,6 +6,14 @@ import numpy as np
 import astropy.units as u
 from maszcal.lensing.shear import Stacker
 from maszcal.ioutils import NumpyEncoder
+
+
+@dataclass
+class FakeMatterPower:
+    cosmo_params: object
+
+    def spectrum(self, ks, zs, is_nonlinear):
+        return np.ones(zs.shape + ks.shape)
 
 
 def describe_stacker():
@@ -98,3 +107,23 @@ def describe_stacker():
 
             with pytest.raises(ValueError):
                 stacker.weak_lensing_avg_mass(a_szs)
+
+        def describe_power_spectrum_works():
+
+            @pytest.fixture
+            def stacker():
+                mus = np.linspace(np.log(1e14), np.log(1e15), 10)
+                redshifts = np.linspace(0, 1, 8)
+                return Stacker(
+                    mus,
+                    redshifts,
+                    units=u.Msun/u.pc**2,
+                    delta=200,
+                    sz_scatter=0.2,
+                    comoving=True,
+                    mass_definition='mean',
+                    matter_power_class=FakeMatterPower,
+                )
+
+            def it_can_calculate_the_mass_function(stacker):
+                assert np.all(stacker.dnumber_dlogmass() >= 0)

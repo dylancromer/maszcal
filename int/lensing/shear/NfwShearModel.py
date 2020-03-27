@@ -25,9 +25,7 @@ def describe_nfw_shear_model():
         mus = np.array([np.log(1e15)])
         cons = np.array([2])
 
-        delta_sigmas = stacked_model.delta_sigma(rs,
-                                                         mus,
-                                                         cons)
+        delta_sigmas = stacked_model.delta_sigma(rs, mus, cons)
 
         delta_sigmas = delta_sigmas[0,:,:,0]
 
