@@ -4,7 +4,7 @@ from astropy.cosmology import Flatw0waCDM
 import astropy.units as u
 
 
-def get_camb_params(cosmology_params, max_k, zs):
+def get_camb_params(cosmology_params, max_k, zs, nonlinear_matter_power):
     params = camb.model.CAMBparams()
 
     params.set_cosmology(
@@ -37,7 +37,7 @@ def get_camb_params(cosmology_params, max_k, zs):
         redshifts=zs,
         kmax=max_k,
         k_per_logint=None,
-        nonlinear=False,
+        nonlinear=nonlinear_matter_power,
         accurate_massive_neutrino_transfers=False,
         silent=True
     )
