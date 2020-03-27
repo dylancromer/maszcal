@@ -48,3 +48,19 @@ def describe_power():
 
         assert np.all(power.spectrum(ks, zs, is_nonlinear=False) == 'linear spectrum')
         assert np.all(power.spectrum(ks, zs, is_nonlinear=True) == 'nonlinear spectrum')
+
+    def it_provides_a_power_spectrum_interpolator(mocker):
+        mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
+
+        cosmo_params = maszcal.cosmology.CosmoParams()
+
+        power = maszcal.matter.Power(cosmo_params=cosmo_params)
+
+        zs = np.linspace(0, 1, 5)
+        ks = np.linspace(0.1, 1, 10)
+
+        lin_spectrum = power.get_spectrum_interpolator(ks, zs, is_nonlinear=False)
+        nonlin_spectrum = power.get_spectrum_interpolator(ks, zs, is_nonlinear=True)
+
+        assert np.all(lin_spectrum(ks, zs) == 'linear spectrum')
+        assert np.all(nonlin_spectrum(ks, zs) == 'nonlinear spectrum')
