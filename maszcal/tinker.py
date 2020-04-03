@@ -2,8 +2,8 @@ from dataclasses import dataclass
 import numpy as np
 import astropy.units as u
 from scipy.interpolate import InterpolatedUnivariateSpline as iuSpline
-from scipy.integrate import simps
-np.seterr(divide='ignore', invalid='ignore')
+import scipy.integrate
+#np.seterr(divide='ignore', invalid='ignore')
 
 
 tinker_data = np.transpose([[float(x) for x in line.split()]
@@ -99,8 +99,8 @@ def sigma_sq_integral(rs, power_spect, ks):
     Determines the sigma^2 parameter over the m-z grid by integrating
     over k.
     """
-    integrand = top_hatf(rs[None, ...] * ks[:, None, None])**2 * (power_spect.T[:, None, :] * ks[:, None, None]**2)
-    return simps(integrand/(2 * np.pi**2), x=ks, axis=0)
+    integrand = top_hatf(rs[None, ...] * ks[:, None, None])**2 * power_spect.T[:, None, :] * ks[:, None, None]**2
+    return scipy.integrate.simps(integrand/(2 * np.pi**2), x=ks, axis=0)
 
 
 def fnl_correction(sigma2, fnl):
@@ -143,27 +143,17 @@ def dsigma_dkmax_dM(M, z, rho, k, P, comoving=False):
 
 def tinker_bias_params(delta):
     y = np.log10(delta)
-    A = 1.0 + 0.24*y*np.exp(-(4/y)**4)
+    big_a = 1 + 0.24*y*np.exp(-(4/y)**4)
     a = 0.44*y - 0.88
-    B = 0.183
+    big_b = 0.183
     b = 1.5
-    C = 0.019 + 0.107*y + 0.19*np.exp(-(4./y)**4)
+    big_c = 0.019 + 0.107*y + 0.19*np.exp(-(4./y)**4)
     c = 2.4
-
-    return A, a, B, b, C, c
-
-
-def tinker_bias(sig, delta):
-    A, a, B, b, C, c = tinker_bias_params(delta)
-    delc = 1.686
-    nu = old_div(delc, sig)
-    ans = 1. - A*nu**a / (nu**a + delc**a) + B*nu**b + C*nu**c
-
-    return ans
+    return big_a, a, big_b, b, big_c, c
 
 
 @dataclass
-class TinkerHmf:
+class TinkerModel:
     delta: int
     mass_definition: str
     astropy_cosmology: object
@@ -173,7 +163,7 @@ class TinkerHmf:
         if self.mass_definition not in ('mean', 'crit'):
             raise ValueError('mass_definition must be \'mean\' or \'crit\'.')
 
-    def _rho_for_mass_func(self, zs):
+    def _rho(self, zs):
         if self.comoving:
             rhos = (
                 self.astropy_cosmology.Om0
@@ -192,7 +182,7 @@ class TinkerHmf:
         """
         Convert mass M to radius R assuming density rho.
         """
-        rhos = self._rho_for_mass_func(zs)
+        rhos = self._rho(zs)
         return (3*masses / (4*np.pi*rhos))**(1/3)
 
     def _get_delta_means(self, zs):
@@ -202,6 +192,8 @@ class TinkerHmf:
             delta_means = self.delta / self.astropy_cosmology.Om(zs)
         return delta_means
 
+
+class TinkerHmf(TinkerModel):
     def dn_dlnm(self, masses, zs, ks, power_spect):
         delta_means = self._get_delta_means(zs)  # converts delta_c to delta_m such that mass is the same
         return self._dn_dlnm(masses, zs, delta_means, ks, power_spect)
@@ -239,4 +231,23 @@ class TinkerHmf:
         else:
             dmasses = np.gradient(np.log(masses))[0] * masses
 
-        return tf * self._rho_for_mass_func(zs) * dlogs / dmasses
+        return tf * self._rho(zs) * dlogs / dmasses
+
+
+class TinkerBias(TinkerModel):
+    def _bias_from_sigma(self, sigma, delta):
+        big_a, a, big_b, b, big_c, c = tinker_bias_params(delta)
+        delta_collapse = 1.686
+        nu = delta_collapse/sigma
+        return 1 - big_a*nu**a / (nu**a + delta_collapse**a) + big_b*nu**b + big_c*nu**c
+
+    def bias(self, masses, zs, ks, power_spectrum):
+        delta_means = self._get_delta_means(zs)  # converts delta_c to delta_m such that mass is the same
+
+        if masses.ndim == 1:
+            masses = masses[:, None]
+
+        radii = self.radius_from_mass(masses, zs)
+        sigmas = np.sqrt(sigma_sq_integral(radii, power_spectrum, ks))
+
+        return self._bias_from_sigma(sigmas, delta_means)
