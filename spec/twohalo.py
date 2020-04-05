@@ -10,7 +10,7 @@ class FakePower:
     cosmo_params: object
 
     def get_spectrum_interpolator(self, ks, zs, is_nonlinear):
-        return lambda ks, zs: np.ones(ks.shape + zs.shape)
+        return lambda ks, zs: np.ones(zs.shape + ks.shape)
 
 
 def fake_quad_vec(func, a, b, limit=1):

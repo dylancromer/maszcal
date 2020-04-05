@@ -50,10 +50,10 @@ class TwoHaloShearModel:
         ks = np.logspace(np.log10(self.MIN_K), np.log10(self.MAX_BIAS_K), self.NUM_BIAS_KS)
 
         try:
-            power_spect = self._power_interpolator(ks, zs).T
+            power_spect = self._power_interpolator(ks, zs)
         except AttributeError:
             self._init_power_interpolator()
-            power_spect = self._power_interpolator(ks, zs).T
+            power_spect = self._power_interpolator(ks, zs)
 
         try:
             return self.__bias(masses, zs, ks, power_spect)
