@@ -50,10 +50,10 @@ class TwoHaloShearModel:
         ks = np.logspace(np.log10(self.MIN_K), np.log10(self.MAX_BIAS_K), self.NUM_BIAS_KS)
 
         try:
-            power_spect = self._power_interpolator(ks, zs)
+            power_spect = self._power_interpolator(ks, zs).T
         except AttributeError:
             self._init_power_interpolator()
-            power_spect = self._power_interpolator(ks, zs)
+            power_spect = self._power_interpolator(ks, zs).T
 
         try:
             return self.__bias(masses, zs, ks, power_spect)
@@ -110,24 +110,27 @@ class TwoHaloShearModel:
         params = maszcal.interp_utils.cartesian_prod(ln_rs, zs)
         return np.exp(self._correlation_rbf.interp(params).flatten()).reshape(rs.shape + zs.shape)
 
-    def _correlation_interpolator(self, rs, mus, zs):
-        total_dim = rs.ndim + mus.ndim + zs.ndim
-        bias = maszcal.mathutils.atleast_kd(self._bias(mus, zs).T, total_dim, append_dims=False)
+    def _correlation_interpolator(self, rs, zs):
         try:
             correlator = self._correlation_integral_interp(rs, zs)
         except AttributeError:
             self._init_correlation_interpolator()
             correlator = self._correlation_integral_interp(rs, zs)
-        correlator = maszcal.mathutils.atleast_kd(correlator, total_dim, append_dims=True)
+        return correlator
 
-        return bias * correlator
+    def density_interpolator(self, rs, zs):
+        return self._correlation_interpolator(rs, zs)
 
-    def density_interpolator(self, rs, mus, zs):
-        return (1 + self._correlation_interpolator(rs, mus, zs))
+    def _esd_radial_shape(self, rs, zs):
+        return projector.esd_quad(rs, lambda radii: self.density_interpolator(radii, zs))
 
     def _esd(self, rs, mus, zs):
+        total_dim = rs.ndim + mus.ndim + zs.ndim
+        bias = maszcal.mathutils.atleast_kd(self._bias(mus, zs).T, total_dim, append_dims=False)
+        esd_radial_shape = self._esd_radial_shape(rs, zs)
+        esd_radial_shape = maszcal.mathutils.atleast_kd(esd_radial_shape, total_dim, append_dims=True)
         return np.swapaxes(
-            projector.esd_quad(rs, lambda radii: self.density_interpolator(radii, mus, zs)),
+            bias * esd_radial_shape,
             0,
             2,
         )
