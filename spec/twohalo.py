@@ -63,7 +63,7 @@ def describe_EmulatedTwoHaloShear():
 
     @pytest.fixture
     def emulated_model():
-        zs = np.linspace(0, 1, 8)
+        zs = np.linspace(0, 1, 7)
         rs = np.logspace(-1, 1, 8)
 
         emu = maszcal.twohalo.EmulatedTwoHaloShear(
@@ -76,9 +76,9 @@ def describe_EmulatedTwoHaloShear():
         return emu
 
     def it_emulated_two_halo_esds(emulated_model):
-        zs = np.linspace(0.1, 0.9, 10)
+        zs = np.linspace(0.1, 0.9, 8)
         mus = np.linspace(32, 33, 10)
-        rs = np.logspace(np.log10(0.2), np.log10(9), 10)
+        rs = np.logspace(np.log10(0.2), np.log10(9), 11)
 
         esds = emulated_model.esd(rs, mus, zs)
 

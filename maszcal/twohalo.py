@@ -166,7 +166,7 @@ class EmulatedTwoHaloShear:
         )
 
     def _get_data_grid(self, rs, zs):
-        return self.two_halo_shear_model._esd_radial_shape(rs, zs)
+        return rs[:, None] * self.two_halo_shear_model._esd_radial_shape(rs, zs)
 
     def process(self):
         data_grid = self._get_data_grid(self.radii, self.redshifts)
@@ -182,10 +182,10 @@ class EmulatedTwoHaloShear:
     def esd(self, rs, mus, zs):
         total_dim = rs.ndim + mus.ndim + zs.ndim
 
-        bias = self.two_halo_shear_model._bias(mus, zs)
+        bias = self.two_halo_shear_model._bias(mus, zs).T
         bias = maszcal.mathutils.atleast_kd(bias, total_dim, append_dims=False)
 
-        esd_radial_shape = self._radial_shape(rs, zs).reshape(rs.shape + zs.shape)
+        esd_radial_shape = self._radial_shape(rs, zs).reshape(rs.shape + zs.shape) / rs[:, None]
         esd_radial_shape = maszcal.mathutils.atleast_kd(esd_radial_shape, total_dim, append_dims=True)
         return np.swapaxes(
             bias * esd_radial_shape,
