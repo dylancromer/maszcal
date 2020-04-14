@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import maszcal.lensing as lensing
-import maszcal.model as model
+import maszcal.lensing.shear as model
 
 
 def describe_lensing():
@@ -16,13 +16,13 @@ def describe_lensing():
             redshift = 0.4*np.ones(1)
             delta = 500
             mass_def = 'crit'
-            lensing_signal = lensing.SingleMassLensingSignal(redshift=redshift, delta=delta, mass_definition=mass_def)
+            lensing_signal = lensing.SingleMassNfwLensingSignal(redshift=redshift, delta=delta, mass_definition=mass_def)
 
             esd_500c = lensing_signal.esd(rs, np.array([[mu, con]]))
 
             delta = 200
             kind = 'mean'
-            lensing_signal = lensing.SingleMassLensingSignal(redshift=redshift, delta=delta, mass_definition=mass_def)
+            lensing_signal = lensing.SingleMassNfwLensingSignal(redshift=redshift, delta=delta, mass_definition=mass_def)
 
             esd_200m = lensing_signal.esd(rs, np.array([[mu, con]]))
 

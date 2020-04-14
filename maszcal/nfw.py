@@ -143,19 +143,53 @@ class NfwModel:
         return prefactor[:, :, None, :] * postfactor
 
 
+class SingleMassNfwModel(NfwModel):
+    def scale_radius(self, zs, masses, cons):
+        """
+        SHAPE z, params
+        """
+        return self.radius_delta(zs, masses).T / cons[None, :]
+
+    def rho(self, rs, zs, masses, cons):
+        """
+        SHAPE z, r, params
+        """
+        scale_radii = self.scale_radius(zs, masses, cons)
+        numerator = self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
+        numerator = np.reshape(numerator, numerator.shape[:1] + rs.ndim*(1,) + numerator.shape[1:])
+        xs = rs[None, ..., None]/np.reshape(scale_radii,
+                                            scale_radii.shape[:1] + rs.ndim*(1,) + scale_radii.shape[1:])
+        denominator = xs * (1+xs)**2
+        return numerator/denominator
+
+    def delta_sigma(self, rs, zs, masses, cons):
+        """
+        SHAPE z, r, params
+        """
+        scale_radii = self.scale_radius(zs, masses, cons)
+        prefactor = scale_radii * self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
+        prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
+
+        xs = rs[None, :, None]/scale_radii[:, None, :]
+
+        postfactor = self._inequality_func(xs)
+
+        return prefactor[:, None, :] * postfactor
+
+
 class NfwCmModel(NfwModel):
     """
     Overwrites some methods to make it work for a concentration-mass relation
     """
     def scale_radius(self, zs, masses, cons):
         """
-        SHAPE mass, z
+        SHAPE mass, z, c
         """
         return self.radius_delta(zs, masses)/cons
 
     def rho(self, rs, zs, masses, cons):
         """
-        SHAPE mass, z, r
+        SHAPE mass, z, r, c
         """
         scale_radii = self.scale_radius(zs, masses, cons)
         numerator = self.delta_c(cons) * self.reference_density(zs)[None, :]
@@ -167,7 +201,7 @@ class NfwCmModel(NfwModel):
 
     def delta_sigma(self, rs, zs, masses, cons):
         """
-        SHAPE mass, z, r
+        SHAPE mass, z, r, c
         """
         scale_radii = self.scale_radius(zs, masses, cons)
         prefactor = scale_radii * self.delta_c(cons) * self.reference_density(zs)[None, :]

@@ -110,3 +110,4 @@ def describe_nfw_model():
         rhos = nfw_model.rho(rs, zs, masses, cons)
 
         assert np.all(rhos > 0)
+        assert rhos.shape == masses.shape + zs.shape + rs.shape + cons.shape

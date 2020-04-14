@@ -986,14 +986,14 @@ class BaryonCmShearModel(BaryonShearModel):
 class SingleMassBaryonShearModel:
     def __init__(
             self,
-            redshift,
+            redshifts,
             units=u.Msun/u.pc**2,
             comoving_radii=True,
             delta=200,
             mass_definition='mean',
             cosmo_params=maszcal.defaults.DefaultCosmology(),
     ):
-        self.redshift = redshift
+        self.redshifts = redshifts
         self.units = units
         self.comoving_radii = comoving_radii
         self.delta = delta
@@ -1014,7 +1014,7 @@ class SingleMassBaryonShearModel:
         self.NUM_INTEGRATION_RADII = 200
 
     def _init_nfw(self):
-        self.nfw_model = maszcal.nfw.NfwModel(
+        self.nfw_model = maszcal.nfw.SingleMassNfwModel(
             cosmo_params=self.cosmo_params,
             units=self.units,
             delta=self.delta,
@@ -1027,30 +1027,30 @@ class SingleMassBaryonShearModel:
 
     def _r_delta(self, mus):
         """
-        SHAPE mu, z
+        SHAPE z, params
         """
         masses = self.mass(mus)
         try:
-            return self.nfw_model.radius_delta(self.redshift, masses).flatten()
+            return self.nfw_model.radius_delta(self.redshifts, masses).T
         except AttributeError:
             self._init_nfw()
-            return self.nfw_model.radius_delta(self.redshift, masses).flatten()
+            return self.nfw_model.radius_delta(self.redshifts, masses).T
 
     def gnfw_shape(self, rs, mus, cons, alphas, betas, gammas):
         """
-        SHAPE mu, z, rs.shape, params
+        SHAPE rs.shape, z, params
         """
-        ys = (rs[..., None]/maszcal.mathutils.atleast_kd(self._r_delta(mus), rs.ndim+1)) / self.CORE_RADIUS
+        ys = (rs[..., None, None]/maszcal.mathutils.atleast_kd(self._r_delta(mus), rs.ndim+2, append_dims=False)) / self.CORE_RADIUS
 
-        alphas = alphas[None, :]
-        betas = betas[None, :]
-        gammas = gammas[None, :]
+        alphas = alphas.reshape((rs.ndim + 1)*(1,) + (alphas.size,))
+        betas = betas.reshape((rs.ndim + 1)*(1,) + (betas.size,))
+        gammas = gammas.reshape((rs.ndim + 1)*(1,) + (gammas.size,))
 
         return 1 / (ys**gammas * (1 + ys**(1/alphas))**((betas-gammas) * alphas))
 
     def _gnfw_norm(self, mus, cons, alphas, betas, gammas):
         """
-        SHAPE mu, z, params
+        SHAPE z, params
         """
         rs = np.linspace(
             self.MIN_INTEGRATION_RADIUS,
@@ -1059,8 +1059,8 @@ class SingleMassBaryonShearModel:
         )
 
         drs = np.gradient(rs)
-        top_integrand = self._rho_nfw(rs, mus, cons) * rs[:, None]**2
-        bottom_integrand = self.gnfw_shape(rs, mus, cons, alphas, betas, gammas) * rs[:, None]**2
+        top_integrand = self._rho_nfw(rs, mus, cons) * rs[None, ..., None]**2
+        bottom_integrand = self.gnfw_shape(rs, mus, cons, alphas, betas, gammas) * rs[..., None, None]**2
 
         return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-2)
                 /maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=0))
@@ -1074,41 +1074,46 @@ class SingleMassBaryonShearModel:
         masses = self.mass(mus)
 
         try:
-            return self.nfw_model.rho(rs, self.redshift, masses, cons)[0, 0, :, :]
+            return self.nfw_model.rho(rs, self.redshifts, masses, cons)
         except AttributeError:
             self._init_nfw()
-            return self.nfw_model.rho(rs, self.redshift, masses, cons)[0, 0, :, :]
+            return self.nfw_model.rho(rs, self.redshifts, masses, cons)
 
     def rho_bary(self, rs, mus, cons, alphas, betas, gammas):
         """
-        SHAPE r, mu, z, params
+        SHAPE r, z, params
         """
         return self.baryon_frac * self._rho_gnfw(rs, mus, cons, alphas, betas, gammas)
 
     def rho_cdm(self, rs, mus, cons):
         """
-        SHAPE mu, z, r, params
+        SHAPE z, r, params
         """
         return (1-self.baryon_frac) * self._rho_nfw(rs, mus, cons)
 
     def delta_sigma_cdm(self, rs, mus, cons):
         """
-        SHAPE r, params
+        SHAPE z, r, params
         """
         masses = self.mass(mus)
 
         try:
-            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, self.redshift, masses, cons)[0, 0, :, :]
+            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, self.redshifts, masses, cons)
         except AttributeError:
             self._init_nfw()
-            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, self.redshift, masses, cons)[0, 0, :, :]
+            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, self.redshifts, masses, cons)
 
     def delta_sigma_bary(self, rs, mus, cons, alphas, betas, gammas):
         """
-        SHAPE r, params
+        SHAPE z, r, params
         """
         return (projector.esd(rs, lambda r: self.rho_bary(r, mus, cons, alphas, betas, gammas))
                 * (u.Msun/u.Mpc**2).to(self.units))
 
     def delta_sigma(self, rs, mus, cons, alphas, betas, gammas):
-        return self.delta_sigma_bary(rs, mus, cons, alphas, betas, gammas) + self.delta_sigma_cdm(rs, mus, cons)
+        delta_sigma_bary = np.moveaxis(
+            self.delta_sigma_bary(rs, mus, cons, alphas, betas, gammas),
+            -2,
+            0,
+        )
+        return delta_sigma_bary + self.delta_sigma_cdm(rs, mus, cons)

@@ -286,19 +286,17 @@ class BaryonCmLensingSignal(BaryonLensingSignal):
 class SingleBaryonLensingSignal:
     def __init__(
             self,
-            redshift=nothing.NoRedshifts(),
+            redshifts=nothing.NoRedshifts(),
             units=u.Msun/u.pc**2,
             comoving=True,
             delta=200,
             mass_definition='mean',
             cosmo_params=defaults.DefaultCosmology(),
     ):
-        if not isinstance(redshift, nothing.NoRedshifts):
-            self.redshift = redshift
+        if not isinstance(redshifts, nothing.NoRedshifts):
+            self.redshifts = redshifts
         else:
-            raise TypeError('redshift is required to calculate a lensing signal')
-
-        self._check_redshift_for_single_mass_model()
+            raise TypeError('redshifts are required to calculate a lensing signal')
 
         self.units = units
         self.comoving = comoving
@@ -307,13 +305,9 @@ class SingleBaryonLensingSignal:
 
         self.cosmo_params = cosmo_params
 
-    def _check_redshift_for_single_mass_model(self):
-        if np.asarray(self.redshift).size != 1:
-            raise TypeError('redshifts must have length 1 to calculate a single-mass-bin model')
-
     def _init_single_mass_model(self):
         self.single_mass_model = maszcal.lensing.shear.SingleMassBaryonShearModel(
-            self.redshift,
+            redshifts=self.redshifts,
             cosmo_params=self.cosmo_params,
             comoving_radii=self.comoving,
             delta=self.delta,
