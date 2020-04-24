@@ -139,5 +139,15 @@ class TwoHaloShearModel:
         return (self.astropy_cosmology.Om(zs)
                 * self.astropy_cosmology.critical_density(zs)).to(u.Msun/u.Mpc**3).value
 
+    def halo_matter_correlation(self, rs, mus, zs):
+        total_dim = rs.ndim + mus.ndim + zs.ndim
+        bias = maszcal.mathutils.atleast_kd(self._bias(mus, zs).T, total_dim, append_dims=False)
+        mm_corr = maszcal.mathutils.atleast_kd(self.density_interpolator(rs, zs), total_dim, append_dims=True)
+        return np.swapaxes(
+            bias * mm_corr,
+            0,
+            2,
+        )
+
     def esd(self, rs, mus, zs):
         return self.matter_density(zs)[None, :, None] * self._esd(rs, mus, zs) * (u.Msun/u.Mpc**2).to(self.units)

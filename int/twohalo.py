@@ -48,46 +48,22 @@ def describe_TwoHaloShearModel():
 
         plt.gcf().clear()
 
-
-def describe_EmulatedTwoHaloShear():
-
-    @pytest.fixture
-    def emulated_model():
-        zs = np.linspace(0, 1, 40)
-        mus = np.linspace(np.log(1e14), np.log(1e15), 5)
-        rs = np.logspace(np.log10(0.05), np.log10(20), 80)
-
-        emu = maszcal.twohalo.EmulatedTwoHaloShear(
-            rs,
-            zs,
-            cosmo_params=maszcal.cosmology.CosmoParams(),
-        )
-        emu.process()
-        return emu
-
-    def it_emulated_two_halo_esds(emulated_model):
+    def it_calculates_halo_matter_correlations(two_halo_model):
         zs = np.linspace(0, 1, 10)
         mus = np.linspace(np.log(1e14), np.log(1e15), 5)
-        rs = np.logspace(-1, 1, 100)
+        rs = np.logspace(-2, np.log10(30), 60)
 
-        esds = emulated_model.esd(rs, mus, zs)
+        xis = two_halo_model.halo_matter_correlation(rs, mus, zs)
 
-        assert np.all(esds >= 0)
-        assert not np.any(np.isnan(esds))
-        assert esds.shape == mus.shape + zs.shape + rs.shape
+        assert np.all(xis >= 0)
+        assert not np.any(np.isnan(xis))
+        assert xis.shape == mus.shape + zs.shape + rs.shape
 
-        plt.plot(rs, esds[0, :, :].T)
+        plt.plot(rs, xis[:, 0, :].T)
         plt.xscale('log')
+        plt.yscale('log')
         plt.xlabel(r'$R \; (\mathrm{Mpc}$)')
-        plt.ylabel(r'$\Delta \Sigma \; (M_\odot/\mathrm{pc}^2)$')
-        plt.savefig('figs/test/two_halo_esd_emulated.svg')
-
-        plt.gcf().clear()
-
-        plt.plot(rs, rs[:, None]*esds[0, :, :].T)
-        plt.xscale('log')
-        plt.xlabel(r'$R \; (\mathrm{Mpc}$)')
-        plt.ylabel(r'$R \, \Delta \Sigma \; (10^6 \, M_\odot/\mathrm{pc})$')
-        plt.savefig('figs/test/two_halo_r_esd_emulated.svg')
+        plt.ylabel(r'$\xi$')
+        plt.savefig('figs/test/halo_matter_correlation.svg')
 
         plt.gcf().clear()
