@@ -4,6 +4,31 @@ import numpy as np
 from maszcal.interpolate import RbfInterpolator, SavedRbf
 import maszcal.ioutils as ioutils
 import maszcal.nothing as nothing
+import pality
+
+
+class LensingPca:
+    @classmethod
+    def create(cls, lensing_data):
+        return cls.get_pca(cls.standardize(lensing_data))
+
+    @classmethod
+    def subtract_mean(cls, array):
+        return array - array.mean(axis=-1)[:, None]
+
+    @classmethod
+    def normalize_by_std(cls, array):
+        return array / array.std(axis=-1)[:, None]
+
+    @classmethod
+    def standardize(cls, lensing_data):
+        shifted_data = cls.subtract_mean(lensing_data)
+        scaled_shifted_data = cls.normalize_by_std(shifted_data)
+        return scaled_shifted_data
+
+    @classmethod
+    def get_pca(cls, data):
+        return pality.Pca.calculate(data)
 
 
 @dataclass
