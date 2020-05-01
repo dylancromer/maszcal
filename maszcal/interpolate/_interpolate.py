@@ -1,25 +1,41 @@
 from dataclasses import dataclass
 import numpy as np
+import sklearn.gaussian_process
+import sklearn.gaussian_process.kernels
 import smolyak
 from .rbf import Rbf
 from maszcal.interp_utils import make_flat
-import maszcal.nothing as nothing
+import maszcal.mathutils
+import maszcal.nothing
+
+
+class GaussianProcessInterpolator:
+    def __init__(
+            self,
+            params,
+            func_vals,
+            kernel=sklearn.gaussian_process.kernels.RBF(),
+    ):
+        params = maszcal.mathutils.atleast_kd(params, 2)
+        self.gpi = sklearn.gaussian_process.GaussianProcessRegressor(kernel=kernel).fit(params, func_vals)
+
+    def __call__(self, params):
+        params = maszcal.mathutils.atleast_kd(params, 2)
+        return self.gpi.predict(params)
 
 
 class SmolyakInterpolator:
     def __init__(self, smolyak_grid, func_vals):
-        self.smolyak_grid = smolyak_grid
-        self.interp_func_vals = func_vals
+        self._smolyak_interpolator = smolyak.interp.SmolyakInterp(smolyak_grid, func_vals)
 
-    def process(self):
-        self._smolyak_interpolator = smolyak.interp.SmolyakInterp(self.smolyak_grid, self.interp_func_vals)
-
-    def interp(self, smolyak_grid):
+    def __call__(self, smolyak_grid):
         return self._smolyak_interpolator.interpolate(smolyak_grid)
 
 
 class RbfInterpolator:
-    def __init__(self, params, func_vals, saved_rbf=nothing.NoSavedRbf()):
+    rbf_function = 'multiquadric'
+
+    def __init__(self, params, func_vals, saved_rbf=maszcal.nothing.NoSavedRbf()):
         self.params = params
         self.interp_func_vals = func_vals
 
@@ -28,19 +44,20 @@ class RbfInterpolator:
         except AttributeError:
             self.ndim = saved_rbf.dimension
 
-        if not isinstance(saved_rbf, nothing.NoSavedRbf):
+        if not isinstance(saved_rbf, maszcal.nothing.NoSavedRbf):
             self.rbfi = Rbf(saved_rbf=saved_rbf)
+        else:
+            self.process()
 
     @classmethod
     def from_saved_rbf(cls, saved_rbf):
-        return cls(nothing.NoCoords(), nothing.NoFuncVals(), saved_rbf=saved_rbf)
+        return cls(maszcal.nothing.NoCoords(), maszcal.nothing.NoFuncVals(), saved_rbf=saved_rbf)
 
-    def process(self, function='multiquadric'):
+    def process(self):
         point_vals = make_flat(self.interp_func_vals)
+        self.rbfi = Rbf(*self.params.T, point_vals, function=self.rbf_function)
 
-        self.rbfi = Rbf(*self.params.T, point_vals, function=function)
-
-    def interp(self, params):
+    def __call__(self, params):
         try:
             return self.rbfi(*params.T)
 

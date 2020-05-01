@@ -5,6 +5,19 @@ import smolyak
 import maszcal.interpolate
 
 
+def describe_GaussianProcessInterpolator():
+
+    def describe__call__():
+
+        def it_interpolates_a_constant_correctly():
+            params = np.linspace(0, 1, 10)
+            func_vals = np.ones(params.shape)
+            interpolator = maszcal.interpolate.GaussianProcessInterpolator(params, func_vals)
+            params_to_eval = np.linspace(0, 1, 20)
+            result = interpolator(params_to_eval)
+            assert np.allclose(result, 1)
+
+
 def describe_Rbf():
 
     @pytest.fixture
@@ -24,14 +37,11 @@ def describe_Rbf():
         rbf = maszcal.interpolate.Rbf(saved_rbf=saved_rbf)
         true_nodes = np.array([0.14783506, -0.07641081,  0.02277437, -0.00811247,  0.00127305,
                                0.00127305, -0.00811247,  0.02277437, -0.07641081,  0.14783506])
-
         assert np.all(rbf.nodes == true_nodes)
 
     def it_can_interpolate_a_constant_with_a_saved_rbf(saved_rbf):
         rbf = maszcal.interpolate.Rbf(saved_rbf=saved_rbf)
-
         coords = np.linspace(0.2, 0.3, 10)
-
         assert np.allclose(rbf(coords), np.ones(10), rtol=1e-2)
 
 
@@ -54,29 +64,21 @@ def describe_RbfInterpolator():
             interpolator = maszcal.interpolate.RbfInterpolator.from_saved_rbf(saved_rbf)
             assert isinstance(interpolator, maszcal.interpolate.RbfInterpolator)
 
-    def describe_interp():
+    def describe__call__():
 
         def it_interpolates_a_constant_correctly():
             params = np.linspace(0, 1, 10)[:, None]
-
             func_vals = np.ones((10, 1))
-
             interpolator = maszcal.interpolate.RbfInterpolator(params, func_vals)
-            interpolator.process()
-
             params_to_eval = np.linspace(0, 1, 20)[:, None]
-
-            result = interpolator.interp(params_to_eval)
-
+            result = interpolator(params_to_eval)
             assert np.allclose(result, 1, rtol=1e-2)
 
         def it_can_handle_lots_of_coords():
             p = np.arange(1, 5)
             params = np.stack((p, p, p, p, p, p)).T
             func_vals = np.ones(4)
-
             interpolator = maszcal.interpolate.RbfInterpolator(params, func_vals)
-            interpolator.process()
 
 
 def describe_SavedRbf():
@@ -174,47 +176,13 @@ def describe_SavedRbf():
 
 def describe_SmolyakInterpolator():
 
-    def describe_init():
-
-        def correct_args_case():
-            func_vals = stub()
-            smolyak_grid = stub()
-            maszcal.interpolate.SmolyakInterpolator(smolyak_grid, func_vals)
-
-        def incorrect_args_case():
-            with pytest.raises(TypeError):
-                maszcal.interpolate.SmolyakInterpolator()
-
-    def describe_interp():
+    def describe__call__():
 
         def it_interpolates_a_constant_correctly():
             smolyak_grid = smolyak.grid.SmolyakGrid(d=2, mu=3, lb=np.zeros(2), ub=np.ones(2))
-
             func_vals = np.ones((smolyak_grid.grid.shape[0], 2))
-
             interpolator = maszcal.interpolate.SmolyakInterpolator(smolyak_grid, func_vals)
-            interpolator.process()
-
             p = np.linspace(0, 1, 20)
             params_to_eval = np.stack((p, p)).T
-
-            result = interpolator.interp(params_to_eval)
-
+            result = interpolator(params_to_eval)
             assert np.allclose(result, 1)
-
-        def it_interpolates_a_weird_func_correctly():
-            smolyak_grid = smolyak.grid.SmolyakGrid(d=2, mu=4, lb=-np.ones(2), ub=np.ones(2))
-
-            def func(x): return x[:, 0] * x[:, 1] * np.sin(x[:, 0])
-            func_vals = func(smolyak_grid.grid)
-
-            interpolator = maszcal.interpolate.SmolyakInterpolator(smolyak_grid, func_vals)
-            interpolator.process()
-
-            p = np.linspace(0, 1, 20)
-            params_to_eval = np.stack((p, p)).T
-
-            result = interpolator.interp(params_to_eval)
-            true_vals = func(params_to_eval)
-
-            assert np.allclose(result, true_vals)
