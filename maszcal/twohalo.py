@@ -102,13 +102,12 @@ class TwoHaloShearModel:
     def _init_correlation_interpolator(self):
         sample_params, sample_ln_xis = self._get_correlator_samples()
         interpolator = maszcal.interpolate.RbfInterpolator(params=sample_params, func_vals=sample_ln_xis)
-        interpolator.process()
         self._correlation_rbf = interpolator
 
     def _correlation_integral_interp(self, rs, zs):
         ln_rs = np.log(rs).flatten()
         params = maszcal.interp_utils.cartesian_prod(ln_rs, zs)
-        return np.exp(self._correlation_rbf.interp(params).flatten()).reshape(rs.shape + zs.shape)
+        return np.exp(self._correlation_rbf(params).flatten()).reshape(rs.shape + zs.shape)
 
     def _correlation_interpolator(self, rs, zs):
         try:
