@@ -1,10 +1,7 @@
-import json
 from dataclasses import dataclass
 import numpy as np
-from maszcal.interpolate import RbfInterpolator, SavedRbf
-import maszcal.ioutils as ioutils
-import maszcal.nothing as nothing
 import pality
+import maszcal.mathutils
 
 
 class LensingPca:
@@ -32,89 +29,31 @@ class LensingPca:
 
 
 @dataclass
-class LensingEmulator:
-    function: str = 'multiquadric'
-
-    def load_emulation(
-            self,
-            emulation_file=nothing.NoFile(),
-            saved_emulation=nothing.NoEmulation()
-    ):
-
-        if not isinstance(emulation_file, nothing.NoFile):
-            saved_emulation = Emulation.load(emulation_file)
-            self.radii = saved_emulation.radii
-            self.interpolators = self._init_saved_rbfs(saved_emulation.saved_rbfs)
-
-        elif not isinstance(saved_emulation, nothing.NoEmulation):
-            self.radii = saved_emulation.radii
-            self.interpolators = self._init_saved_rbfs(saved_emulation.saved_rbfs)
-
-        else:
-            raise TypeError("load_emulation requires either an "
-                            "interpolation file or a SavedRbf object")
-
-    def _init_saved_rbfs(self, saved_rbfs):
-        return [RbfInterpolator.from_saved_rbf(saved_rbf) for saved_rbf in saved_rbfs]
-
-    def _get_saved_rbfs(self):
-        return [interp.get_rbf_solution() for interp in self.interpolators]
-
-    def save_emulation(self, emulation_file=None):
-        emulation = Emulation(
-            radii=self.radii,
-            saved_rbfs=self._get_saved_rbfs(),
-        )
-
-        if emulation_file is None:
-            return emulation
-        else:
-            emulation.save(emulation_file)
-
-    def emulate(self, rs, params, func_vals):
-        self.radii = rs
-        self.interpolators = [self._emulate_single_radius(params, val) for val in func_vals]
-
-    def _emulate_single_radius(self, params, func_vals):
-        interpolator = RbfInterpolator(params, func_vals)
-        interpolator.process(function=self.function)
-        return interpolator
-
-    def evaluate_on(self, params):
-        return np.array([self.interpolators[i].interp(params) for i in range(self.radii.size)])
-
-
-@dataclass
-class Emulation:
-    radii: np.ndarray
-    saved_rbfs: list
+class PcaEmulator:
+    mean: np.ndarray
+    std_dev: np.ndarray
+    coords: np.ndarray
+    basis_vectors: np.ndarray
+    weights: np.ndarray
+    interpolator_class: object
 
     def __post_init__(self):
-        if self.radii.ndim > 1:
-            raise TypeError("radii must be a 1-dimensional array")
-        if self.radii.size != len(self.saved_rbfs):
-            raise ValueError("radii and saved_rbfs must have equal length")
+        self.n_components = self.basis_vectors.shape[-1]
+        self.weight_interpolators = self.create_weight_interpolators()
 
-    def save(self, save_location):
-        emulation_dict = self.__dict__
-        with open(save_location, 'w') as outfile:
-            json.dump(emulation_dict, outfile, cls=ioutils.EmulationEncoder, ensure_ascii=False)
+    def create_weight_interpolators(self):
+        return tuple(
+            self.interpolator_class(self.coords, self.weights[i, :]) for i in range(self.n_components)
+        )
 
-    @staticmethod
-    def _init_saved_rbf(rbf_dict):
-        for key, val in rbf_dict.items():
-            if isinstance(val, list):
-                rbf_dict[key] = np.asarray(val)
-        return SavedRbf(**rbf_dict)
+    def reconstruct_standard_data(self, coords):
+        return np.stack(tuple(
+            self.weight_interpolators[i](coords)[None, :] * self.basis_vectors[:, i, None] for i in range(self.n_components)
+        )).sum(axis=0)
 
-    @classmethod
-    def load(cls, saved_emulation):
-        with open(saved_emulation, 'r') as json_file:
-            emulation_dict = json.load(json_file)
+    def reconstruct_data(self, coords):
+        standard_data = self.reconstruct_standard_data(coords)
+        return self.mean[:, None] + (standard_data*self.std_dev[:, None])
 
-        saved_rbf_dicts = emulation_dict['saved_rbfs']
-        emulation_dict['saved_rbfs'] = [cls._init_saved_rbf(rbf_dict) for rbf_dict in saved_rbf_dicts]
-
-        emulation_dict['radii'] = np.asarray(emulation_dict['radii'])
-
-        return cls(**emulation_dict)
+    def __call__(self, coords):
+        return self.reconstruct_data(coords)
