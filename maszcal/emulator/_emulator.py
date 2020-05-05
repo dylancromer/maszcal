@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from types import MappingProxyType
 import numpy as np
 import sklearn.gaussian_process.kernels
 import pality
@@ -37,20 +38,15 @@ class PcaEmulator:
     basis_vectors: np.ndarray
     weights: np.ndarray
     interpolator_class: object
-    kernel: object = None
+    interpolator_kwargs: object = MappingProxyType({})
 
     def __post_init__(self):
         self.n_components = self.basis_vectors.shape[-1]
         self.weight_interpolators = self.create_weight_interpolators()
 
     def create_weight_interpolators(self):
-        if self.kernel is None:
             return tuple(
-                self.interpolator_class(self.coords, self.weights[i, :]) for i in range(self.n_components)
-            )
-        else:
-            return tuple(
-                self.interpolator_class(self.coords, self.weights[i, :], kernel=self.kernel) for i in range(self.n_components)
+                self.interpolator_class(self.coords, self.weights[i, :], **self.interpolator_kwargs) for i in range(self.n_components)
             )
 
     def reconstruct_standard_data(self, coords):
