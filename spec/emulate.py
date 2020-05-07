@@ -65,3 +65,14 @@ def describe_PcaEmulator():
 
         new_coords = np.linspace(0.1, 0.9, 20)
         assert emulator(new_coords).shape == (10, 20)
+
+    def create_from_data(coords, data):
+        emulator = maszcal.emulate.PcaEmulator.create_from_data(
+            coords=coords,
+            data=data,
+            interpolator_class=maszcal.interpolate.RbfInterpolator,
+            interpolator_kwargs={}
+        )
+
+        new_coords = np.linspace(0.1, 0.9, 20)
+        assert emulator(new_coords).shape == (10, 20)

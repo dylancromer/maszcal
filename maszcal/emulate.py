@@ -60,3 +60,18 @@ class PcaEmulator:
 
     def __call__(self, coords):
         return self.reconstruct_data(coords)
+
+    @classmethod
+    def create_from_data(cls, coords, data, interpolator_class, interpolator_kwargs, num_components=8):
+        pca = LensingPca.create(data)
+        basis_vectors = pca.basis_vectors[:, :num_components]
+        weights = pca.weights[:num_components, :]
+        return cls(
+            mean=data.mean(axis=-1),
+            std_dev=data.std(axis=-1),
+            coords=coords,
+            basis_vectors=basis_vectors,
+            weights=weights,
+            interpolator_class=interpolator_class,
+            interpolator_kwargs=interpolator_kwargs,
+        )
