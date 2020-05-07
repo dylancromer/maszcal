@@ -1,4 +1,5 @@
-
+#
+docs/*.ipynb
 data/act-hsc
 *venv*
 .DS_Store
