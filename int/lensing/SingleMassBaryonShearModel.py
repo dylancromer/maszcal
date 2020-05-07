@@ -9,8 +9,7 @@ from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
 import seaborn as sns
 sns.set(style='whitegrid', font_scale=1.5, rc={"lines.linewidth": 2,'lines.markersize': 8.0,})
-from maszcal.lensing.shear import SingleMassNfwShearModel
-from maszcal.lensing import SingleMassNfwLensingSignal
+from maszcal.lensing import SingleMassBaryonShearModel
 
 
 def describe_single_mass_bin():
@@ -18,34 +17,20 @@ def describe_single_mass_bin():
     @pytest.fixture
     def single_mass_model():
         zs = np.ones(1)
-        return SingleMassNfwShearModel(redshift=zs)
-
-    @pytest.fixture
-    def lensing_signal():
-        zs = np.ones(1)
-        return SingleMassNfwLensingSignal(redshift=zs)
-
-    def both_classes_give_the_same_thing(lensing_signal, single_mass_model):
-        rs = np.logspace(-2, 1, 50)
-        mu = np.array([np.log(1e15)])
-        concentration = np.array([3])
-        params = np.array([[mu, concentration]])
-
-        ds = single_mass_model.delta_sigma(rs, mu, concentration)
-        esd = lensing_signal.esd(rs, params)
-
-        assert np.all(ds == esd)
+        return SingleMassBaryonShearModel(redshift=zs)
 
     def the_plot_looks_correct():
         z = np.array([0.43])
-        single_mass_model = SingleMassNfwShearModel(redshift=z, delta=500, mass_definition='crit')
 
         rs = np.logspace(-1, 1, 50)
         mu = np.array([np.log(4.26e14)])
         concentration = np.array([2.08])
-        params = np.array([[mu, concentration]])
+        alpha = np.array([0.88])
+        beta = np.array([3.8])
+        gamma = np.array([0.2])
+        params = np.array([[mu, concentration, alpha, beta, gamma]])
 
-        ds = single_mass_model.delta_sigma(rs, mu, concentration)
+        ds = single_mass_model.delta_sigma(rs, mu, concentration, alpha, beta, gamma)
 
         plt.plot(rs, ds.flatten())
         plt.xlabel(r'$R \; (\mathrm{Mpc}/h)$')
@@ -55,5 +40,5 @@ def describe_single_mass_bin():
 
         plt.xscale('log')
         plt.yscale('log')
-        plt.savefig('figs/test/single_mass_bin.svg')
+        plt.savefig('figs/test/single_mass_bin_baryons.svg')
         plt.gcf().clear()

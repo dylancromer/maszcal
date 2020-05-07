@@ -8,7 +8,7 @@ from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
 import seaborn as sns
 sns.set(style='whitegrid', font_scale=1.5, rc={"lines.linewidth": 2,'lines.markersize': 8.0,})
-from maszcal.lensing.shear import Stacker
+from maszcal.lensing import Stacker
 from maszcal.cosmology import CosmoParams
 
 

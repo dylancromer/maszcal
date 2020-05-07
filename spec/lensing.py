@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import pytest
 import numpy as np
 import astropy.units as u
-import maszcal.lensing.shear
+import maszcal.lensing
 
 
 class FakeProjector:
@@ -29,11 +29,11 @@ def describe_BaryonCmShearModel():
 
         @pytest.fixture
         def baryon_model(mocker):
-            mocker.patch('maszcal.lensing.shear.ConModel', new=FakeConModel)
-            mocker.patch('maszcal.lensing.shear.projector', new=FakeProjector)
+            mocker.patch('maszcal.lensing.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.lensing.projector', new=FakeProjector)
             mus = np.linspace(np.log(1e14), np.log(1e16), 9)
             zs = np.linspace(0, 1, 8)
-            return maszcal.lensing.shear.BaryonCmShearModel(mus, zs)
+            return maszcal.lensing.BaryonCmShearModel(mus, zs)
 
         def it_can_calculate_a_gnfw_rho(baryon_model):
             radii = np.logspace(-1, 1, 10)
@@ -131,10 +131,10 @@ def describe_BaryonCmShearModel():
 
         @pytest.fixture
         def baryon_model(mocker):
-            mocker.patch('maszcal.lensing.shear.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.lensing.ConModel', new=FakeConModel)
             mus = np.linspace(np.log(1e14), np.log(1e16), 9)
             zs = np.linspace(0, 1, 8)
-            return maszcal.lensing.shear.BaryonCmShearModel(mus, zs, units=u.Msun/u.pc**2)
+            return maszcal.lensing.BaryonCmShearModel(mus, zs, units=u.Msun/u.pc**2)
 
         def it_has_correct_units(baryon_model):
             radii = np.logspace(-1, 1, 10)
@@ -161,10 +161,10 @@ def describe_BaryonShearModel():
 
         @pytest.fixture
         def baryon_model(mocker):
-            mocker.patch('maszcal.lensing.shear.projector', new=FakeProjector)
+            mocker.patch('maszcal.lensing.projector', new=FakeProjector)
             mus = np.linspace(np.log(1e14), np.log(1e16), 9)
             zs = np.linspace(0, 1, 8)
-            return maszcal.lensing.shear.BaryonShearModel(mus, zs)
+            return maszcal.lensing.BaryonShearModel(mus, zs)
 
         def it_can_calculate_a_gnfw_rho(baryon_model):
             radii = np.logspace(-1, 1, 10)
@@ -271,7 +271,7 @@ def describe_BaryonShearModel():
         def baryon_model():
             mus = np.linspace(np.log(1e14), np.log(1e16), 9)
             zs = np.linspace(0, 1, 8)
-            return maszcal.lensing.shear.BaryonShearModel(mus, zs, units=u.Msun/u.pc**2)
+            return maszcal.lensing.BaryonShearModel(mus, zs, units=u.Msun/u.pc**2)
 
         def it_has_correct_units(baryon_model):
             radii = np.logspace(-1, 1, 10)
@@ -294,7 +294,7 @@ def describe_CmStacker():
         def stacker():
             mus = np.linspace(np.log(1e14), np.log(1e15), 10)
             redshifts = np.linspace(0, 1, 8)
-            return maszcal.lensing.shear.CmStacker(
+            return maszcal.lensing.CmStacker(
                 mus,
                 redshifts,
                 units=u.Msun/u.pc**2,
@@ -399,9 +399,9 @@ def describe_MiyatakeShearModel():
         def stacked_model(mocker):
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
             zs = np.linspace(0, 2, 8)
-            mocker.patch('maszcal.lensing.shear.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.lensing.ConModel', new=FakeConModel)
 
-            model = maszcal.lensing.shear.MiyatakeShearModel(mus, zs)
+            model = maszcal.lensing.MiyatakeShearModel(mus, zs)
             model._init_stacker()
 
             return model
@@ -419,7 +419,7 @@ def describe_MiyatakeShearModel():
             assert avg_wl_mass > 0
 
         def it_can_use_different_mass_definitions(mocker):
-            mocker.patch('maszcal.lensing.shear.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.lensing.ConModel', new=FakeConModel)
             rs = np.logspace(-1, 1, 10)
 
             mus = np.linspace(np.log(1e12), np.log(1e15), 20)
@@ -427,13 +427,13 @@ def describe_MiyatakeShearModel():
 
             delta = 500
             mass_def = 'crit'
-            model = maszcal.lensing.shear.MiyatakeShearModel(mus, zs, delta=delta, mass_definition=mass_def)
+            model = maszcal.lensing.MiyatakeShearModel(mus, zs, delta=delta, mass_definition=mass_def)
 
             delta_sigs_500c = model.delta_sigma(rs, mus)
 
             delta = 200
             kind = 'mean'
-            model = maszcal.lensing.shear.MiyatakeShearModel(mus, zs, delta=delta, mass_definition=mass_def)
+            model = maszcal.lensing.MiyatakeShearModel(mus, zs, delta=delta, mass_definition=mass_def)
 
             delta_sigs_200m = model.delta_sigma(rs, mus)
 
@@ -461,7 +461,7 @@ def describe_MiyatakeStacker():
         def stacker():
             mus = np.linspace(np.log(1e14), np.log(1e15), 10)
             redshifts = np.linspace(0, 1, 8)
-            return maszcal.lensing.shear.MiyatakeStacker(
+            return maszcal.lensing.MiyatakeStacker(
                 mus,
                 redshifts,
                 units=u.Msun/u.pc**2,
@@ -557,16 +557,16 @@ def describe_NfwCmShearModel():
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
             zs = np.linspace(0, 2, 8)
 
-            model = maszcal.lensing.shear.NfwCmShearModel(mus, zs)
+            model = maszcal.lensing.NfwCmShearModel(mus, zs)
 
             return model
 
         def it_computes_stacked_delta_sigma(mocker):
-            mocker.patch('maszcal.lensing.shear.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.lensing.ConModel', new=FakeConModel)
 
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
             zs = np.linspace(0, 2, 8)
-            stacked_model = maszcal.lensing.shear.NfwCmShearModel(mus, zs)
+            stacked_model = maszcal.lensing.NfwCmShearModel(mus, zs)
             stacked_model._init_stacker()
 
             stacked_model.stacker.dnumber_dlogmass = lambda : np.ones(
@@ -581,11 +581,11 @@ def describe_NfwCmShearModel():
             assert avg_wl_mass.shape == (rs.size, a_szs.size)
 
         def it_computes_weak_lensing_avg_mass(mocker):
-            mocker.patch('maszcal.lensing.shear.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.lensing.ConModel', new=FakeConModel)
 
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
             zs = np.linspace(0, 2, 8)
-            stacked_model = maszcal.lensing.shear.NfwCmShearModel(mus, zs)
+            stacked_model = maszcal.lensing.NfwCmShearModel(mus, zs)
             stacked_model._init_stacker()
 
             stacked_model.stacker.dnumber_dlogmass = lambda : np.ones(
@@ -599,7 +599,7 @@ def describe_NfwCmShearModel():
             assert avg_wl_mass.shape == (3,)
 
         def it_can_use_different_mass_definitions(mocker):
-            mocker.patch('maszcal.lensing.shear.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.lensing.ConModel', new=FakeConModel)
 
             rs = np.logspace(-1, 1, 10)
 
@@ -608,7 +608,7 @@ def describe_NfwCmShearModel():
 
             delta = 500
             mass_def = 'crit'
-            model = maszcal.lensing.shear.NfwCmShearModel(mus, zs, delta=delta, mass_definition=mass_def)
+            model = maszcal.lensing.NfwCmShearModel(mus, zs, delta=delta, mass_definition=mass_def)
 
             delta_sigs_500c = model.delta_sigma(rs, mus)
 
@@ -616,7 +616,7 @@ def describe_NfwCmShearModel():
 
             delta = 200
             kind = 'mean'
-            model = maszcal.lensing.shear.NfwCmShearModel(mus, zs, delta=delta, mass_definition=mass_def)
+            model = maszcal.lensing.NfwCmShearModel(mus, zs, delta=delta, mass_definition=mass_def)
 
             delta_sigs_200m = model.delta_sigma(rs, mus)
 
@@ -632,14 +632,14 @@ def describe_NfwShearModel():
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
             zs = np.linspace(0, 2, 8)
 
-            model = maszcal.lensing.shear.NfwShearModel(mus, zs)
+            model = maszcal.lensing.NfwShearModel(mus, zs)
 
             return model
 
         def it_computes_weak_lensing_avg_mass():
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
             zs = np.linspace(0, 2, 8)
-            stacked_model = maszcal.lensing.shear.NfwShearModel(mus, zs)
+            stacked_model = maszcal.lensing.NfwShearModel(mus, zs)
             stacked_model._init_stacker()
 
             stacked_model.stacker.dnumber_dlogmass = lambda : np.ones(
@@ -661,13 +661,13 @@ def describe_NfwShearModel():
 
             delta = 500
             mass_def = 'crit'
-            model = maszcal.lensing.shear.NfwShearModel(mus, zs, delta=delta, mass_definition=mass_def)
+            model = maszcal.lensing.NfwShearModel(mus, zs, delta=delta, mass_definition=mass_def)
 
             delta_sigs_500c = model.delta_sigma(rs, mus, cons)
 
             delta = 200
             kind = 'mean'
-            model = maszcal.lensing.shear.NfwShearModel(mus, zs, delta=delta, mass_definition=mass_def)
+            model = maszcal.lensing.NfwShearModel(mus, zs, delta=delta, mass_definition=mass_def)
 
             delta_sigs_200m = model.delta_sigma(rs, mus, cons)
 
@@ -681,7 +681,7 @@ def describe_SingleMassBaryonShearModel():
         @pytest.fixture
         def single_mass_model():
             redshifts = 0.4*np.ones(2)
-            model = maszcal.lensing.shear.SingleMassBaryonShearModel(redshifts=redshifts)
+            model = maszcal.lensing.SingleMassBaryonShearModel(redshifts=redshifts)
             return model
 
         def it_can_calculate_delta_sigma_of_mass(single_mass_model):
@@ -700,7 +700,7 @@ def describe_SingleMassBaryonShearModel():
 
         def it_can_use_different_units():
             redshifts = 0.4*np.ones(1)
-            model = maszcal.lensing.shear.SingleMassBaryonShearModel(redshifts=redshifts, units=u.Msun/u.Mpc**2)
+            model = maszcal.lensing.SingleMassBaryonShearModel(redshifts=redshifts, units=u.Msun/u.Mpc**2)
 
             mu = np.array([np.log(1e15)])
             con = np.array([3])
@@ -724,13 +724,13 @@ def describe_SingleMassBaryonShearModel():
             redshifts = 0.4*np.ones(1)
             delta = 500
             mass_def = 'crit'
-            model = maszcal.lensing.shear.SingleMassBaryonShearModel(redshifts=redshifts, delta=delta, mass_definition=mass_def)
+            model = maszcal.lensing.SingleMassBaryonShearModel(redshifts=redshifts, delta=delta, mass_definition=mass_def)
 
             delta_sigs_500c = model.delta_sigma(rs, mu, con, alpha, beta, gamma)
 
             delta = 200
             kind = 'mean'
-            model = maszcal.lensing.shear.SingleMassBaryonShearModel(redshifts=redshifts, delta=delta, mass_definition=mass_def)
+            model = maszcal.lensing.SingleMassBaryonShearModel(redshifts=redshifts, delta=delta, mass_definition=mass_def)
 
             delta_sigs_200m = model.delta_sigma(rs, mu, con, alpha, beta, gamma)
 
@@ -744,7 +744,7 @@ def describe_SingleMassNfwShearModel():
         @pytest.fixture
         def single_mass_model():
             redshift = 0.4*np.ones(1)
-            model = maszcal.lensing.shear.SingleMassNfwShearModel(redshift=redshift)
+            model = maszcal.lensing.SingleMassNfwShearModel(redshift=redshift)
             return model
 
         def it_can_calculate_delta_sigma_of_mass(single_mass_model):
@@ -759,7 +759,7 @@ def describe_SingleMassNfwShearModel():
 
         def it_can_use_different_units():
             redshift = 0.4*np.ones(1)
-            model = maszcal.lensing.shear.SingleMassNfwShearModel(redshift=redshift, units=u.Msun/u.Mpc**2)
+            model = maszcal.lensing.SingleMassNfwShearModel(redshift=redshift, units=u.Msun/u.Mpc**2)
 
             mu = np.array([np.log(1e15)])
             con = np.array([3])
@@ -777,13 +777,13 @@ def describe_SingleMassNfwShearModel():
             redshift = 0.4*np.ones(1)
             delta = 500
             mass_def = 'crit'
-            model = maszcal.lensing.shear.SingleMassNfwShearModel(redshift=redshift, delta=delta, mass_definition=mass_def)
+            model = maszcal.lensing.SingleMassNfwShearModel(redshift=redshift, delta=delta, mass_definition=mass_def)
 
             delta_sigs_500c = model.delta_sigma(rs, mu, con)
 
             delta = 200
             kind = 'mean'
-            model = maszcal.lensing.shear.SingleMassNfwShearModel(redshift=redshift, delta=delta, mass_definition=mass_def)
+            model = maszcal.lensing.SingleMassNfwShearModel(redshift=redshift, delta=delta, mass_definition=mass_def)
 
             delta_sigs_200m = model.delta_sigma(rs, mu, con)
 
@@ -806,7 +806,7 @@ def describe_Stacker():
         def stacker():
             mus = np.linspace(np.log(1e14), np.log(1e15), 10)
             redshifts = np.linspace(0, 1, 8)
-            return maszcal.lensing.shear.Stacker(
+            return maszcal.lensing.Stacker(
                 mus,
                 redshifts,
                 units=u.Msun/u.pc**2,
@@ -896,7 +896,7 @@ def describe_Stacker():
             def stacker():
                 mus = np.linspace(np.log(1e14), np.log(1e15), 10)
                 redshifts = np.linspace(0, 1, 8)
-                return maszcal.lensing.shear.Stacker(
+                return maszcal.lensing.Stacker(
                     mus,
                     redshifts,
                     units=u.Msun/u.pc**2,

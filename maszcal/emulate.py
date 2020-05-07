@@ -62,7 +62,7 @@ class PcaEmulator:
         return self.reconstruct_data(coords)
 
     @classmethod
-    def create_from_data(cls, coords, data, interpolator_class, interpolator_kwargs, num_components=8):
+    def create_from_data(cls, coords, data, interpolator_class, interpolator_kwargs=MappingProxyType({}), num_components=8):
         pca = LensingPca.create(data)
         basis_vectors = pca.basis_vectors[:, :num_components]
         weights = pca.weights[:num_components, :]
