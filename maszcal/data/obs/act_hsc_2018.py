@@ -3,6 +3,7 @@ import scipy.interpolate
 
 
 class ActHsc2018:
+    #TODO check if there are any little-h factors in here to be taken care of
     @classmethod
     def _load_covariance(cls, directory):
         act_rs, _, act_errs = np.loadtxt(directory + 'deltaSigma.dat', unpack=True, skiprows=1, usecols=[0,3,4])
