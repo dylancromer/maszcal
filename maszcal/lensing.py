@@ -629,7 +629,7 @@ class MiyatakeShearModel(NfwShearModel):
 class SingleMassNfwShearModel:
     def __init__(
             self,
-            redshift,
+            redshifts,
             units=u.Msun/u.pc**2,
             comoving_radii=True,
             delta=200,
@@ -637,7 +637,7 @@ class SingleMassNfwShearModel:
             cosmo_params=maszcal.defaults.DefaultCosmology(),
     ):
 
-        self.redshift = redshift
+        self.redshifts = redshifts
         self.units = units
         self.comoving_radii = comoving_radii
         self.delta = delta
@@ -666,10 +666,10 @@ class SingleMassNfwShearModel:
         masses = self.mass(mus)
 
         try:
-            return self.nfw_model.delta_sigma(rs, self.redshift, masses, concentrations)
+            return self.nfw_model.delta_sigma(rs, self.redshifts, masses, concentrations)
         except AttributeError:
             self._init_nfw()
-            return self.nfw_model.delta_sigma(rs, self.redshift, masses, concentrations)
+            return self.nfw_model.delta_sigma(rs, self.redshifts, masses, concentrations)
 
 
 class BaryonShearModel:

@@ -744,7 +744,7 @@ def describe_SingleMassNfwShearModel():
         @pytest.fixture
         def single_mass_model():
             redshift = 0.4*np.ones(1)
-            model = maszcal.lensing.SingleMassNfwShearModel(redshift=redshift)
+            model = maszcal.lensing.SingleMassNfwShearModel(redshifts=redshift)
             return model
 
         def it_can_calculate_delta_sigma_of_mass(single_mass_model):
@@ -759,7 +759,7 @@ def describe_SingleMassNfwShearModel():
 
         def it_can_use_different_units():
             redshift = 0.4*np.ones(1)
-            model = maszcal.lensing.SingleMassNfwShearModel(redshift=redshift, units=u.Msun/u.Mpc**2)
+            model = maszcal.lensing.SingleMassNfwShearModel(redshifts=redshift, units=u.Msun/u.Mpc**2)
 
             mu = np.array([np.log(1e15)])
             con = np.array([3])
@@ -777,13 +777,13 @@ def describe_SingleMassNfwShearModel():
             redshift = 0.4*np.ones(1)
             delta = 500
             mass_def = 'crit'
-            model = maszcal.lensing.SingleMassNfwShearModel(redshift=redshift, delta=delta, mass_definition=mass_def)
+            model = maszcal.lensing.SingleMassNfwShearModel(redshifts=redshift, delta=delta, mass_definition=mass_def)
 
             delta_sigs_500c = model.delta_sigma(rs, mu, con)
 
             delta = 200
             kind = 'mean'
-            model = maszcal.lensing.SingleMassNfwShearModel(redshift=redshift, delta=delta, mass_definition=mass_def)
+            model = maszcal.lensing.SingleMassNfwShearModel(redshifts=redshift, delta=delta, mass_definition=mass_def)
 
             delta_sigs_200m = model.delta_sigma(rs, mu, con)
 
