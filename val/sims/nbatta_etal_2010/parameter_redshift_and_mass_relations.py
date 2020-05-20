@@ -66,18 +66,18 @@ def _pool_map(func, *arrays):
 
 
 def calculate_nfw_fits(i, z, sim_data, fisher_matrix):
-    nfw_model = maszcal.lensing.SingleMassNfwLensingSignal(
-        redshift=np.array([z]),
+    nfw_model = maszcal.lensing.SingleMassNfwShearModel(
+        redshifts=np.array([z]),
         delta=500,
         mass_definition='crit',
         cosmo_params=sim_data.cosmology,
     )
 
     def esd_model_func(radii, true_mass, params):
+        con = params
         mass = np.array([true_mass])
         mu = np.log(mass)
-        params = np.concatenate((mu, params))
-        return  nfw_model.esd(radii, params[None, :])
+        return  nfw_model.delta_sigma(radii, mu, con)
 
     def _pool_func(data, true_mass):
         return _get_best_fit(data, true_mass, sim_data.radii, esd_model_func, fisher_matrix, NFW_PARAM_MINS, NFW_PARAM_MAXES)
@@ -86,19 +86,21 @@ def calculate_nfw_fits(i, z, sim_data, fisher_matrix):
 
 
 def calculate_baryon_fits(i, z, sim_data, fisher_matrix):
-    baryon_model = maszcal.lensing.SingleBaryonLensingSignal(
-        redshift=np.array([z]),
+    baryon_model = maszcal.lensing.SingleMassBaryonShearModel(
+        redshifts=np.array([z]),
         delta=500,
         mass_definition='crit',
         cosmo_params=sim_data.cosmology,
     )
 
     def esd_model_func(radii, true_mass, params):
+        con = params[0:1]
+        alpha = params[1:2]
+        beta = params[2:3]
         gamma = np.array([0.2])
         mass = np.array([true_mass])
         mu = np.log(mass)
-        params = np.concatenate((mu, params, gamma))
-        return baryon_model.esd(radii, params[None, :])
+        return baryon_model.delta_sigma(radii, mu, con, alpha, beta, gamma)
 
     def _pool_func(data, true_mass):
         return _get_best_fit(data, true_mass, sim_data.radii, esd_model_func, fisher_matrix, BARYON_PARAM_MINS, BARYON_PARAM_MAXES)
@@ -107,8 +109,8 @@ def calculate_baryon_fits(i, z, sim_data, fisher_matrix):
 
 
 def calculate_baryon_cm_fits(i, z, sim_data, fisher_matrix):
-    baryon_model = maszcal.lensing.SingleBaryonLensingSignal(
-        redshift=np.array([z]),
+    baryon_model = maszcal.lensing.SingleMassBaryonShearModel(
+        redshifts=np.array([z]),
         delta=500,
         mass_definition='crit',
         cosmo_params=sim_data.cosmology,
@@ -124,9 +126,7 @@ def calculate_baryon_cm_fits(i, z, sim_data, fisher_matrix):
         con_model = maszcal.concentration.ConModel('500c', cosmology=sim_data.cosmology)
         con = con_model.c(mass, np.array([z]), '500c').flatten()
 
-        params = np.concatenate((mu, con, alpha, beta, gamma))
-        params = params[None, :]
-        return baryon_model.esd(radii, params)
+        return baryon_model.delta_sigma(radii, mu, con, alpha, beta, gamma)
 
     def _pool_func(data, true_mass):
         return _get_best_fit(data, true_mass, sim_data.radii, esd_model_func, fisher_matrix, BARYON_CM_PARAM_MINS, BARYON_CM_PARAM_MAXES)
