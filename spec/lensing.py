@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 import astropy.units as u
 import maszcal.lensing
+import maszcal.cosmology
 
 
 class FakeProjector:
@@ -21,6 +22,38 @@ class FakeConModel:
 
     def convert_mass_def(self, masses, redshifts, old_def, new_def):
         return np.ones((masses.size, redshifts.size))
+
+
+def describe_SimpleBaryonShearModel():
+
+    def describe_stacked_delta_sigma():
+
+        @pytest.fixture
+        def model():
+            sz_masses = 2e13*np.random.randn(9) + 2e14
+            zs = np.random.rand(10)
+            weights = np.random.rand(10)
+            cosmo_params = maszcal.cosmology.CosmoParams()
+            return maszcal.lensing.SimpleBaryonShearModel(
+                sz_masses=sz_masses,
+                redshifts=zs,
+                lensing_weights=weights,
+                cosmo_params=cosmo_params,
+                mass_definition='mean',
+                delta=200,
+                units=u.Msun/u.pc**2,
+            )
+
+        def it_calculates_delta_sigma_stacked_profiles(model):
+            rs = np.logspace(-1, 1, 8)
+            alphas = np.ones(2)
+            betas = np.ones(2)
+            gammas = np.ones(2)
+            a_szs = np.ones(2)
+
+            esds = model.stacked_delta_sigma(rs, alphas, betas, gammas, a_szs)
+
+            assert np.all(esds >= 0)
 
 
 def describe_BaryonCmShearModel():
