@@ -22,38 +22,38 @@ class FakeConModel:
         return np.ones((masses.size, redshifts.size))
 
 
-def describe_MatchingBaryonShearModel():
+# def describe_MatchingBaryonShearModel():
 
-    def describe_stacked_delta_sigma():
+#     def describe_stacked_delta_sigma():
 
-        @pytest.fixture
-        def model():
-            NUM_CLUSTERS = 10
-            sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
-            zs = np.random.rand(NUM_CLUSTERS)
-            weights = np.random.rand(NUM_CLUSTERS)
-            cosmo_params = maszcal.cosmology.CosmoParams()
-            return maszcal.lensing.MatchingBaryonShearModel(
-                sz_masses=sz_masses,
-                redshifts=zs,
-                lensing_weights=weights,
-                cosmo_params=cosmo_params,
-                mass_definition='mean',
-                delta=200,
-                units=u.Msun/u.pc**2,
-            )
+#         @pytest.fixture
+#         def model():
+#             NUM_CLUSTERS = 10
+#             sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
+#             zs = np.random.rand(NUM_CLUSTERS)
+#             weights = np.random.rand(NUM_CLUSTERS)
+#             cosmo_params = maszcal.cosmology.CosmoParams()
+#             return maszcal.lensing.MatchingBaryonShearModel(
+#                 sz_masses=sz_masses,
+#                 redshifts=zs,
+#                 lensing_weights=weights,
+#                 cosmo_params=cosmo_params,
+#                 mass_definition='mean',
+#                 delta=200,
+#                 units=u.Msun/u.pc**2,
+#             )
 
-        def it_calculates_delta_sigma_profiles(model):
-            rs = np.logspace(-1, 1, 8)
-            alphas = np.ones(2)
-            betas = np.ones(2)
-            gammas = np.ones(2)
-            a_szs = np.array([0, 1])
+#         def it_calculates_delta_sigma_profiles(model):
+#             rs = np.logspace(-1, 1, 8)
+#             alphas = np.ones(2)
+#             betas = np.ones(2)
+#             gammas = np.ones(2)
+#             a_szs = np.array([0, 1])
 
-            esds = model.delta_sigma(rs, alphas, betas, gammas, a_szs)
+#             esds = model.delta_sigma(rs, alphas, betas, gammas, a_szs)
 
-            assert np.all(esds >= 0)
-            assert esds.shape == (10, 8, 2)
+#             assert np.all(esds >= 0)
+#             assert esds.shape == (10, 8, 2)
 
 
 def describe_BaryonCmShearModel():
@@ -153,12 +153,13 @@ def describe_BaryonCmShearModel():
 
             baryon_model._init_stacker()
             baryon_model.stacker.dnumber_dlogmass = lambda : np.ones(
-                (baryon_model.mus.size, baryon_model.zs.size)
+                (baryon_model.mu_bins.size, baryon_model.redshift_bins.size)
             )
+            baryon_model.stacker.dnumber_dlogmass()
 
             ds = baryon_model.stacked_delta_sigma(radii, alphas, betas, gammas, a_szs)
 
-            assert np.all(ds > 0)
+            assert ds.shape == (10, 3)
 
     def describe_units():
 
@@ -179,13 +180,6 @@ def describe_BaryonCmShearModel():
             ds = baryon_model._shear.delta_sigma_bary(radii, mus, alphas, betas, gammas)
 
             assert np.all(radii[None, None, :, None]*ds < 1e2)
-
-
-class FakeProjector:
-    @staticmethod
-    def esd(rs, rho_func):
-        rhos = rho_func(rs)
-        return np.ones(rhos.shape)
 
 
 def describe_BaryonShearModel():
@@ -291,12 +285,13 @@ def describe_BaryonShearModel():
 
             baryon_model._init_stacker()
             baryon_model.stacker.dnumber_dlogmass = lambda : np.ones(
-                (baryon_model.mus.size, baryon_model.zs.size)
+                (baryon_model.mu_bins.size, baryon_model.redshift_bins.size)
             )
+            baryon_model.stacker.dnumber_dlogmass()
 
             ds = baryon_model.stacked_delta_sigma(radii, cs, alphas, betas, gammas, a_szs)
 
-            assert np.all(ds > 0)
+            assert ds.shape == (10, 3)
 
     def describe_units():
 
@@ -443,6 +438,7 @@ def describe_MiyatakeShearModel():
             stacked_model.stacker.dnumber_dlogmass = lambda : np.ones(
                 (stacked_model.mus.size, stacked_model.zs.size)
             )
+            stacked_model.stacker.dnumber_dlogmass()
 
             a_szs = np.linspace(-1, 1, 1)
 
@@ -476,6 +472,7 @@ def describe_MiyatakeShearModel():
             stacked_model.stacker.dnumber_dlogmass = lambda : np.ones(
                 (stacked_model.mus.size, stacked_model.zs.size)
             )
+            stacked_model.stacker.dnumber_dlogmass()
 
             a_szs = np.linspace(-1, 1, 1)
 
@@ -605,6 +602,7 @@ def describe_NfwCmShearModel():
             stacked_model.stacker.dnumber_dlogmass = lambda : np.ones(
                 (stacked_model.mus.size, stacked_model.zs.size)
             )
+            stacked_model.stacker.dnumber_dlogmass()
 
             rs = np.logspace(-1, 1, 4)
             a_szs = np.linspace(-1, 1, 3)
@@ -624,6 +622,7 @@ def describe_NfwCmShearModel():
             stacked_model.stacker.dnumber_dlogmass = lambda : np.ones(
                 (stacked_model.mus.size, stacked_model.zs.size)
             )
+            stacked_model.stacker.dnumber_dlogmass()
 
             a_szs = np.linspace(-1, 1, 3)
 
@@ -678,6 +677,7 @@ def describe_NfwShearModel():
             stacked_model.stacker.dnumber_dlogmass = lambda : np.ones(
                 (stacked_model.mus.size, stacked_model.zs.size)
             )
+            stacked_model.stacker.dnumber_dlogmass()
 
             a_szs = np.linspace(-1, 1, 1)
 
