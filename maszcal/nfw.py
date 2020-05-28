@@ -58,9 +58,9 @@ class NfwModel:
         return rho_mass_def
 
     def reference_density(self, zs):
-        """
+        '''
         SHAPE z
-        """
+        '''
 
         if self.comoving:
             rho_mass_def = self._reference_density_comoving(zs)
@@ -70,22 +70,22 @@ class NfwModel:
         return rho_mass_def.to(u.Msun/u.Mpc**3).value
 
     def radius_delta(self, zs, masses):
-        """
+        '''
         SHAPE mass, z
-        """
+        '''
         pref = 3 / (4*np.pi)
         return (pref * masses[:, None] / (self._delta*self.reference_density(zs))[None, :])**(1/3)
 
     def scale_radius(self, zs, masses, cons):
-        """
+        '''
         SHAPE mass, z, cons
-        """
+        '''
         return self.radius_delta(zs, masses)[:, :, None]/cons[None, None, :]
 
     def delta_c(self, cons):
-        """
+        '''
         SHAPE cons
-        """
+        '''
         return (self._delta * cons**3)/(3 * (np.log(1+cons) - cons/(1+cons)))
 
     def _less_than_func(self, x):
@@ -117,9 +117,9 @@ class NfwModel:
         return full_func_vals
 
     def rho(self, rs, zs, masses, cons):
-        """
+        '''
         SHAPE mass, z, r, cons
-        """
+        '''
         scale_radii = self.scale_radius(zs, masses, cons)
         numerator = self.delta_c(cons)[None, None, :] * self.reference_density(zs)[None, :, None]
         numerator = np.reshape(numerator, numerator.shape[:2] + rs.ndim*(1,) + numerator.shape[2:])
@@ -129,9 +129,9 @@ class NfwModel:
         return numerator/denominator
 
     def delta_sigma(self, rs, zs, masses, cons):
-        """
+        '''
         SHAPE mass, z, r, cons
-        """
+        '''
         scale_radii = self.scale_radius(zs, masses, cons)
         prefactor = scale_radii * self.delta_c(cons)[None, None, :] * self.reference_density(zs)[None, :, None]
         prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
@@ -145,15 +145,15 @@ class NfwModel:
 
 class SingleMassNfwModel(NfwModel):
     def scale_radius(self, zs, masses, cons):
-        """
+        '''
         SHAPE z, params
-        """
+        '''
         return self.radius_delta(zs, masses).T / cons[None, :]
 
     def rho(self, rs, zs, masses, cons):
-        """
+        '''
         SHAPE z, r, params
-        """
+        '''
         scale_radii = self.scale_radius(zs, masses, cons)
         numerator = self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
         numerator = np.reshape(numerator, numerator.shape[:1] + rs.ndim*(1,) + numerator.shape[1:])
@@ -163,9 +163,9 @@ class SingleMassNfwModel(NfwModel):
         return numerator/denominator
 
     def delta_sigma(self, rs, zs, masses, cons):
-        """
+        '''
         SHAPE z, r, params
-        """
+        '''
         scale_radii = self.scale_radius(zs, masses, cons)
         prefactor = scale_radii * self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
         prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
@@ -178,19 +178,19 @@ class SingleMassNfwModel(NfwModel):
 
 
 class NfwCmModel(NfwModel):
-    """
+    '''
     Overwrites some methods to make it work for a concentration-mass relation
-    """
+    '''
     def scale_radius(self, zs, masses, cons):
-        """
+        '''
         SHAPE mass, z, c
-        """
+        '''
         return self.radius_delta(zs, masses)/cons
 
     def rho(self, rs, zs, masses, cons):
-        """
+        '''
         SHAPE mass, z, r, c
-        """
+        '''
         scale_radii = self.scale_radius(zs, masses, cons)
         numerator = self.delta_c(cons) * self.reference_density(zs)[None, :]
         numerator = np.reshape(numerator, numerator.shape + rs.ndim*(1,))
@@ -200,9 +200,9 @@ class NfwCmModel(NfwModel):
         return numerator/denominator
 
     def delta_sigma(self, rs, zs, masses, cons):
-        """
+        '''
         SHAPE mass, z, r, c
-        """
+        '''
         scale_radii = self.scale_radius(zs, masses, cons)
         prefactor = scale_radii * self.delta_c(cons) * self.reference_density(zs)[None, :]
         prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
@@ -212,3 +212,47 @@ class NfwCmModel(NfwModel):
         postfactor = self._inequality_func(xs)
 
         return prefactor[:, :, None] * postfactor
+
+
+class MatchingNfwModel(NfwModel):
+    '''
+    Overwrites some methods to make it work for a matching stack
+    '''
+    def radius_delta(self, zs, masses):
+        '''
+        SHAPE cluster
+        '''
+        pref = 3 / (4*np.pi)
+        return (pref * masses / (self._delta*self.reference_density(zs)))**(1/3)
+
+    def scale_radius(self, zs, masses, cons):
+        '''
+        SHAPE cluster
+        '''
+        return self.radius_delta(zs, masses)/cons
+
+    def rho(self, rs, zs, masses, cons):
+        '''
+        SHAPE cluster, r
+        '''
+        scale_radii = self.scale_radius(zs, masses, cons)
+        numerator = self.delta_c(cons) * self.reference_density(zs)
+        numerator = np.reshape(numerator, numerator.shape + rs.ndim*(1,))
+        xs = rs[None, ...]/np.reshape(scale_radii,
+                                      scale_radii.shape + rs.ndim*(1,))
+        denominator = xs * (1+xs)**2
+        return numerator/denominator
+
+    def delta_sigma(self, rs, zs, masses, cons):
+        '''
+        SHAPE cluster, r
+        '''
+        scale_radii = self.scale_radius(zs, masses, cons)
+        prefactor = scale_radii * self.delta_c(cons) * self.reference_density(zs)
+        prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
+
+        xs = rs[None, :]/scale_radii[:, None]
+
+        postfactor = self._inequality_func(xs)
+
+        return prefactor[:, None] * postfactor
