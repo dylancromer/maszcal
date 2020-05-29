@@ -17,9 +17,9 @@ def describe_single_mass_bin():
     @pytest.fixture
     def single_mass_model():
         zs = np.ones(1)
-        return SingleMassBaryonShearModel(redshift=zs)
+        return SingleMassBaryonShearModel(redshifts=zs)
 
-    def the_plot_looks_correct():
+    def the_plot_looks_correct(single_mass_model):
         z = np.array([0.43])
 
         rs = np.logspace(-1, 1, 50)
