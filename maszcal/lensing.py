@@ -491,15 +491,15 @@ class MatchingBaryonShearModel:
 class MatchingCmBaryonShearModel(MatchingBaryonShearModel):
     shear_class: object = MatchingCmGnfwBaryonShear
 
-    def delta_sigma_total(self, rs, cons, alphas, betas, gammas, a_szs):
+    def delta_sigma_total(self, rs, alphas, betas, gammas, a_szs):
         mus = self.mu_from_sz_mu(np.log(self.sz_masses), a_szs).flatten()
         zs = np.repeat(self.redshifts, a_szs.size)
-        return self._shear.delta_sigma_total(rs, zs, mus, cons, alphas, betas, gammas)
+        return self._shear.delta_sigma_total(rs, zs, mus, alphas, betas, gammas)
 
-    def stacked_delta_sigma(self, rs, cons, alphas, betas, gammas, a_szs):
+    def stacked_delta_sigma(self, rs, alphas, betas, gammas, a_szs):
         'SHAPE a_sz, r, params'
         num_clusters = self.sz_masses.size
-        profiles = self.delta_sigma_total(rs, cons, alphas, betas, gammas, a_szs).reshape(num_clusters, a_szs.size, rs.size, -1)
+        profiles = self.delta_sigma_total(rs, alphas, betas, gammas, a_szs).reshape(num_clusters, a_szs.size, rs.size, -1)
         weights = self.normed_lensing_weights(a_szs).reshape(num_clusters, a_szs.size)
         return (weights[:, :, None, None] * profiles).sum(axis=0)
 
