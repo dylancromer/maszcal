@@ -48,3 +48,32 @@ class ConModel:
             converted_ms[:, i], _, converted_cons[:, i] = _change_mass_def(masses, concentrations, z, old_def, new_def)
 
         return converted_ms, converted_cons
+
+
+class MatchingConModel(ConModel):
+    def _check_masses_and_redshifts_match(self, masses, redshifts):
+        if masses.shape != redshifts.shape:
+            raise ValueError('Masses and redshifts must have same shape')
+
+    def get_masses_and_cons(self, masses, redshifts, old_def, new_def):
+        MODEL = 'diemer19'
+
+        self._check_masses_and_redshifts_match(masses, redshifts)
+
+        converted_ms = np.empty((masses.size))
+        cons = np.empty((masses.size))
+        for i, z in enumerate(redshifts):
+            converted_ms[i], _, cons[i] = _change_mass_def_cmodel(masses[i], z, old_def, new_def, c_model=MODEL)
+
+        return converted_ms, cons
+
+    def convert_c_mass_pair(self, masses, concentrations, redshifts, old_def, new_def):
+        self._check_masses_and_redshifts_match(masses, redshifts)
+
+        converted_ms = np.empty((masses.size))
+        converted_cons = np.empty((concentrations.size))
+        for i, z in enumerate(redshifts):
+            converted_ms[i], _, converted_cons[i] = _change_mass_def(masses[i], concentrations, z, old_def, new_def)
+
+        return converted_ms, converted_cons
+
