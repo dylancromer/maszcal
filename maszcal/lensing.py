@@ -420,7 +420,7 @@ class MatchingBaryonShearModel:
     def stacked_delta_sigma(self, rs, alphas, betas, gammas, a_szs):
         'SHAPE a_sz, r, params'
         num_clusters = self.sz_masses.size
-        profiles = self.delta_sigma_total(rs, alphas, betas, gammas, a_szs).reshape(num_clusters, a_szs.size, rs.size, alphas.size)
+        profiles = self.delta_sigma_total(rs, alphas, betas, gammas, a_szs).reshape(num_clusters, a_szs.size, rs.size, -1)
         weights = self.normed_lensing_weights(a_szs).reshape(num_clusters, a_szs.size)
         return (weights[:, :, None, None] * profiles).sum(axis=0)
 
