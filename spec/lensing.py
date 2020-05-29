@@ -45,17 +45,17 @@ def describe_MatchingBaryonShearModel():
                 units=u.Msun/u.pc**2,
             )
 
-        def it_calculates_delta_sigma_profiles(model):
+        def it_calculates_stacked_delta_sigma_profiles(model):
             rs = np.logspace(-1, 1, 8)
             alphas = np.ones(2)
             betas = np.ones(2)
             gammas = np.ones(2)
-            a_szs = np.array([0, 1])
+            a_szs = np.array([-1, 0, 1])
 
-            esds = model.delta_sigma(rs, alphas, betas, gammas, a_szs)
+            esds = model.stacked_delta_sigma(rs, alphas, betas, gammas, a_szs)
 
             assert np.all(esds >= 0)
-            assert esds.shape == (10, 8, 2)
+            assert esds.shape == (3, 8, 2)
 
 
 def describe_BaryonCmShearModel():

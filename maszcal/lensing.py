@@ -5,7 +5,7 @@ import projector
 from maszcal.tinker import TinkerHmf
 from maszcal.cosmo_utils import get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
-from maszcal.concentration import ConModel
+from maszcal.concentration import ConModel, MatchingConModel
 import maszcal.nfw
 import maszcal.matter
 import maszcal.mathutils
@@ -321,6 +321,23 @@ class CmGnfwBaryonShear(GnfwBaryonShear):
 class MatchingCmGnfwBaryonShear(CmGnfwBaryonShear):
     nfw_class: object = maszcal.nfw.MatchingNfwModel
 
+    def _init_con_model(self):
+        mass_def = str(self.delta) + self.mass_definition[0]
+        self._con_model = MatchingConModel(mass_def, cosmology=self.cosmo_params)
+
+    def gnfw_shape(self, rs, zs, mus, alphas, betas, gammas):
+        '''
+        SHAPE cluster, rs.shape, params
+        '''
+        ys = (rs[None, ...]/maszcal.mathutils.atleast_kd(self._r_delta(zs, mus), rs.ndim+1)) / self.CORE_RADIUS
+        ys = ys[..., None]
+
+        alphas = alphas.reshape((rs.ndim + 1)*(1,) + (alphas.size,))
+        betas = betas.reshape((rs.ndim + 1)*(1,) + (betas.size,))
+        gammas = gammas.reshape((rs.ndim + 1)*(1,) + (gammas.size,))
+
+        return 1 / (ys**gammas * (1 + ys**(1/alphas))**((betas-gammas) * alphas))
+
     def _gnfw_norm(self, zs, mus, alphas, betas, gammas):
         '''
         SHAPE cluster, params
@@ -332,11 +349,27 @@ class MatchingCmGnfwBaryonShear(CmGnfwBaryonShear):
         )
 
         drs = np.gradient(rs)
+
         top_integrand = self._rho_nfw(rs, zs, mus)[..., None] * rs[None, :, None]**2
-        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[ None, :, None]**2
+        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[None, :, None]**2
 
         return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-2)
                 /maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=-2))
+
+    def _rho_gnfw(self, rs, zs, mus, alphas, betas, gammas):
+        norm = self._gnfw_norm(zs, mus, alphas, betas, gammas)
+        norm = norm.reshape(rs.ndim*(1,) + norm.shape)
+        profile_shape = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas)
+
+        radius_axes = np.arange(profile_shape.ndim)[1:-1]
+        new_radius_axes = np.arange(radius_axes.size)
+        profile_shape = np.moveaxis(
+            profile_shape,
+            tuple(radius_axes),
+            tuple(new_radius_axes),
+        )
+
+        return norm * profile_shape
 
     def delta_sigma_bary(self, rs, zs, mus, alphas, betas, gammas):
         '''
@@ -370,21 +403,26 @@ class MatchingBaryonShearModel:
             comoving_radii=self.comoving_radii,
         )
 
-    def normed_lensing_weights(self):
-        return self.lensing_weights/self.lensing_weights.sum()
+    def normed_lensing_weights(self, a_szs):
+        return np.repeat(
+            self.lensing_weights/self.lensing_weights.sum(),
+            a_szs.size,
+        )
 
     def mu_from_sz_mu(self, sz_mu, a_sz):
         return sz_mu[:, None] - a_sz[None, :]
 
     def delta_sigma_total(self, rs, alphas, betas, gammas, a_szs):
         mus = self.mu_from_sz_mu(np.log(self.sz_masses), a_szs).flatten()
-        return self._shear.delta_sigma_total(rs, self.redshifts, mus, alphas, betas, gammas)
+        zs = np.repeat(self.redshifts, a_szs.size)
+        return self._shear.delta_sigma_total(rs, zs, mus, alphas, betas, gammas)
 
-    def delta_sigma(self, rs, alphas, betas, gammas, a_szs):
-        'SHAPE cluster, a_sz, r, params'
-        profiles = self.delta_sigma_total(rs, alphas, betas, gammas, a_szs)
-        assert False, profiles.shape
-        return (self.normed_lensing_weights()[None, :, None, None] * profiles)
+    def stacked_delta_sigma(self, rs, alphas, betas, gammas, a_szs):
+        'SHAPE a_sz, r, params'
+        num_clusters = self.sz_masses.size
+        profiles = self.delta_sigma_total(rs, alphas, betas, gammas, a_szs).reshape(num_clusters, a_szs.size, rs.size, alphas.size)
+        weights = self.normed_lensing_weights(a_szs).reshape(num_clusters, a_szs.size)
+        return (weights[:, :, None, None] * profiles).sum(axis=0)
 
 
 @dataclass
