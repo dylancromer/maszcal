@@ -24,12 +24,13 @@ def describe_gaussian_baryonic_model():
 
         def the_plots_look_right(baryon_model):
             radii = np.logspace(-1, 1, 30)
+            zs = np.linspace(0, 1, 20)
             mus = np.log(1e14)*np.ones(1)
             alphas = 0.5*np.ones(1)
             betas = np.linspace(2.8, 3.2, 3)
             gammas = 0.5*np.ones(1)
 
-            rhos = baryon_model.rho_bary(radii, mus, alphas, betas, gammas)[:, 0, 0, :]
+            rhos = baryon_model._shear.rho_bary(radii, zs, mus, alphas, betas, gammas)[:, 0, 0, :]
 
             plt.plot(radii, rhos)
             plt.xscale('log')
@@ -51,12 +52,13 @@ def describe_gaussian_baryonic_model():
 
         def the_plots_look_right(baryon_model):
             radii = np.logspace(-1, 1, 30)
+            zs = np.linspace(0, 1, 20)
             mus = np.log(1e14)*np.ones(1)
             alphas = 0.5*np.ones(1)
             betas = np.linspace(2.8, 3.2, 3)
             gammas = 0.5*np.ones(1)
 
-            esds = baryon_model.delta_sigma_bary(radii, mus, alphas, betas, gammas)[0, 0, :, :]
+            esds = baryon_model._shear.delta_sigma_bary(radii, zs, mus, alphas, betas, gammas)[0, 0, :, :]
 
             plt.plot(radii, radii[:, None]*esds)
             plt.xscale('log')
@@ -77,12 +79,13 @@ def describe_gaussian_baryonic_model():
 
         def the_plots_look_right(baryon_model):
             radii = np.logspace(-1, 1, 30)
+            zs = np.linspace(0, 1, 20)
             mus = np.log(1e14)*np.ones(1)
             alphas = 0.5*np.ones(1)
             betas = np.linspace(2.8, 3.2, 3)
             gammas = 0.5*np.ones(1)
 
-            esds = baryon_model.delta_sigma_total(radii, mus, alphas, betas, gammas)[0, 0, :, :]
+            esds = baryon_model._shear.delta_sigma_total(radii, zs, mus, alphas, betas, gammas)[0, 0, :, :]
 
             plt.plot(radii, radii[:, None]*esds)
             plt.xscale('log')
