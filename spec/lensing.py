@@ -22,38 +22,40 @@ class FakeConModel:
         return np.ones((masses.size, redshifts.size))
 
 
-# def describe_MatchingBaryonShearModel():
+def describe_MatchingBaryonShearModel():
 
-#     def describe_stacked_delta_sigma():
+    def describe_stacked_delta_sigma():
 
-#         @pytest.fixture
-#         def model():
-#             NUM_CLUSTERS = 10
-#             sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
-#             zs = np.random.rand(NUM_CLUSTERS)
-#             weights = np.random.rand(NUM_CLUSTERS)
-#             cosmo_params = maszcal.cosmology.CosmoParams()
-#             return maszcal.lensing.MatchingBaryonShearModel(
-#                 sz_masses=sz_masses,
-#                 redshifts=zs,
-#                 lensing_weights=weights,
-#                 cosmo_params=cosmo_params,
-#                 mass_definition='mean',
-#                 delta=200,
-#                 units=u.Msun/u.pc**2,
-#             )
+        @pytest.fixture
+        def model(mocker):
+            mocker.patch('maszcal.lensing.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.lensing.projector.esd', new=fake_projector_esd)
+            NUM_CLUSTERS = 10
+            sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
+            zs = np.random.rand(NUM_CLUSTERS)
+            weights = np.random.rand(NUM_CLUSTERS)
+            cosmo_params = maszcal.cosmology.CosmoParams()
+            return maszcal.lensing.MatchingBaryonShearModel(
+                sz_masses=sz_masses,
+                redshifts=zs,
+                lensing_weights=weights,
+                cosmo_params=cosmo_params,
+                mass_definition='mean',
+                delta=200,
+                units=u.Msun/u.pc**2,
+            )
 
-#         def it_calculates_delta_sigma_profiles(model):
-#             rs = np.logspace(-1, 1, 8)
-#             alphas = np.ones(2)
-#             betas = np.ones(2)
-#             gammas = np.ones(2)
-#             a_szs = np.array([0, 1])
+        def it_calculates_delta_sigma_profiles(model):
+            rs = np.logspace(-1, 1, 8)
+            alphas = np.ones(2)
+            betas = np.ones(2)
+            gammas = np.ones(2)
+            a_szs = np.array([0, 1])
 
-#             esds = model.delta_sigma(rs, alphas, betas, gammas, a_szs)
+            esds = model.delta_sigma(rs, alphas, betas, gammas, a_szs)
 
-#             assert np.all(esds >= 0)
-#             assert esds.shape == (10, 8, 2)
+            assert np.all(esds >= 0)
+            assert esds.shape == (10, 8, 2)
 
 
 def describe_BaryonCmShearModel():
@@ -70,20 +72,22 @@ def describe_BaryonCmShearModel():
 
         def it_can_calculate_a_gnfw_rho(baryon_model):
             radii = np.logspace(-1, 1, 10)
+            zs = np.linspace(0, 1, 8)
             mus = np.log(1e14)*np.ones(2)
             alphas = np.ones(3)
             betas = 2*np.ones(3)
             gammas = np.ones(3)
 
-            rhos = baryon_model._shear.rho_bary(radii, mus, alphas, betas, gammas)
+            rhos = baryon_model._shear.rho_bary(radii, zs, mus, alphas, betas, gammas)
 
             assert np.all(rhos > 0)
 
         def it_can_calculate_an_nfw_rho(baryon_model):
             radii = np.logspace(-1, 1, 10)
+            zs = np.linspace(0, 1, 8)
             mus = np.log(1e14)*np.ones(1)
 
-            rhos = baryon_model._shear.rho_cdm(radii, mus)
+            rhos = baryon_model._shear.rho_cdm(radii, zs, mus)
 
             assert np.all(rhos > 0)
 
@@ -93,13 +97,14 @@ def describe_BaryonCmShearModel():
                 baryon_model._shear.MAX_INTEGRATION_RADIUS,
                 baryon_model._shear.NUM_INTEGRATION_RADII
             )
+            zs = np.linspace(0, 1, 8)
             mus = np.log(1e14)*np.ones(1)
             alphas = 0.88*np.ones(1)
             betas = 3.8*np.ones(1)
             gammas = 0.2*np.ones(1)
 
-            rho_barys = baryon_model._shear.rho_bary(rs, mus, alphas, betas, gammas)
-            rho_cdms = np.moveaxis(baryon_model._shear.rho_cdm(rs, mus)[..., None], 2, 0)
+            rho_barys = baryon_model._shear.rho_bary(rs, zs, mus, alphas, betas, gammas)
+            rho_cdms = np.moveaxis(baryon_model._shear.rho_cdm(rs, zs, mus)[..., None], 2, 0)
 
             ratio = np.trapz(
                 rho_barys * rs[:, None, None, None]**2,
@@ -116,31 +121,34 @@ def describe_BaryonCmShearModel():
 
         def it_can_calculate_an_nfw_delta_sigma(baryon_model):
             radii = np.logspace(-1, 1, 10)
+            zs = np.linspace(0, 1, 8)
             mus = np.log(1e14)*np.ones(1)
 
-            ds = baryon_model._shear.delta_sigma_cdm(radii, mus)
+            ds = baryon_model._shear.delta_sigma_cdm(radii, zs, mus)
 
             assert np.all(ds > 0)
 
         def it_can_calculate_a_gnfw_delta_sigma(baryon_model):
             radii = np.logspace(-1, 1, 10)
+            zs = np.linspace(0, 1, 8)
             mus = np.log(1e14)*np.ones(2)
             alphas = np.ones(3)
             betas = 2*np.ones(3)
             gammas = np.ones(3)
 
-            ds = baryon_model._shear.delta_sigma_bary(radii, mus, alphas, betas, gammas)
+            ds = baryon_model._shear.delta_sigma_bary(radii, zs, mus, alphas, betas, gammas)
 
             assert np.all(ds > 0)
 
         def it_can_calculate_a_total_delta_sigma(baryon_model):
             radii = np.logspace(-1, 1, 10)
+            zs = np.linspace(0, 1, 8)
             mus = np.log(1e14)*np.ones(2)
             alphas = np.ones(3)
             betas = 2*np.ones(3)
             gammas = np.ones(3)
 
-            ds = baryon_model._shear.delta_sigma_total(radii, mus, alphas, betas, gammas)
+            ds = baryon_model._shear.delta_sigma_total(radii, zs, mus, alphas, betas, gammas)
 
             assert np.all(ds > 0)
 
@@ -172,12 +180,13 @@ def describe_BaryonCmShearModel():
 
         def it_has_correct_units(baryon_model):
             radii = np.logspace(-1, 1, 10)
+            zs = np.linspace(0, 1, 8)
             mus = np.log(1e14)*np.ones(2)
             alphas = np.ones(3)
             betas = 2*np.ones(3)
             gammas = np.ones(3)
 
-            ds = baryon_model._shear.delta_sigma_bary(radii, mus, alphas, betas, gammas)
+            ds = baryon_model._shear.delta_sigma_bary(radii, zs, mus, alphas, betas, gammas)
 
             assert np.all(radii[None, None, :, None]*ds < 1e2)
 
@@ -195,22 +204,24 @@ def describe_BaryonShearModel():
 
         def it_can_calculate_a_gnfw_rho(baryon_model):
             radii = np.logspace(-1, 1, 10)
+            zs = np.linspace(0, 1, 8)
             mus = np.log(1e14)*np.ones(2)
             cs = 3*np.ones(3)
             alphas = np.ones(3)
             betas = 2*np.ones(3)
             gammas = np.ones(3)
 
-            rhos = baryon_model._shear.rho_bary(radii, mus, cs, alphas, betas, gammas)
+            rhos = baryon_model._shear.rho_bary(radii, zs, mus, cs, alphas, betas, gammas)
 
             assert np.all(rhos > 0)
 
         def it_can_calculate_an_nfw_rho(baryon_model):
             radii = np.logspace(-1, 1, 10)
+            zs = np.linspace(0, 1, 8)
             mus = np.log(1e14)*np.ones(1)
             cs = 3*np.ones(1)
 
-            rhos = baryon_model._shear.rho_cdm(radii, mus, cs)
+            rhos = baryon_model._shear.rho_cdm(radii, zs, mus, cs)
 
             assert np.all(rhos > 0)
 
@@ -220,14 +231,15 @@ def describe_BaryonShearModel():
                 baryon_model._shear.MAX_INTEGRATION_RADIUS,
                 baryon_model._shear.NUM_INTEGRATION_RADII
             )
+            zs = np.linspace(0, 1, 8)
             mus = np.log(1e14)*np.ones(1)
             cs = 3*np.ones(1)
             alphas = 0.88*np.ones(1)
             betas = 3.8*np.ones(1)
             gammas = 0.2*np.ones(1)
 
-            rho_barys = baryon_model._shear.rho_bary(rs, mus, cs, alphas, betas, gammas)
-            rho_cdms = np.moveaxis(baryon_model._shear.rho_cdm(rs, mus, cs), 2, 0)
+            rho_barys = baryon_model._shear.rho_bary(rs, zs, mus, cs, alphas, betas, gammas)
+            rho_cdms = np.moveaxis(baryon_model._shear.rho_cdm(rs, zs, mus, cs), 2, 0)
 
             ratio = np.trapz(
                 rho_barys * rs[:, None, None, None]**2,
@@ -244,34 +256,37 @@ def describe_BaryonShearModel():
 
         def it_can_calculate_an_nfw_delta_sigma(baryon_model):
             radii = np.logspace(-1, 1, 10)
+            zs = np.linspace(0, 1, 8)
             mus = np.log(1e14)*np.ones(1)
             cs = 3*np.ones(1)
 
-            ds = baryon_model._shear.delta_sigma_cdm(radii, mus, cs)
+            ds = baryon_model._shear.delta_sigma_cdm(radii, zs, mus, cs)
 
             assert np.all(ds > 0)
 
         def it_can_calculate_a_gnfw_delta_sigma(baryon_model):
             radii = np.logspace(-1, 1, 10)
+            zs = np.linspace(0, 1, 8)
             mus = np.log(1e14)*np.ones(2)
             cs = 3*np.ones(3)
             alphas = np.ones(3)
             betas = 2*np.ones(3)
             gammas = np.ones(3)
 
-            ds = baryon_model._shear.delta_sigma_bary(radii, mus, cs, alphas, betas, gammas)
+            ds = baryon_model._shear.delta_sigma_bary(radii, zs, mus, cs, alphas, betas, gammas)
 
             assert np.all(ds > 0)
 
         def it_can_calculate_a_total_delta_sigma(baryon_model):
             radii = np.logspace(-1, 1, 10)
+            zs = np.linspace(0, 1, 8)
             mus = np.log(1e14)*np.ones(2)
             cs = 3*np.ones(3)
             alphas = np.ones(3)
             betas = 2*np.ones(3)
             gammas = np.ones(3)
 
-            ds = baryon_model._shear.delta_sigma_total(radii, mus, cs, alphas, betas, gammas)
+            ds = baryon_model._shear.delta_sigma_total(radii, zs, mus, cs, alphas, betas, gammas)
 
             assert np.all(ds > 0)
 
@@ -303,13 +318,14 @@ def describe_BaryonShearModel():
 
         def it_has_correct_units(baryon_model):
             radii = np.logspace(-1, 1, 10)
+            zs = np.linspace(0, 1, 8)
             mus = np.log(1e14)*np.ones(2)
             cs = 3*np.ones(3)
             alphas = np.ones(3)
             betas = 2*np.ones(3)
             gammas = np.ones(3)
 
-            ds = baryon_model._shear.delta_sigma_bary(radii, mus, cs, alphas, betas, gammas)
+            ds = baryon_model._shear.delta_sigma_bary(radii, zs, mus, cs, alphas, betas, gammas)
 
             assert np.all(radii[None, None, :, None]*ds < 1e2)
 
@@ -736,6 +752,7 @@ def describe_SingleMassBaryonShearModel():
             redshifts = 0.4*np.ones(1)
             model = maszcal.lensing.SingleMassBaryonShearModel(redshifts=redshifts, units=u.Msun/u.Mpc**2)
 
+            zs = 0.4*np.ones(2)
             mu = np.array([np.log(1e15)])
             con = np.array([3])
             alpha = np.array([0.88])

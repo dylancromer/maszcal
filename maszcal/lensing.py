@@ -20,7 +20,6 @@ class GnfwBaryonShear:
     MAX_INTEGRATION_RADIUS = 3.3
     NUM_INTEGRATION_RADII = 200
 
-    zs: np.ndarray
     cosmo_params: maszcal.cosmology.CosmoParams
     mass_definition: str
     delta: float
@@ -43,22 +42,22 @@ class GnfwBaryonShear:
             comoving=self.comoving_radii,
         )
 
-    def _r_delta(self, mus):
+    def _r_delta(self, zs, mus):
         '''
         SHAPE mu, z
         '''
         masses = self.mass_from_mu(mus)
         try:
-            return self.nfw_model.radius_delta(self.zs, masses)
+            return self.nfw_model.radius_delta(zs, masses)
         except AttributeError:
             self._init_nfw()
-            return self.nfw_model.radius_delta(self.zs, masses)
+            return self.nfw_model.radius_delta(zs, masses)
 
-    def gnfw_shape(self, rs, mus, alphas, betas, gammas):
+    def gnfw_shape(self, rs, zs, mus, alphas, betas, gammas):
         '''
         SHAPE mu, z, rs.shape, params
         '''
-        ys = (rs[None, None, ...]/maszcal.mathutils.atleast_kd(self._r_delta(mus), rs.ndim+2)) / self.CORE_RADIUS
+        ys = (rs[None, None, ...]/maszcal.mathutils.atleast_kd(self._r_delta(zs, mus), rs.ndim+2)) / self.CORE_RADIUS
         ys = ys[..., None]
 
         alphas = alphas.reshape((rs.ndim + 2)*(1,) + (alphas.size,))
@@ -67,7 +66,7 @@ class GnfwBaryonShear:
 
         return 1 / (ys**gammas * (1 + ys**(1/alphas))**((betas-gammas) * alphas))
 
-    def _gnfw_norm(self, mus, cons, alphas, betas, gammas):
+    def _gnfw_norm(self, zs, mus, cons, alphas, betas, gammas):
         '''
         SHAPE mu, z, params
         '''
@@ -78,16 +77,16 @@ class GnfwBaryonShear:
         )
 
         drs = np.gradient(rs)
-        top_integrand = self._rho_nfw(rs, mus, cons) * rs[None, None, :, None]**2
-        bottom_integrand = self.gnfw_shape(rs, mus, alphas, betas, gammas) * rs[None, None, :, None]**2
+        top_integrand = self._rho_nfw(rs, zs, mus, cons) * rs[None, None, :, None]**2
+        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[None, None, :, None]**2
 
         return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-2)
                 /maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=-2))
 
-    def _rho_gnfw(self, rs, mus, cons, alphas, betas, gammas):
-        norm = self._gnfw_norm(mus, cons, alphas, betas, gammas)
+    def _rho_gnfw(self, rs, zs, mus, cons, alphas, betas, gammas):
+        norm = self._gnfw_norm(zs, mus, cons, alphas, betas, gammas)
         norm = norm.reshape(rs.ndim*(1,) + norm.shape)
-        profile_shape = self.gnfw_shape(rs, mus, alphas, betas, gammas)
+        profile_shape = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas)
 
         radius_axes = np.arange(profile_shape.ndim)[2:-1]
         new_radius_axes = np.arange(radius_axes.size)
@@ -99,73 +98,73 @@ class GnfwBaryonShear:
 
         return norm * profile_shape
 
-    def _rho_nfw(self, rs, mus, cons):
+    def _rho_nfw(self, rs, zs, mus, cons):
         masses = self.mass_from_mu(mus)
 
         try:
-            return self.nfw_model.rho(rs, self.zs, masses, cons)
+            return self.nfw_model.rho(rs, zs, masses, cons)
         except AttributeError:
             self._init_nfw()
-            return self.nfw_model.rho(rs, self.zs, masses, cons)
+            return self.nfw_model.rho(rs, zs, masses, cons)
 
-    def rho_bary(self, rs, mus, cons, alphas, betas, gammas):
+    def rho_bary(self, rs, zs, mus, cons, alphas, betas, gammas):
         '''
         SHAPE r, mu, z, params
         '''
-        return self.baryon_frac * self._rho_gnfw(rs, mus, cons, alphas, betas, gammas)
+        return self.baryon_frac * self._rho_gnfw(rs, zs, mus, cons, alphas, betas, gammas)
 
-    def rho_cdm(self, rs, mus, cons):
+    def rho_cdm(self, rs, zs, mus, cons):
         '''
         SHAPE mu, z, r, params
         '''
-        return (1-self.baryon_frac) * self._rho_nfw(rs, mus, cons)
+        return (1-self.baryon_frac) * self._rho_nfw(rs, zs, mus, cons)
 
-    def delta_sigma_cdm(self, rs, mus, cons):
+    def delta_sigma_cdm(self, rs, zs, mus, cons):
         '''
         SHAPE mu, z, r, params
         '''
         masses = self.mass_from_mu(mus)
 
         try:
-            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
+            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, zs, masses, cons)
         except AttributeError:
             self._init_nfw()
-            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
+            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, zs, masses, cons)
 
-    def delta_sigma_bary(self, rs, mus, cons, alphas, betas, gammas):
+    def delta_sigma_bary(self, rs, zs, mus, cons, alphas, betas, gammas):
         '''
         SHAPE mu, z, r, params
         '''
         return np.moveaxis(
-            projector.esd(rs, lambda r: self.rho_bary(r, mus, cons, alphas, betas, gammas)) * (u.Msun/u.Mpc**2).to(self.units),
+            projector.esd(rs, lambda r: self.rho_bary(r, zs, mus, cons, alphas, betas, gammas)) * (u.Msun/u.Mpc**2).to(self.units),
             0,
             2,
         )
 
-    def delta_sigma_total(self, rs, mus, cons, alphas, betas, gammas):
-        return self.delta_sigma_bary(rs, mus, cons, alphas, betas, gammas) + self.delta_sigma_cdm(rs, mus, cons)
+    def delta_sigma_total(self, rs, zs, mus, cons, alphas, betas, gammas):
+        return self.delta_sigma_bary(rs, zs, mus, cons, alphas, betas, gammas) + self.delta_sigma_cdm(rs, zs, mus, cons)
 
 
 @dataclass
 class SingleMassGnfwBaryonShear(GnfwBaryonShear):
     nfw_class: object = maszcal.nfw.SingleMassNfwModel
 
-    def _r_delta(self, mus):
+    def _r_delta(self, zs, mus):
         '''
         SHAPE z, params
         '''
         masses = self.mass_from_mu(mus)
         try:
-            return self.nfw_model.radius_delta(self.zs, masses).T
+            return self.nfw_model.radius_delta(zs, masses).T
         except AttributeError:
             self._init_nfw()
-            return self.nfw_model.radius_delta(self.zs, masses).T
+            return self.nfw_model.radius_delta(zs, masses).T
 
-    def gnfw_shape(self, rs, mus, alphas, betas, gammas):
+    def gnfw_shape(self, rs, zs, mus, alphas, betas, gammas):
         '''
         SHAPE rs.shape, z, params
         '''
-        ys = (rs[..., None, None]/maszcal.mathutils.atleast_kd(self._r_delta(mus), rs.ndim+2, append_dims=False)) / self.CORE_RADIUS
+        ys = (rs[..., None, None]/maszcal.mathutils.atleast_kd(self._r_delta(zs, mus), rs.ndim+2, append_dims=False)) / self.CORE_RADIUS
 
         alphas = alphas.reshape((rs.ndim + 1)*(1,) + (alphas.size,))
         betas = betas.reshape((rs.ndim + 1)*(1,) + (betas.size,))
@@ -173,7 +172,7 @@ class SingleMassGnfwBaryonShear(GnfwBaryonShear):
 
         return 1 / (ys**gammas * (1 + ys**(1/alphas))**((betas-gammas) * alphas))
 
-    def _gnfw_norm(self, mus, cons, alphas, betas, gammas):
+    def _gnfw_norm(self, zs, mus, cons, alphas, betas, gammas):
         '''
         SHAPE z, params
         '''
@@ -184,31 +183,31 @@ class SingleMassGnfwBaryonShear(GnfwBaryonShear):
         )
 
         drs = np.gradient(rs)
-        top_integrand = self._rho_nfw(rs, mus, cons) * rs[None, ..., None]**2
-        bottom_integrand = self.gnfw_shape(rs, mus, alphas, betas, gammas) * rs[..., None, None]**2
+        top_integrand = self._rho_nfw(rs, zs, mus, cons) * rs[None, ..., None]**2
+        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[..., None, None]**2
 
         return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-2)
                 /maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=0))
 
-    def _rho_gnfw(self, rs, mus, cons, alphas, betas, gammas):
-        norm = self._gnfw_norm(mus, cons, alphas, betas, gammas)[None, ...]
-        profile_shape = self.gnfw_shape(rs, mus, alphas, betas, gammas)
+    def _rho_gnfw(self, rs, zs, mus, cons, alphas, betas, gammas):
+        norm = self._gnfw_norm(zs, mus, cons, alphas, betas, gammas)[None, ...]
+        profile_shape = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas)
         return norm * profile_shape
 
-    def delta_sigma_bary(self, rs, mus, cons, alphas, betas, gammas):
+    def delta_sigma_bary(self, rs, zs, mus, cons, alphas, betas, gammas):
         '''
         SHAPE z, r, params
         '''
-        return (projector.esd(rs, lambda r: self.rho_bary(r, mus, cons, alphas, betas, gammas))
+        return (projector.esd(rs, lambda r: self.rho_bary(r, zs, mus, cons, alphas, betas, gammas))
                 * (u.Msun/u.Mpc**2).to(self.units))
 
-    def delta_sigma_total(self, rs, mus, cons, alphas, betas, gammas):
+    def delta_sigma_total(self, rs, zs, mus, cons, alphas, betas, gammas):
         delta_sigma_bary = np.moveaxis(
-            self.delta_sigma_bary(rs, mus, cons, alphas, betas, gammas),
+            self.delta_sigma_bary(rs, zs, mus, cons, alphas, betas, gammas),
             -2,
             0,
         )
-        return delta_sigma_bary + self.delta_sigma_cdm(rs, mus, cons)
+        return delta_sigma_bary + self.delta_sigma_cdm(rs, zs, mus, cons)
 
 
 @dataclass
@@ -218,7 +217,6 @@ class CmGnfwBaryonShear(GnfwBaryonShear):
     MAX_INTEGRATION_RADIUS = 3.3
     NUM_INTEGRATION_RADII = 200
 
-    zs: np.ndarray
     cosmo_params: maszcal.cosmology.CosmoParams
     mass_definition: str
     delta: float
@@ -230,15 +228,15 @@ class CmGnfwBaryonShear(GnfwBaryonShear):
         mass_def = str(self.delta) + self.mass_definition[0]
         self._con_model = ConModel(mass_def, cosmology=self.cosmo_params)
 
-    def _con(self, masses):
+    def _con(self, zs, masses):
         mass_def = str(self.delta) + self.mass_definition[0]
         try:
-            return self._con_model.c(masses, self.zs, mass_def)
+            return self._con_model.c(masses, zs, mass_def)
         except AttributeError:
             self._init_con_model()
-            return self._con_model.c(masses, self.zs, mass_def)
+            return self._con_model.c(masses, zs, mass_def)
 
-    def _gnfw_norm(self, mus, alphas, betas, gammas):
+    def _gnfw_norm(self, zs, mus, alphas, betas, gammas):
         '''
         SHAPE mu, z, params
         '''
@@ -249,16 +247,16 @@ class CmGnfwBaryonShear(GnfwBaryonShear):
         )
 
         drs = np.gradient(rs)
-        top_integrand = self._rho_nfw(rs, mus)[..., None] * rs[None, None, :, None]**2
-        bottom_integrand = self.gnfw_shape(rs, mus, alphas, betas, gammas) * rs[None, None, :, None]**2
+        top_integrand = self._rho_nfw(rs, zs, mus)[..., None] * rs[None, None, :, None]**2
+        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[None, None, :, None]**2
 
         return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-2)
                 /maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=-2))
 
-    def _rho_gnfw(self, rs, mus, alphas, betas, gammas):
-        norm = self._gnfw_norm(mus, alphas, betas, gammas)
+    def _rho_gnfw(self, rs, zs, mus, alphas, betas, gammas):
+        norm = self._gnfw_norm(zs, mus, alphas, betas, gammas)
         norm = norm.reshape(rs.ndim*(1,) + norm.shape)
-        profile_shape = self.gnfw_shape(rs, mus, alphas, betas, gammas)
+        profile_shape = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas)
 
         radius_axes = np.arange(profile_shape.ndim)[2:-1]
         new_radius_axes = np.arange(radius_axes.size)
@@ -270,60 +268,60 @@ class CmGnfwBaryonShear(GnfwBaryonShear):
 
         return norm * profile_shape
 
-    def _rho_nfw(self, rs, mus):
+    def _rho_nfw(self, rs, zs, mus):
         masses = self.mass_from_mu(mus)
-        cons = self._con(masses)
+        cons = self._con(zs, masses)
 
         try:
-            return self.nfw_model.rho(rs, self.zs, masses, cons)
+            return self.nfw_model.rho(rs, zs, masses, cons)
         except AttributeError:
             self._init_nfw()
-            return self.nfw_model.rho(rs, self.zs, masses, cons)
+            return self.nfw_model.rho(rs, zs, masses, cons)
 
-    def rho_bary(self, rs, mus, alphas, betas, gammas):
+    def rho_bary(self, rs, zs, mus, alphas, betas, gammas):
         '''
         SHAPE r, mu, z, params
         '''
-        return self.baryon_frac * self._rho_gnfw(rs, mus, alphas, betas, gammas)
+        return self.baryon_frac * self._rho_gnfw(rs, zs, mus, alphas, betas, gammas)
 
-    def rho_cdm(self, rs, mus):
+    def rho_cdm(self, rs, zs, mus):
         '''
         SHAPE mu, z, r, params
         '''
-        return (1-self.baryon_frac) * self._rho_nfw(rs, mus)
+        return (1-self.baryon_frac) * self._rho_nfw(rs, zs, mus)
 
-    def delta_sigma_cdm(self, rs, mus):
+    def delta_sigma_cdm(self, rs, zs, mus):
         '''
         SHAPE mu, z, r, params
         '''
         masses = self.mass_from_mu(mus)
-        cons = self._con(masses)
+        cons = self._con(zs, masses)
 
         try:
-            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
+            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, zs, masses, cons)
         except AttributeError:
             self._init_nfw()
-            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, self.zs, masses, cons)
+            return (1-self.baryon_frac) * self.nfw_model.delta_sigma(rs, zs, masses, cons)
 
-    def delta_sigma_bary(self, rs, mus, alphas, betas, gammas):
+    def delta_sigma_bary(self, rs, zs, mus, alphas, betas, gammas):
         '''
         SHAPE mu, z, r, params
         '''
         return np.moveaxis(
-            projector.esd(rs, lambda r: self.rho_bary(r, mus, alphas, betas, gammas)) * (u.Msun/u.Mpc**2).to(self.units),
+            projector.esd(rs, lambda r: self.rho_bary(r, zs, mus, alphas, betas, gammas)) * (u.Msun/u.Mpc**2).to(self.units),
             0,
             2,
         )
 
-    def delta_sigma_total(self, rs, mus, alphas, betas, gammas):
-        return self.delta_sigma_bary(rs, mus, alphas, betas, gammas) + self.delta_sigma_cdm(rs, mus)[..., None]
+    def delta_sigma_total(self, rs, zs, mus, alphas, betas, gammas):
+        return self.delta_sigma_bary(rs, zs, mus, alphas, betas, gammas) + self.delta_sigma_cdm(rs, zs, mus)[..., None]
 
 
 @dataclass
 class MatchingCmGnfwBaryonShear(CmGnfwBaryonShear):
     nfw_class: object = maszcal.nfw.MatchingNfwModel
 
-    def _gnfw_norm(self, mus, alphas, betas, gammas):
+    def _gnfw_norm(self, zs, mus, alphas, betas, gammas):
         '''
         SHAPE cluster, params
         '''
@@ -334,18 +332,18 @@ class MatchingCmGnfwBaryonShear(CmGnfwBaryonShear):
         )
 
         drs = np.gradient(rs)
-        top_integrand = self._rho_nfw(rs, mus)[..., None] * rs[None, :, None]**2
-        bottom_integrand = self.gnfw_shape(rs, mus, alphas, betas, gammas) * rs[ None, :, None]**2
+        top_integrand = self._rho_nfw(rs, zs, mus)[..., None] * rs[None, :, None]**2
+        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[ None, :, None]**2
 
         return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-2)
                 /maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=-2))
 
-    def delta_sigma_bary(self, rs, mus, alphas, betas, gammas):
+    def delta_sigma_bary(self, rs, zs, mus, alphas, betas, gammas):
         '''
         SHAPE cluster, r, params
         '''
         return np.moveaxis(
-            projector.esd(rs, lambda r: self.rho_bary(r, mus, alphas, betas, gammas)) * (u.Msun/u.Mpc**2).to(self.units),
+            projector.esd(rs, lambda r: self.rho_bary(r, zs, mus, alphas, betas, gammas)) * (u.Msun/u.Mpc**2).to(self.units),
             0,
             1,
         )
@@ -365,7 +363,6 @@ class MatchingBaryonShearModel:
 
     def __post_init__(self):
         self._shear = self.shear_class(
-            zs=self.redshifts,
             cosmo_params=self.cosmo_params,
             mass_definition=self.mass_definition,
             delta=self.delta,
@@ -381,7 +378,7 @@ class MatchingBaryonShearModel:
 
     def delta_sigma_total(self, rs, alphas, betas, gammas, a_szs):
         mus = self.mu_from_sz_mu(np.log(self.sz_masses), a_szs).flatten()
-        return self._shear.delta_sigma_total(rs, mus, alphas, betas, gammas)
+        return self._shear.delta_sigma_total(rs, self.redshifts, mus, alphas, betas, gammas)
 
     def delta_sigma(self, rs, alphas, betas, gammas, a_szs):
         'SHAPE cluster, a_sz, r, params'
@@ -409,7 +406,6 @@ class BaryonShearModel:
             self.cosmo_params = CosmoParams()
 
         self._shear = self.shear_class(
-            zs=self.redshift_bins,
             cosmo_params=self.cosmo_params,
             mass_definition=self.mass_definition,
             delta=self.delta,
@@ -432,7 +428,7 @@ class BaryonShearModel:
         )
 
     def stacked_delta_sigma(self, rs, cons, alphas, betas, gammas, a_szs):
-        delta_sigmas = self._shear.delta_sigma_total(rs, self.mu_bins, cons, alphas, betas, gammas)
+        delta_sigmas = self._shear.delta_sigma_total(rs, self.redshift_bins, self.mu_bins, cons, alphas, betas, gammas)
 
         try:
             return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
@@ -453,7 +449,7 @@ class BaryonCmShearModel(BaryonShearModel):
     shear_class: object = CmGnfwBaryonShear
 
     def stacked_delta_sigma(self, rs, alphas, betas, gammas, a_szs):
-        delta_sigmas = self._shear.delta_sigma_total(rs, self.mu_bins, alphas, betas, gammas)
+        delta_sigmas = self._shear.delta_sigma_total(rs, self.redshift_bins, self.mu_bins, alphas, betas, gammas)
 
         try:
             return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
@@ -477,7 +473,6 @@ class SingleMassBaryonShearModel:
             self.cosmo_params = CosmoParams()
 
         self._shear = self.shear_class(
-            zs=self.redshifts,
             cosmo_params=self.cosmo_params,
             mass_definition=self.mass_definition,
             delta=self.delta,
@@ -486,7 +481,7 @@ class SingleMassBaryonShearModel:
         )
 
     def delta_sigma(self, rs, mus, cons, alphas, betas, gammas):
-        return self._shear.delta_sigma_total(rs, mus, cons, alphas, betas, gammas)
+        return self._shear.delta_sigma_total(rs, self.redshifts, mus, cons, alphas, betas, gammas)
 
 
 class Stacker:
