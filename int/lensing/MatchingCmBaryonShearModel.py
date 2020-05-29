@@ -9,11 +9,11 @@ from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
 import seaborn as sns
 sns.set(style='whitegrid', font_scale=1.5, rc={"lines.linewidth": 2,'lines.markersize': 8.0,})
-from maszcal.lensing import MatchingBaryonShearModel
+from maszcal.lensing import MatchingCmBaryonShearModel
 import maszcal.cosmology
 
 
-def describe_MatchingBaryonModel():
+def describe_MatchingCmBaryonModel():
 
     def describe_stacked_delta_sigma():
 
@@ -24,7 +24,7 @@ def describe_MatchingBaryonModel():
             zs = np.random.rand(NUM_CLUSTERS)
             weights = np.random.rand(NUM_CLUSTERS)
             cosmo_params = maszcal.cosmology.CosmoParams()
-            return MatchingBaryonShearModel(
+            return MatchingCmBaryonShearModel(
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
@@ -33,13 +33,12 @@ def describe_MatchingBaryonModel():
 
         def the_plots_look_right(baryon_model):
             radii = np.logspace(-1, 1, 30)
-            cons = 3*np.ones(1)
             alphas = 0.5*np.ones(1)
             betas = np.linspace(2.8, 3.2, 3)
             gammas = 0.5*np.ones(1)
             a_szs = 0.3*np.ones(1)
 
-            esds = baryon_model.stacked_delta_sigma(radii, cons, alphas, betas, gammas, a_szs)
+            esds = baryon_model.stacked_delta_sigma(radii, alphas, betas, gammas, a_szs)
 
             plt.plot(radii, radii[:, None]*esds[0, ...])
             plt.xscale('log')
@@ -47,5 +46,5 @@ def describe_MatchingBaryonModel():
             plt.xlabel(r'$R$')
             plt.ylabel(r'$R \Delta\Sigma(R)$')
 
-            plt.savefig('figs/test/matching_stacked_gnfw_delta_sigma.svg')
+            plt.savefig('figs/test/matching_cm_stacked_gnfw_delta_sigma.svg')
             plt.gcf().clear()
