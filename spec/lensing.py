@@ -22,6 +22,17 @@ class FakeConModel:
         return np.ones((masses.size, redshifts.size))
 
 
+class FakeMatchingConModel:
+    def __init__(self, mass_def, cosmology=None):
+        pass
+
+    def c(self, masses, redshifts, mass_def):
+        return np.ones((masses.size))
+
+    def convert_mass_def(self, masses, redshifts, old_def, new_def):
+        return np.ones((masses.size))
+
+
 def describe_MatchingBaryonShearModel():
 
     def describe_stacked_delta_sigma():
@@ -65,7 +76,7 @@ def describe_MatchingCmBaryonShearModel():
 
         @pytest.fixture
         def model(mocker):
-            mocker.patch('maszcal.lensing.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.lensing.MatchingConModel', new=FakeMatchingConModel)
             mocker.patch('maszcal.lensing.projector.esd', new=fake_projector_esd)
             NUM_CLUSTERS = 10
             sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
