@@ -9,7 +9,6 @@ Mass SZ Calibrations
 ## Dependencies
 The module dependencies are:
 - dataclasses (if you are using Python version less than 3.7)
-- future (Should be removed from this list)
 - numpy
 - scipy
 - astropy
