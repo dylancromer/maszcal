@@ -227,6 +227,47 @@ class MatchingNfwModel(NfwModel):
 
     def scale_radius(self, zs, masses, cons):
         '''
+        SHAPE cluster, cons
+        '''
+        return self.radius_delta(zs, masses)[:, None]/cons[None, :]
+
+    def rho(self, rs, zs, masses, cons):
+        '''
+        SHAPE cluster, r
+        '''
+        scale_radii = self.scale_radius(zs, masses, cons)
+        numerator = self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
+        numerator = np.reshape(numerator, numerator.shape[:1] + rs.ndim*(1,) + numerator.shape[1:])
+        xs = rs[None, ..., None]/np.reshape(scale_radii,
+                                                  scale_radii.shape[:1] + rs.ndim*(1,) + scale_radii.shape[1:])
+        denominator = xs * (1+xs)**2
+        return numerator/denominator
+
+    def delta_sigma(self, rs, zs, masses, cons):
+        '''
+        SHAPE cluster, r
+        '''
+        scale_radii = self.scale_radius(zs, masses, cons)
+        prefactor = scale_radii * self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
+        prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
+        xs = rs[None, :, None]/scale_radii[:, None, :]
+        postfactor = self._inequality_func(xs)
+        return prefactor[:, None, :] * postfactor
+
+
+class MatchingCmNfwModel(NfwModel):
+    '''
+    Overwrites some methods to make it work for a matching stack
+    '''
+    def radius_delta(self, zs, masses):
+        '''
+        SHAPE cluster
+        '''
+        pref = 3 / (4*np.pi)
+        return (pref * masses / (self._delta*self.reference_density(zs)))**(1/3)
+
+    def scale_radius(self, zs, masses, cons):
+        '''
         SHAPE cluster
         '''
         return self.radius_delta(zs, masses)/cons

@@ -17,6 +17,36 @@ def describe_MatchingNfwModel():
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 8)
         masses = np.logspace(14, 14.8, 8)
+        cons = np.linspace(2, 3.4, 4)
+
+        ds = nfw_model.delta_sigma(rs, zs, masses, cons)
+
+        assert np.all(ds > 0)
+        assert ds.shape == (8, 10, 4)
+
+    def it_can_calculate_a_rho(nfw_model):
+        rs = np.logspace(-1, 1, 10)
+        zs = np.linspace(0, 1, 8)
+        masses = np.logspace(14, 15, 8)
+        cons = np.linspace(2, 4, 4)
+
+        rhos = nfw_model.rho(rs, zs, masses, cons)
+
+        assert np.all(rhos > 0)
+        assert rhos.shape == (8, 10, 4)
+
+
+def describe_MatchingCmNfwModel():
+
+    @pytest.fixture
+    def nfw_model():
+        cosmo = CosmoParams()
+        return maszcal.nfw.MatchingCmNfwModel(cosmo_params=cosmo)
+
+    def it_calculates_delta_sigma(nfw_model):
+        rs = np.logspace(-1, 1, 10)
+        zs = np.linspace(0, 1, 8)
+        masses = np.logspace(14, 14.8, 8)
         cons = np.linspace(2, 3.4, 8)
 
         ds = nfw_model.delta_sigma(rs, zs, masses, cons)
