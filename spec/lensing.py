@@ -47,6 +47,43 @@ def describe_MatchingBaryonShearModel():
 
         def it_calculates_stacked_delta_sigma_profiles(model):
             rs = np.logspace(-1, 1, 8)
+            cons = 2*np.ones(2)
+            alphas = np.ones(2)
+            betas = np.ones(2)
+            gammas = np.ones(2)
+            a_szs = np.array([-1, 0, 1])
+
+            esds = model.stacked_delta_sigma(rs, cons, alphas, betas, gammas, a_szs)
+
+            assert np.all(esds >= 0)
+            assert esds.shape == (3, 8, 2)
+
+
+def describe_MatchingCmBaryonShearModel():
+
+    def describe_stacked_delta_sigma():
+
+        @pytest.fixture
+        def model(mocker):
+            mocker.patch('maszcal.lensing.ConModel', new=FakeConModel)
+            mocker.patch('maszcal.lensing.projector.esd', new=fake_projector_esd)
+            NUM_CLUSTERS = 10
+            sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
+            zs = np.random.rand(NUM_CLUSTERS)
+            weights = np.random.rand(NUM_CLUSTERS)
+            cosmo_params = maszcal.cosmology.CosmoParams()
+            return maszcal.lensing.MatchingCmBaryonShearModel(
+                sz_masses=sz_masses,
+                redshifts=zs,
+                lensing_weights=weights,
+                cosmo_params=cosmo_params,
+                mass_definition='mean',
+                delta=200,
+                units=u.Msun/u.pc**2,
+            )
+
+        def it_calculates_stacked_delta_sigma_profiles(model):
+            rs = np.logspace(-1, 1, 8)
             alphas = np.ones(2)
             betas = np.ones(2)
             gammas = np.ones(2)
