@@ -1,4 +1,3 @@
-
 import pytest
 import numpy as np
 from maszcal.lensing import SingleMassNfwLensingSignal
