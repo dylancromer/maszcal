@@ -9,6 +9,7 @@ misc/
 tests/xarray_concentration_integ.py
 tests/test.py
 stats.sh
+*.c
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
