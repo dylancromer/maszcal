@@ -10,9 +10,6 @@ ext_modules.append(
 ext_modules.append(
     Extension('cmaszcal.nfw', ['cmaszcal/nfw.pyx'], include_dirs=[np.get_include()])
 )
-ext_modules.append(
-    Extension('cmaszcal.integrate', ['cmaszcal/integrate.pyx'], include_dirs=[np.get_include()])
-)
 
 
 setup(

@@ -1,3 +1,6 @@
+import cython
+from cpython cimport bool
+cimport numpy as np
 import numpy as np
 import astropy.units as u
 from maszcal.defaults import DefaultCosmology
@@ -5,14 +8,18 @@ from maszcal.cosmology import CosmoParams
 from maszcal.cosmo_utils import get_astropy_cosmology
 
 
+ctypedef np.float64_t ARRAY_DTYPE
+
+
 class NfwModel:
+
     def __init__(
-            self,
-            cosmo_params=DefaultCosmology(),
-            units=u.Msun/u.pc**2,
-            delta=200,
-            mass_definition='mean',
-            comoving=True,
+        self,
+        cosmo_params=DefaultCosmology(),
+        units=u.Msun/u.pc**2,
+        delta=200,
+        mass_definition='mean',
+        comoving=True,
     ):
         self._delta = delta
         self._check_mass_def(mass_definition)
@@ -25,8 +32,13 @@ class NfwModel:
             self.cosmo_params = cosmo_params
 
         self._astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
-
         self.units = units
+
+        self._c_class = _NfwModel(
+            delta,
+            mass_definition,
+            comoving,
+        )
 
     def _check_mass_def(self, mass_def):
         if mass_def not in ['mean', 'crit']:
@@ -41,15 +53,33 @@ class NfwModel:
         self._check_mass_def(new_mass_def)
         self._mass_definition = new_mass_def
 
-    def _reference_density_comoving(self, zs):
+
+cdef class _NfwModel:
+    cdef int _delta
+    cdef str mass_definition
+    cdef bool comoving
+
+    def __cinit__(
+        self,
+        delta,
+        mass_definition,
+        comoving,
+    ):
+        self._delta = delta
+        self.mass_definition = mass_definition
+        self.comoving = comoving
+
+
+    cdef np.ndarray[ARRAY_DTYPE] _reference_density_comoving(self, np.ndarray[ARRAY_DTYPE] zs):
+        cdef np.ndarray[ARRAY_DTYPE] rho_mass_def
         if self.mass_definition == 'mean':
-            rho_mass_def = self._astropy_cosmology.critical_density0 * self._astropy_cosmology.Om0 * np.ones(zs.shape)
+            rho_mass_def = self._astropy_cosmology.critical_density0 * self._astropy_cosmology.Om0 * np.ones(zs.size)
         elif self.mass_definition == 'crit':
             rho_mass_def = self._astropy_cosmology.critical_density(zs) / (1+zs)**3
-
         return rho_mass_def
 
-    def _reference_density_nocomoving(self, zs):
+    cdef np.ndarray[ARRAY_DTYPE] _reference_density_nocomoving(self, np.ndarray[ARRAY_DTYPE] zs):
+        cdef np.ndarray[ARRAY_DTYPE] rho_mass_def
         if self.mass_definition == 'mean':
             rho_mass_def = self._astropy_cosmology.critical_density(zs) * self._astropy_cosmology.Om(zs)
         elif self.mass_definition == 'crit':
@@ -143,81 +173,50 @@ class NfwModel:
         return prefactor[:, :, None, :] * postfactor
 
 
-class SingleMassNfwModel(NfwModel):
-    def scale_radius(self, zs, masses, cons):
-        '''
-        SHAPE z, params
-        '''
-        return self.radius_delta(zs, masses).T / cons[None, :]
-
-    def rho(self, rs, zs, masses, cons):
-        '''
-        SHAPE z, r, params
-        '''
-        scale_radii = self.scale_radius(zs, masses, cons)
-        numerator = self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
-        numerator = np.reshape(numerator, numerator.shape[:1] + rs.ndim*(1,) + numerator.shape[1:])
-        xs = rs[None, ..., None]/np.reshape(scale_radii,
-                                            scale_radii.shape[:1] + rs.ndim*(1,) + scale_radii.shape[1:])
-        denominator = xs * (1+xs)**2
-        return numerator/denominator
-
-    def delta_sigma(self, rs, zs, masses, cons):
-        '''
-        SHAPE z, r, params
-        '''
-        scale_radii = self.scale_radius(zs, masses, cons)
-        prefactor = scale_radii * self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
-        prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
-
-        xs = rs[None, :, None]/scale_radii[:, None, :]
-
-        postfactor = self._inequality_func(xs)
-
-        return prefactor[:, None, :] * postfactor
-
-
-class NfwCmModel(NfwModel):
-    '''
-    Overwrites some methods to make it work for a concentration-mass relation
-    '''
-    def scale_radius(self, zs, masses, cons):
-        '''
-        SHAPE mass, z, c
-        '''
-        return self.radius_delta(zs, masses)/cons
-
-    def rho(self, rs, zs, masses, cons):
-        '''
-        SHAPE mass, z, r, c
-        '''
-        scale_radii = self.scale_radius(zs, masses, cons)
-        numerator = self.delta_c(cons) * self.reference_density(zs)[None, :]
-        numerator = np.reshape(numerator, numerator.shape + rs.ndim*(1,))
-        xs = rs[None, None, ...]/np.reshape(scale_radii,
-                                            scale_radii.shape + rs.ndim*(1,))
-        denominator = xs * (1+xs)**2
-        return numerator/denominator
-
-    def delta_sigma(self, rs, zs, masses, cons):
-        '''
-        SHAPE mass, z, r, c
-        '''
-        scale_radii = self.scale_radius(zs, masses, cons)
-        prefactor = scale_radii * self.delta_c(cons) * self.reference_density(zs)[None, :]
-        prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
-
-        xs = rs[None, None, :]/scale_radii[:, :, None]
-
-        postfactor = self._inequality_func(xs)
-
-        return prefactor[:, :, None] * postfactor
-
-
 class MatchingNfwModel(NfwModel):
     '''
     Overwrites some methods to make it work for a matching stack
     '''
+    def __init__(
+        self,
+        cosmo_params=DefaultCosmology(),
+        units=u.Msun/u.pc**2,
+        delta=200,
+        mass_definition='mean',
+        comoving=True,
+    ):
+        self._delta = delta
+        self._check_mass_def(mass_definition)
+        self.mass_definition = mass_definition
+        self.comoving = comoving
+
+        if isinstance(cosmo_params, DefaultCosmology):
+            self.cosmo_params = CosmoParams()
+        else:
+            self.cosmo_params = cosmo_params
+
+        self._astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
+        self.units = units
+
+        self._c_class = _NfwModel(
+            delta,
+            mass_definition,
+            comoving,
+        )
+
+    def _check_mass_def(self, mass_def):
+        if mass_def not in ['mean', 'crit']:
+            raise ValueError('Mass definition must be \'crit\' or \'mean\'')
+
+    @property
+    def mass_definition(self):
+        return self._mass_definition
+
+    @mass_definition.setter
+    def mass_definition(self, new_mass_def):
+        self._check_mass_def(new_mass_def)
+        self._mass_definition = new_mass_def
+
     def radius_delta(self, zs, masses):
         '''
         SHAPE cluster
