@@ -1,4 +1,5 @@
 #
+*.npy
 docs/*.ipynb
 data/act-hsc
 *venv*
