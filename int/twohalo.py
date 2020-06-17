@@ -28,7 +28,6 @@ def describe_TwoHaloShearModel():
 
         esds = two_halo_model.esd(rs, mus, zs)
 
-        assert np.all(esds >= 0)
         assert not np.any(np.isnan(esds))
         assert esds.shape == mus.shape + zs.shape + rs.shape
 
@@ -51,17 +50,15 @@ def describe_TwoHaloShearModel():
     def it_calculates_halo_matter_correlations(two_halo_model):
         zs = np.linspace(0, 1, 10)
         mus = np.linspace(np.log(1e14), np.log(1e15), 5)
-        rs = np.logspace(-2, np.log10(30), 60)
+        rs = np.logspace(-2, 3, 600)
 
         xis = two_halo_model.halo_matter_correlation(rs, mus, zs)
 
-        assert np.all(xis >= 0)
         assert not np.any(np.isnan(xis))
         assert xis.shape == mus.shape + zs.shape + rs.shape
 
-        plt.plot(rs, xis[:, 0, :].T)
+        plt.plot(rs, rs[:, None]**2 * xis[:, 0, :].T)
         plt.xscale('log')
-        plt.yscale('log')
         plt.xlabel(r'$R \; (\mathrm{Mpc}$)')
         plt.ylabel(r'$\xi$')
         plt.savefig('figs/test/halo_matter_correlation.svg')

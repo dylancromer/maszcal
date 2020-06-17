@@ -13,24 +13,22 @@ import maszcal.tinker
 
 @dataclass
 class TwoHaloShearModel:
-    MIN_K = 1e-5
+    MIN_K = 1e-4
     MAX_K = 1e2
+    NUM_KS = 800
     MAX_BIAS_K = 0.3
     NUM_BIAS_KS = 200
     MIN_REDSHIFT = 0
     MAX_REDSHIFT = 1
     NUM_INTERP_ZS = 40
-    MIN_RADIUS = 1e-6
-    MAX_RADIUS = 30
-    NUM_INTERP_RADII = 200
-    USE_NONLINEAR_MATTER_POWER = True
-    QUAD_ITER_LIMIT = 2000
+    USE_NONLINEAR_MATTER_POWER_FOR_BIAS = True
 
     cosmo_params: object
     units: object = u.Msun/u.pc**2
     delta: int = 200
     mass_definition: str = 'mean'
     comoving: bool = True
+    is_nonlinear: bool = True
     matter_power_class: object = maszcal.matter.Power
 
     def __post_init__(self):
@@ -44,6 +42,12 @@ class TwoHaloShearModel:
             comoving=self.comoving,
         )
         self.__bias = tinker_bias_model.bias
+
+    def _init_power_interpolator(self):
+        power = self.matter_power_class(cosmo_params=self.cosmo_params)
+        dummy_ks = np.linspace(self.MIN_K, self.MAX_K, self.NUM_KS)
+        dummy_zs = np.linspace(self.MIN_REDSHIFT, self.MAX_REDSHIFT, self.NUM_INTERP_ZS)
+        self._power_interpolator = power.get_spectrum_interpolator(dummy_ks, dummy_zs, is_nonlinear=self.USE_NONLINEAR_MATTER_POWER_FOR_BIAS)
 
     def _bias(self, mus, zs):
         masses = np.exp(mus)
@@ -61,76 +65,36 @@ class TwoHaloShearModel:
             self._init_tinker_bias()
             return self.__bias(masses, zs, ks, power_spect)
 
-    def _init_power_interpolator(self):
-        power = self.matter_power_class(cosmo_params=self.cosmo_params)
 
-        dummy_ks = np.linspace(self.MIN_K, self.MAX_K, 2)
-        dummy_zs = np.linspace(self.MIN_REDSHIFT, self.MAX_REDSHIFT, 6)
-
-        self._power_interpolator = power.get_spectrum_interpolator(dummy_ks, dummy_zs, is_nonlinear=self.USE_NONLINEAR_MATTER_POWER)
-
-    def _correlation_integrand(self, ln_k, rs, zs):
-        k = np.exp(np.array([ln_k]))
-
-        try:
-            power_spect = self._power_interpolator(k, zs)[None, :, :]
-        except AttributeError:
-            self._init_power_interpolator()
-            power_spect = self._power_interpolator(k, zs)[None, :, :]
-
-        k = k[None, :, None]
-        rs = rs[:, None, None]
-
-        return k * k**2 * power_spect * np.sinc(k * rs) / (2 * np.pi**2) # extra k factor from log coordinates
-
-    def _get_correlator_samples(self):
-        sample_rs = np.logspace(np.log10(self.MIN_RADIUS), np.log10(self.MAX_RADIUS), self.NUM_INTERP_RADII)
-        sample_zs = np.linspace(self.MIN_REDSHIFT, self.MAX_REDSHIFT, self.NUM_INTERP_ZS)
-        xi_integral = scipy.integrate.quad_vec(
-            lambda ln_k: self._correlation_integrand(ln_k, sample_rs, sample_zs),
-            np.log(self.MIN_K),
-            np.log(self.MAX_K),
-            limit=self.QUAD_ITER_LIMIT,
+    def _init_correlation_interpolator(self, zs):
+        self.__correlation_interpolator = maszcal.matter.Correlations.from_cosmology(
+            self.cosmo_params,
+            zs,
+            is_nonlinear=self.is_nonlinear,
         )
-
-        sample_xis = np.squeeze(xi_integral[0])
-        xi_errors = xi_integral[1]
-
-        params = maszcal.interp_utils.cartesian_prod(np.log(sample_rs), sample_zs)
-        return params, np.log(sample_xis)
-
-    def _init_correlation_interpolator(self):
-        sample_params, sample_ln_xis = self._get_correlator_samples()
-        interpolator = maszcal.interpolate.RbfInterpolator(params=sample_params, func_vals=sample_ln_xis)
-        self._correlation_rbf = interpolator
-
-    def _correlation_integral_interp(self, rs, zs):
-        ln_rs = np.log(rs).flatten()
-        params = maszcal.interp_utils.cartesian_prod(ln_rs, zs)
-        return np.exp(self._correlation_rbf(params).flatten()).reshape(rs.shape + zs.shape)
 
     def _correlation_interpolator(self, rs, zs):
         try:
-            correlator = self._correlation_integral_interp(rs, zs)
+            correlator = self.__correlation_interpolator(rs)
         except AttributeError:
-            self._init_correlation_interpolator()
-            correlator = self._correlation_integral_interp(rs, zs)
+            self._init_correlation_interpolator(zs)
+            correlator = self.__correlation_interpolator(rs)
         return correlator
 
-    def density_interpolator(self, rs, zs):
-        return self._correlation_interpolator(rs, zs)
+    def _density_shape_interpolator(self, rs, zs):
+        corr = self._correlation_interpolator(rs.flatten(), zs).reshape(zs.shape + rs.shape)
+        corr = np.moveaxis(corr, 0, -1)
+        return 1 + corr
 
     def _esd_radial_shape(self, rs, zs):
-        return projector.esd_quad(rs, lambda radii: self.density_interpolator(radii, zs))
+        return projector.esd_quad(rs, lambda radii: self._density_shape_interpolator(radii, zs))
 
     def _esd(self, rs, mus, zs):
-        total_dim = rs.ndim + mus.ndim + zs.ndim
-        bias = maszcal.mathutils.atleast_kd(self._bias(mus, zs).T, total_dim, append_dims=False)
-        esd_radial_shape = self._esd_radial_shape(rs, zs)
-        esd_radial_shape = maszcal.mathutils.atleast_kd(esd_radial_shape, total_dim, append_dims=True)
+        bias = self._bias(mus, zs)[:, None, :]
+        esd_radial_shape = self._esd_radial_shape(rs, zs)[None, :, :]
         return np.swapaxes(
             bias * esd_radial_shape,
-            0,
+            1,
             2,
         )
 
@@ -139,12 +103,11 @@ class TwoHaloShearModel:
                 * self.astropy_cosmology.critical_density(zs)).to(u.Msun/u.Mpc**3).value
 
     def halo_matter_correlation(self, rs, mus, zs):
-        total_dim = rs.ndim + mus.ndim + zs.ndim
-        bias = maszcal.mathutils.atleast_kd(self._bias(mus, zs).T, total_dim, append_dims=False)
-        mm_corr = maszcal.mathutils.atleast_kd(self.density_interpolator(rs, zs), total_dim, append_dims=True)
+        bias = self._bias(mus, zs)[:, None, :]
+        mm_corr = self._correlation_interpolator(rs, zs).T[None, :, :]
         return np.swapaxes(
             bias * mm_corr,
-            0,
+            1,
             2,
         )
 
