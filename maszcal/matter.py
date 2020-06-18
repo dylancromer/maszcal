@@ -45,6 +45,7 @@ class Correlations:
     MAX_LOG10_K = 2
     MIN_LOG10_k = -4
     NUM_KS = 800
+    EXTRAPOLATE_OPTION = 1 # 0->extrapolate, 1->0-fill, 2->ValueError, 3->boundary_value
 
     def __init__(self, radius_samples, redshift_samples, xi_samples):
         num_zs = redshift_samples.size
@@ -54,6 +55,7 @@ class Correlations:
                 radius_samples,
                 xi_samples[i, :],
                 k=self.SPLINE_DEGREE,
+                ext=self.EXTRAPOLATE_OPTION
             ) for i in range(num_zs)
         ]
 

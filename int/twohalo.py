@@ -24,7 +24,7 @@ def describe_TwoHaloShearModel():
     def it_calculates_two_halo_esds(two_halo_model):
         zs = np.linspace(0, 1, 10)
         mus = np.linspace(np.log(1e14), np.log(1e15), 5)
-        rs = np.logspace(-1, 1, 60)
+        rs = np.logspace(-3, 3, 200)
 
         esds = two_halo_model.esd(rs, mus, zs)
 

@@ -23,7 +23,7 @@ class FakePowerInterpolator:
     nonlinear: bool
 
     def P(self, zs, ks):
-            return (1/ks**2)[None, :] * np.ones(zs.shape + ks.shape)
+        return (ks**4)[None, :] * np.ones(zs.shape + ks.shape)
 
 
 @dataclass

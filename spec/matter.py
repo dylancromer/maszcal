@@ -70,7 +70,7 @@ def describe_Correlations():
 
     @pytest.fixture
     def ks_zs_and_power_spectrum():
-        return np.logspace(-1, 1, 100), np.linspace(0, 1, 10), np.ones((10, 100))
+        return np.logspace(-2, 40, 100), np.linspace(0, 1, 10), np.ones((10, 100))
 
     def it_converts_the_power_spectrum_to_a_correlator(ks_zs_and_power_spectrum):
         ks, zs, ps = ks_zs_and_power_spectrum
