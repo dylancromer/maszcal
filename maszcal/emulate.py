@@ -37,6 +37,7 @@ class PcaEmulator:
     coords: np.ndarray
     basis_vectors: np.ndarray
     weights: np.ndarray
+    explained_variance: np.ndarray
     interpolator_class: object
     interpolator_kwargs: object = MappingProxyType({})
 
@@ -66,12 +67,14 @@ class PcaEmulator:
         pca = LensingPca.create(data)
         basis_vectors = pca.basis_vectors[:, :num_components]
         weights = pca.weights[:num_components, :]
+        explained_variance = pca.explained_variance[:num_components]
         return cls(
             mean=data.mean(axis=-1),
             std_dev=data.std(axis=-1),
             coords=coords,
             basis_vectors=basis_vectors,
             weights=weights,
+            explained_variance=explained_variance,
             interpolator_class=interpolator_class,
             interpolator_kwargs=interpolator_kwargs,
         )

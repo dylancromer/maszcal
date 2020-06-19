@@ -59,6 +59,7 @@ def describe_PcaEmulator():
             std_dev=data.std(axis=-1),
             coords=coords,
             basis_vectors=pca.basis_vectors,
+            explained_variance=pca.explained_variance,
             weights=pca.weights,
             interpolator_class=maszcal.interpolate.RbfInterpolator
         )
