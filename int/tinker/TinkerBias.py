@@ -17,9 +17,9 @@ import maszcal.cosmology
 import maszcal.matter
 
 
-def describe_tinker_hmf():
+def describe_TinkerBias():
 
-    def describe_mdef_crit():
+    def describe_bias_mdef_crit():
 
         @pytest.fixture
         def ks_and_power_spect():
@@ -51,7 +51,7 @@ def describe_tinker_hmf():
             plt.savefig('figs/test/halo_bias_tinker_mcrit.svg')
             plt.gcf().clear()
 
-    def describe_mdef_mean():
+    def describe_bias_mdef_mean():
 
         @pytest.fixture
         def ks_and_power_spect():
@@ -81,4 +81,47 @@ def describe_tinker_hmf():
             plt.xscale('log')
 
             plt.savefig('figs/test/halo_bias_tinker_mmean.svg')
+            plt.gcf().clear()
+
+
+    def describe_plot_as_function_of_nu():
+
+        @pytest.fixture
+        def cosmo_params():
+            return maszcal.cosmology.CosmoParams()
+
+        @pytest.fixture
+        def tinker_bias(cosmo_params):
+            return maszcal.tinker.TinkerBias(
+                delta=200,
+                mass_definition='mean',
+                astropy_cosmology=maszcal.cosmo_utils.get_astropy_cosmology(cosmo_params),
+                comoving=True,
+            )
+
+        @pytest.fixture
+        def power_spectrum_and_ks(cosmo_params):
+            zs = np.zeros(1)
+            ks = np.logspace(-4, np.log10(100), 400)
+            return maszcal.matter.Power(cosmo_params).spectrum(ks, zs, is_nonlinear=False), ks
+
+        def it_matches_tinker_etal_2010(tinker_bias, power_spectrum_and_ks):
+            power_spectrum, ks = power_spectrum_and_ks
+            delta_collapse = 1.686
+            zs = np.zeros(1)
+            masses = np.logspace(np.log10(8e13), np.log10(6e15), 60)
+            radii = tinker_bias.radius_from_mass(masses[:, None], zs)
+            sigmas = np.sqrt(maszcal.tinker.sigma_sq_integral(radii, power_spectrum, ks))
+            nus = delta_collapse/sigmas
+
+            bias = tinker_bias.bias(masses, zs, ks, power_spectrum)
+
+            plt.plot(nus.squeeze(), bias.squeeze())
+            plt.xticks(np.arange(2, 5, 1))
+            plt.yticks(np.arange(2, 13, 1))
+            plt.xlabel(r'$\nu$')
+            plt.ylabel(r'$b$')
+            plt.gcf().set_size_inches(4, 5)
+
+            plt.savefig('figs/test/halo_bias_tinker_of_nu.svg')
             plt.gcf().clear()
