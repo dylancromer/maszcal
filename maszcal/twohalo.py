@@ -16,8 +16,8 @@ class TwoHaloShearModel:
     MIN_K = 1e-4
     MAX_K = 1e2
     NUM_KS = 800
-    MAX_BIAS_K = 0.3
-    NUM_BIAS_KS = 200
+    MAX_BIAS_K = 1e2
+    NUM_BIAS_KS = 400
     MIN_REDSHIFT = 0
     MAX_REDSHIFT = 1
     NUM_INTERP_ZS = 40
