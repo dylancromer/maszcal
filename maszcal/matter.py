@@ -46,6 +46,8 @@ class Correlations:
     MIN_LOG10_k = -4
     NUM_KS = 800
     NUM_ZS = 40
+    MIN_Z = 0
+    MAX_Z = 1.1
     EXTRAPOLATE_OPTION = 1 # 0->extrapolate, 1->0-fill, 2->ValueError, 3->boundary_value
 
     def __init__(self, radius_samples, redshift_samples, xi_samples):
@@ -70,15 +72,15 @@ class Correlations:
         return cls(rs, zs, xis)
 
     @classmethod
-    def _make_z_grid(cls, zs):
-        return np.linspace(zs.min(), zs.max(), cls.NUM_ZS)
+    def _make_z_grid(cls):
+        return np.linspace(cls.MIN_Z, cls.MAX_Z, cls.NUM_ZS)
 
     @classmethod
     def from_cosmology(cls, cosmo_params, zs, is_nonlinear):
         ks = np.logspace(cls.MIN_LOG10_k, cls.MAX_LOG10_K, cls.NUM_KS)
         power_spectra = Power(cosmo_params).get_spectrum_interpolator(
             ks,
-            cls._make_z_grid(zs),
+            cls._make_z_grid(),
             is_nonlinear,
         )(ks, zs)
         return cls.from_power_spectrum(ks, zs, power_spectra)

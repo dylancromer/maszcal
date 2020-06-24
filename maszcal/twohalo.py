@@ -87,7 +87,7 @@ class TwoHaloShearModel:
         return 1 + corr
 
     def _esd_radial_shape(self, rs, zs):
-        return projector.esd_quad(rs, lambda radii: self._density_shape_interpolator(radii, zs))
+        return projector.esd(rs, lambda radii: self._density_shape_interpolator(radii, zs))
 
     def _esd(self, rs, mus, zs):
         bias = self._bias(mus, zs)[:, None]
