@@ -235,6 +235,14 @@ class TinkerHmf(TinkerModel):
 
 
 class TinkerBias(TinkerModel):
+    def sigma_sq_integral(self, rs, power_spect, ks):
+        """
+        Determines the sigma^2 parameter over the m-z grid by integrating
+        over k.
+        """
+        integrand = top_hatf(rs[None, ...] * ks[:, None])**2 * power_spect.T * ks[:, None]**2
+        return scipy.integrate.simps(integrand/(2 * np.pi**2), x=ks, axis=0)
+
     def _bias_from_sigma(self, sigma, delta):
         big_a, a, big_b, b, big_c, c = tinker_bias_params(delta)
         delta_collapse = 1.686
@@ -244,10 +252,7 @@ class TinkerBias(TinkerModel):
     def bias(self, masses, zs, ks, power_spectrum):
         delta_means = self._get_delta_means(zs)  # converts delta_c to delta_m such that mass is the same
 
-        if masses.ndim == 1:
-            masses = masses[:, None]
-
         radii = self.radius_from_mass(masses, zs)
-        sigmas = np.sqrt(sigma_sq_integral(radii, power_spectrum, ks))
+        sigmas = np.sqrt(self.sigma_sq_integral(radii, power_spectrum, ks))
 
         return self._bias_from_sigma(sigmas, delta_means)

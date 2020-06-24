@@ -60,25 +60,25 @@ def describe_TwoHaloShearModel():
 
     def it_calculates_two_halo_esds(two_halo_model):
         zs = np.linspace(0, 1, 4)
-        mus = np.linspace(32, 33, 3)
+        mus = np.linspace(32, 33, 4)
         rs = np.logspace(-1, 1, 2)
 
         esds = two_halo_model.esd(rs, mus, zs)
 
         assert np.all(esds >= 0)
         assert not np.any(np.isnan(esds))
-        assert esds.shape == mus.shape + zs.shape + rs.shape
+        assert esds.shape == zs.shape + rs.shape
 
     def it_calculates_halo_matter_correlations(two_halo_model):
         zs = np.linspace(0, 1, 4)
-        mus = np.linspace(32, 33, 3)
+        mus = np.linspace(32, 33, 4)
         rs = np.logspace(-1, 1, 2)
 
         xis = two_halo_model.halo_matter_correlation(rs, mus, zs)
 
         assert np.all(xis >= 0)
         assert not np.any(np.isnan(xis))
-        assert xis.shape == mus.shape + zs.shape + rs.shape
+        assert xis.shape == zs.shape + rs.shape
 
     def it_reshapes_the_correlator_correctly(two_halo_model):
         zs = np.linspace(0, 1, 4)

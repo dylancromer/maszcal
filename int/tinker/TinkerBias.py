@@ -13,6 +13,7 @@ sns.set(style='whitegrid', font_scale=1.5, rc={"lines.linewidth": 2,'lines.marke
 from maszcal.lensing import Stacker
 from maszcal.cosmology import CosmoParams
 from maszcal.tinker import TinkerBias
+import maszcal.interp_utils
 import maszcal.cosmology
 import maszcal.matter
 
@@ -38,9 +39,10 @@ def describe_TinkerBias():
 
         def it_calculates_biases(bias_func, ks_and_power_spect):
             ks, power_spect = ks_and_power_spect
+            power_spect = power_spect[0, :]
             masses = np.logspace(14, 15, 30)
-            zs = np.linspace(0, 1, 8)
-            biases = bias_func.bias(masses, zs, ks, power_spect)
+            zs = np.zeros(30)
+            biases = bias_func.bias(masses, zs, ks, power_spect[None, :])
 
             plt.plot(masses, biases)
             plt.xlabel(r'$M_{500c}$')
@@ -70,9 +72,10 @@ def describe_TinkerBias():
 
         def it_calculates_biases(bias_func, ks_and_power_spect):
             ks, power_spect = ks_and_power_spect
+            power_spect = power_spect[0, :]
             masses = np.logspace(14, 15, 30)
-            zs = np.linspace(0, 1, 8)
-            biases = bias_func.bias(masses, zs, ks, power_spect)
+            zs = np.zeros(30)
+            biases = bias_func.bias(masses, zs, ks, power_spect[None, :])
 
             plt.plot(masses, biases)
             plt.xlabel(r'$M_{200m}$')

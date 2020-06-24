@@ -90,26 +90,18 @@ class TwoHaloShearModel:
         return projector.esd_quad(rs, lambda radii: self._density_shape_interpolator(radii, zs))
 
     def _esd(self, rs, mus, zs):
-        bias = self._bias(mus, zs)[:, None, :]
-        esd_radial_shape = self._esd_radial_shape(rs, zs)[None, :, :]
-        return np.swapaxes(
-            bias * esd_radial_shape,
-            1,
-            2,
-        )
+        bias = self._bias(mus, zs)[:, None]
+        esd_radial_shape = self._esd_radial_shape(rs, zs).T
+        return bias * esd_radial_shape
 
     def matter_density(self, zs):
         return (self.astropy_cosmology.Om(zs)
                 * self.astropy_cosmology.critical_density(zs)).to(u.Msun/u.Mpc**3).value
 
     def halo_matter_correlation(self, rs, mus, zs):
-        bias = self._bias(mus, zs)[:, None, :]
-        mm_corr = self._correlation_interpolator(rs, zs).T[None, :, :]
-        return np.swapaxes(
-            bias * mm_corr,
-            1,
-            2,
-        )
+        bias = self._bias(mus, zs)[:, None]
+        mm_corr = self._correlation_interpolator(rs, zs)
+        return bias * mm_corr
 
     def esd(self, rs, mus, zs):
-        return self.matter_density(zs)[None, :, None] * self._esd(rs, mus, zs) * (u.Msun/u.Mpc**2).to(self.units)
+        return self.matter_density(zs)[:, None] * self._esd(rs, mus, zs) * (u.Msun/u.Mpc**2).to(self.units)
