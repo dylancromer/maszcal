@@ -23,7 +23,7 @@ def describe_Matching2HaloBaryonShearModel():
             weights = np.random.rand(NUM_CLUSTERS)
 
             rs = np.logspace(-1, 1, 8)
-            def fake_2_halo_func(zs, mus): return 1000*np.ones(mus.shape + rs.shape)
+            def fake_2_halo_func(zs, mus): return 1001*np.ones(mus.shape + rs.shape)
 
             cosmo_params = maszcal.cosmology.CosmoParams()
             return maszcal.corrections.Matching2HaloBaryonShearModel(
@@ -50,4 +50,4 @@ def describe_Matching2HaloBaryonShearModel():
 
             assert np.all(esds >= 0)
             assert esds.shape == (3, 8, 2)
-            assert np.all(esds[:, :, 1] >= 1000)
+            assert np.all(esds[:, :, 1] > 1000)
