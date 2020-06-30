@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from types import MappingProxyType
 import numpy as np
 import scipy.integrate
 import astropy.units as u
@@ -30,9 +31,13 @@ class TwoHaloShearModel:
     comoving: bool = True
     is_nonlinear: bool = True
     matter_power_class: object = maszcal.matter.Power
+    projector_kwargs: object = MappingProxyType({})
 
     def __post_init__(self):
         self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
+
+        if not self.comoving:
+            raise NotImplementedError('TwoHaloShearModel has not yet implemented a non-comoving option')
 
     def _init_tinker_bias(self):
         tinker_bias_model = maszcal.tinker.TinkerBias(
@@ -87,7 +92,7 @@ class TwoHaloShearModel:
         return 1 + corr
 
     def _esd_radial_shape(self, rs, zs):
-        return projector.esd(rs, lambda radii: self._density_shape_interpolator(radii, zs))
+        return projector.esd(rs, lambda radii: self._density_shape_interpolator(radii, zs), **self.projector_kwargs)
 
     def _esd(self, rs, mus, zs):
         bias = self._bias(mus, zs)[:, None]
