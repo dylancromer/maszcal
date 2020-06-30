@@ -2,6 +2,8 @@ from dataclasses import dataclass
 import numpy as np
 from astropy.cosmology import Planck15
 import astropy.units as u
+import astropy.constants as const
+import maszcal.cosmo_utils
 
 
 class NonFlatUniverseError(Exception):
@@ -70,3 +72,26 @@ class CosmoParams:
 @dataclass
 class Constants:
     speed_of_light: float = 2.99792e5  # km/s
+
+
+@dataclass
+class SigmaCrit:
+    cosmo_params: object
+    units: object = u.Msun/u.pc**2
+
+    def __post_init__(self):
+        self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
+
+    def _check_zs(self, z_source, z_lens):
+        if np.any(z_source < z_lens):
+            raise ValueError('Source redshift must be greater or equal to lens redshift')
+
+    def prefac(self):
+        return const.c**2 / (4 * np.pi * const.G)
+
+    def sdc(self, z_source, z_lens):
+        self._check_zs(z_source, z_lens)
+        d_source = self.astropy_cosmology.angular_diameter_distance(z_source)
+        d_lens = self.astropy_cosmology.angular_diameter_distance(z_lens)
+        d_lens_source = self.astropy_cosmology.angular_diameter_distance_z1z2(z_lens, z_source)
+        return (self.prefac() * d_source / (d_lens * d_lens_source)).to(self.units).value
