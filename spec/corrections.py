@@ -15,8 +15,7 @@ def describe_Matching2HaloBaryonShearModel():
     def describe_stacked_delta_sigma():
 
         @pytest.fixture
-        def model(mocker):
-            mocker.patch('maszcal.corrections.projector.esd', new=fake_projector_esd)
+        def model():
             NUM_CLUSTERS = 10
             sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
             zs = np.random.rand(NUM_CLUSTERS)
@@ -36,6 +35,7 @@ def describe_Matching2HaloBaryonShearModel():
                 mass_definition='mean',
                 delta=200,
                 units=u.Msun/u.pc**2,
+                esd_func=fake_projector_esd,
             )
 
         def it_calculates_stacked_delta_sigma_profiles(model):

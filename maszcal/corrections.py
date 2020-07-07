@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import numpy as np
 import astropy.units as u
 import projector
+import maszcal.nfw
 import maszcal.cosmology
 import maszcal.lensing
 import maszcal.mathutils
@@ -20,6 +21,7 @@ class Matching2HaloBaryonShearModel:
     units: u.Quantity = u.Msun/u.pc**2
     comoving_radii: bool = True
     shear_class: object = maszcal.lensing.MatchingGnfwBaryonShear
+    esd_func: object = projector.esd
 
     def __post_init__(self):
         self._shear = self.shear_class(
@@ -28,6 +30,8 @@ class Matching2HaloBaryonShearModel:
             delta=self.delta,
             units=self.units,
             comoving_radii=self.comoving_radii,
+            nfw_class=maszcal.nfw.MatchingNfwModel,
+            esd_func=self.esd_func,
         )
 
     def normed_lensing_weights(self, a_szs):
