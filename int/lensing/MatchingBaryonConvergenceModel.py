@@ -32,20 +32,21 @@ def describe_MatchingBaryonModel():
             )
 
         def the_plots_look_right(baryon_model):
-            radii = np.logspace(-1, 1, 30)
+            from_arcmin = 2 * np.pi / 360 / 60
+            thetas = np.logspace(-4, np.log10(15*from_arcmin), 30)
             cons = 3*np.ones(1)
             alphas = 0.5*np.ones(1)
             betas = np.linspace(2.8, 3.2, 3)
             gammas = 0.5*np.ones(1)
             a_szs = 0.3*np.ones(1)
 
-            sds = baryon_model.stacked_kappa(radii, cons, alphas, betas, gammas, a_szs)
+            sds = baryon_model.stacked_kappa(thetas, cons, alphas, betas, gammas, a_szs)
 
-            plt.plot(radii, radii[:, None]*sds[0, ...])
+            plt.plot(thetas, thetas[:, None]*sds[0, ...])
             plt.xscale('log')
 
-            plt.xlabel(r'$R$')
-            plt.ylabel(r'$R \; \kappa(R)$')
+            plt.xlabel(r'$\theta$')
+            plt.ylabel(r'$\theta \; \kappa(\theta)$')
 
             plt.savefig('figs/test/matching_stacked_gnfw_kappa.svg')
             plt.gcf().clear()

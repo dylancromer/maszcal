@@ -46,14 +46,14 @@ def describe_MatchingBaryonConvergenceModel():
             )
 
         def it_calculates_stacked_kappa_profiles(model):
-            rs = np.logspace(-1, 1, 8)
+            thetas = np.logspace(-4, np.log(15 * (2*np.pi/360)/(60)), 8)
             cons = 2*np.ones(2)
             alphas = np.ones(2)
             betas = np.ones(2)
             gammas = np.ones(2)
             a_szs = np.array([-1, 0, 1])
 
-            sds = model.stacked_kappa(rs, cons, alphas, betas, gammas, a_szs)
+            sds = model.stacked_kappa(thetas, cons, alphas, betas, gammas, a_szs)
 
             assert np.all(sds >= 0)
             assert sds.shape == (3, 8, 2)

@@ -507,7 +507,7 @@ class MatchingCmGnfwBaryonShear(CmGnfwBaryonShear):
 
 
 @dataclass
-class BaryonModel:
+class MatchingBaryonModel:
     sz_masses: np.ndarray
     redshifts: np.ndarray
     lensing_weights: np.ndarray
