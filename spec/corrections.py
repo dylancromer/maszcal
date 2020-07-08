@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 import astropy.units as u
+import maszcal.lensing
 import maszcal.cosmology
 import maszcal.corrections
 
@@ -25,11 +26,12 @@ def describe_Matching2HaloBaryonShearModel():
             def fake_2_halo_func(zs, mus): return 1001*np.ones(mus.shape + rs.shape)
 
             cosmo_params = maszcal.cosmology.CosmoParams()
-            return maszcal.corrections.Matching2HaloBaryonShearModel(
+            return maszcal.corrections.Matching2HaloShearModel(
                 radii=rs,
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
+                one_halo_shear_class=maszcal.lensing.MatchingGnfwBaryonShear,
                 two_halo_term_function=fake_2_halo_func,
                 cosmo_params=cosmo_params,
                 mass_definition='mean',
@@ -46,7 +48,7 @@ def describe_Matching2HaloBaryonShearModel():
             a_2hs = np.arange(2)
             a_szs = np.array([-1, 0, 1])
 
-            esds = model.stacked_delta_sigma(cons, alphas, betas, gammas, a_2hs, a_szs)
+            esds = model.stacked_delta_sigma(a_2hs, a_szs, cons, alphas, betas, gammas)
 
             assert np.all(esds >= 0)
             assert esds.shape == (3, 8, 2)
