@@ -44,11 +44,36 @@ def fake_camb_get_results(params):
         return FakeCambResults(nonlinear=True)
 
 
+def describe_TwoHaloConvergenceModel():
+
+    @pytest.fixture
+    def two_halo_model(mocker):
+        mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
+        cosmo = maszcal.cosmology.CosmoParams()
+        model = maszcal.twohalo.TwoHaloConvergenceModel(cosmo_params=cosmo, matter_power_class=FakePower)
+
+        model.NUM_INTERP_ZS = 3
+        model.NUM_INTERP_RADII = 4
+
+        return model
+
+    def it_calculates_two_halo_kappas(two_halo_model):
+        zs = np.linspace(0, 1, 4)
+        mus = np.linspace(32, 33, 4)
+        from_arcmin = 2 * np.pi / 360 / 60
+        thetas = np.logspace(-4, np.log10(15*from_arcmin), 2)
+
+        sds = two_halo_model.kappa(thetas, mus, zs)
+
+        assert np.all(sds >= 0)
+        assert not np.any(np.isnan(sds))
+        assert sds.shape == zs.shape + thetas.shape
+
+
 def describe_TwoHaloShearModel():
 
     @pytest.fixture
     def two_halo_model(mocker):
-        mocker.patch('maszcal.twohalo.scipy.integrate.quad_vec', new=fake_quad_vec)
         mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
         cosmo = maszcal.cosmology.CosmoParams()
         model = maszcal.twohalo.TwoHaloShearModel(cosmo_params=cosmo, matter_power_class=FakePower)
@@ -68,6 +93,20 @@ def describe_TwoHaloShearModel():
         assert np.all(esds >= 0)
         assert not np.any(np.isnan(esds))
         assert esds.shape == zs.shape + rs.shape
+
+
+def describe_TwoHaloModel():
+
+    @pytest.fixture
+    def two_halo_model(mocker):
+        mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
+        cosmo = maszcal.cosmology.CosmoParams()
+        model = maszcal.twohalo.TwoHaloModel(cosmo_params=cosmo, matter_power_class=FakePower)
+
+        model.NUM_INTERP_ZS = 3
+        model.NUM_INTERP_RADII = 4
+
+        return model
 
     def it_calculates_halo_matter_correlations(two_halo_model):
         zs = np.linspace(0, 1, 4)

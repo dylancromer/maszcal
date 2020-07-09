@@ -1,7 +1,7 @@
+from functools import partial
 from dataclasses import dataclass
 from types import MappingProxyType
 import numpy as np
-import scipy.integrate
 import astropy.units as u
 import projector
 import maszcal.interpolate
@@ -13,7 +13,7 @@ import maszcal.tinker
 
 
 @dataclass
-class TwoHaloShearModel:
+class TwoHaloModel:
     MIN_K = 1e-4
     MAX_K = 1e2
     NUM_KS = 800
@@ -37,7 +37,7 @@ class TwoHaloShearModel:
         self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
 
         if not self.comoving:
-            raise NotImplementedError('TwoHaloShearModel has not yet implemented a non-comoving option')
+            raise NotImplementedError('TwoHaloModel has not yet implemented a non-comoving option')
 
     def _init_tinker_bias(self):
         tinker_bias_model = maszcal.tinker.TinkerBias(
@@ -91,14 +91,6 @@ class TwoHaloShearModel:
         corr = np.moveaxis(corr, 0, -1)
         return 1 + corr
 
-    def _esd_radial_shape(self, rs, zs):
-        return projector.esd(rs, lambda radii: self._density_shape_interpolator(radii, zs), **self.projector_kwargs)
-
-    def _esd(self, rs, mus, zs):
-        bias = self._bias(mus, zs)[:, None]
-        esd_radial_shape = self._esd_radial_shape(rs, zs).T
-        return bias * esd_radial_shape
-
     def matter_density(self, zs):
         return (self.astropy_cosmology.Om(zs)
                 * self.astropy_cosmology.critical_density(zs)).to(u.Msun/u.Mpc**3).value
@@ -108,5 +100,49 @@ class TwoHaloShearModel:
         mm_corr = self._correlation_interpolator(rs, zs)
         return bias * mm_corr
 
+
+class TwoHaloShearModel(TwoHaloModel):
+    def _esd_radial_shape(self, rs, zs):
+        return projector.esd(rs, lambda radii: self._density_shape_interpolator(radii, zs), **self.projector_kwargs)
+
+    def _esd(self, rs, mus, zs):
+        bias = self._bias(mus, zs)[:, None]
+        esd_radial_shape = self._esd_radial_shape(rs, zs).T
+        return bias * esd_radial_shape
+
     def esd(self, rs, mus, zs):
         return self.matter_density(zs)[:, None] * self._esd(rs, mus, zs) * (u.Msun/u.Mpc**2).to(self.units)
+
+
+class TwoHaloConvergenceModel(TwoHaloModel):
+    CMB_REDSHIFT = 1100
+
+    def __post_init__(self):
+        self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
+        if not self.comoving:
+            raise NotImplementedError('TwoHaloModel has not yet implemented a non-comoving option')
+        self.sigma_crit = partial(
+            maszcal.cosmology.SigmaCrit(self.cosmo_params, units=self.units).sdc,
+            z_source=np.array([self.CMB_REDSHIFT]),
+        )
+
+    def _sd_radial_shape(self, rs, zs):
+        return projector.sd(rs, lambda radii: self._density_shape_interpolator(radii, zs), **self.projector_kwargs)
+
+    def __radius_space_kappa(self, rs, mus, zs):
+        bias = self._bias(mus, zs)[:, None]
+        sd_radial_shape = self._sd_radial_shape(rs, zs).T * (u.Msun/u.Mpc**2).to(self.units)
+        return bias * sd_radial_shape / self.sigma_crit(z_lens=zs)[:, None]
+
+    def _radius_space_kappa(self, rs, mus, zs):
+        return self.matter_density(zs)[:, None] * self.__radius_space_kappa(rs, mus, zs)
+
+    def _comoving_distance(self, z):
+        return self.astropy_cosmology.comoving_distance(z).to(u.Mpc).value
+
+    def kappa(self, thetas, mus, zs):
+        radii_of_z = [thetas * self._comoving_distance(z) for z in zs]
+        return np.array([
+            self._radius_space_kappa(rs, zs[i:i+1], mus[i:i+1])
+            for i, rs in enumerate(radii_of_z)
+        ]).squeeze()

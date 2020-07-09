@@ -29,13 +29,13 @@ class MatchingBaryonConvergenceModel(_core.MatchingBaryonModel):
     def _radius_space_kappa_total(self, rs, zs, mus, cons, alphas, betas, gammas, a_szs):
         return self._convergence.kappa_total(rs, zs, mus, cons, alphas, betas, gammas)
 
-    def _angular_diameter_distance(self, z):
-        return self.astropy_cosmology.angular_diameter_distance(z).to(u.Mpc).value
+    def _comoving_distance(self, z):
+        return self.astropy_cosmology.comoving_distance(z).to(u.Mpc).value
 
     def kappa_total(self, thetas, cons, alphas, betas, gammas, a_szs):
         mus = self.mu_from_sz_mu(np.log(self.sz_masses), a_szs).flatten()
         zs = np.repeat(self.redshifts, a_szs.size)
-        radii_of_z = [thetas * self._angular_diameter_distance(z) for z in zs]
+        radii_of_z = [thetas * self._comoving_distance(z) for z in zs]
         kappas = np.array([
             self._radius_space_kappa_total(rs, zs[i:i+1], mus[i:i+1], cons, alphas, betas, gammas, a_szs)
             for i, rs in enumerate(radii_of_z)

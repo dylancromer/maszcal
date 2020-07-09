@@ -33,7 +33,7 @@ def describe_MatchingBaryonModel():
 
         def the_plots_look_right(baryon_model):
             from_arcmin = 2 * np.pi / 360 / 60
-            thetas = np.logspace(-4, np.log10(15*from_arcmin), 30)
+            thetas = np.logspace(np.log10(0.05*from_arcmin), np.log10(15*from_arcmin), 30)
             cons = 3*np.ones(1)
             alphas = 0.5*np.ones(1)
             betas = np.linspace(2.8, 3.2, 3)

@@ -24,7 +24,7 @@ def describe_TwoHaloShearModel():
 
     def it_calculates_two_halo_esds(two_halo_model):
         zs = np.linspace(0, 1, 10)
-        mus = np.ones(1) * np.log(1e14)
+        mus = np.ones(10) * np.log(1e14)
         rs = np.logspace(-3, 3, 200)
 
         esds = two_halo_model.esd(rs, mus, zs)
@@ -55,5 +55,33 @@ def describe_TwoHaloShearModel():
         plt.xlabel(r'$R \; (\mathrm{Mpc}$)')
         plt.ylabel(r'$\xi$')
         plt.savefig('figs/test/halo_matter_correlation.svg')
+
+        plt.gcf().clear()
+
+
+def describe_TwoHaloConvergenceModel():
+
+    @pytest.fixture
+    def two_halo_model(mocker):
+        cosmo = maszcal.cosmology.CosmoParams()
+        model = maszcal.twohalo.TwoHaloConvergenceModel(cosmo_params=cosmo)
+        return model
+
+    def it_calculates_two_halo_esds(two_halo_model):
+        zs = np.linspace(0.01, 1, 10)
+        mus = np.ones(10) * np.log(1e14)
+        from_arcmin = 2 * np.pi / 360 / 60
+        thetas = np.logspace(-4, np.log10(15*from_arcmin), 200)
+
+        kappas = two_halo_model.kappa(thetas, mus, zs)
+
+        assert not np.any(np.isnan(kappas))
+        assert kappas.shape == zs.shape + thetas.shape
+
+        plt.plot(thetas, thetas[:, None] * kappas.T)
+        plt.xscale('log')
+        plt.xlabel(r'$\theta$')
+        plt.ylabel(r'$\theta \kappa(\theta)$')
+        plt.savefig('figs/test/two_halo_kappa.svg')
 
         plt.gcf().clear()
