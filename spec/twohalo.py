@@ -58,7 +58,7 @@ def describe_TwoHaloConvergenceModel():
         return model
 
     def it_calculates_two_halo_kappas(two_halo_model):
-        zs = np.linspace(0, 1, 4)
+        zs = np.linspace(0.1, 1, 4)
         mus = np.linspace(32, 33, 4)
         from_arcmin = 2 * np.pi / 360 / 60
         thetas = np.logspace(-4, np.log10(15*from_arcmin), 2)

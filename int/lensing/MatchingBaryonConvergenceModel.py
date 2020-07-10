@@ -22,7 +22,7 @@ def describe_MatchingBaryonModel():
             NUM_CLUSTERS = 10
             sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
             zs = np.random.rand(NUM_CLUSTERS)
-            weights = np.random.rand(NUM_CLUSTERS)
+            weights = np.ones(NUM_CLUSTERS)
             cosmo_params = maszcal.cosmology.CosmoParams()
             return MatchingBaryonConvergenceModel(
                 sz_masses=sz_masses,

@@ -68,8 +68,8 @@ def describe_TwoHaloConvergenceModel():
         return model
 
     def it_calculates_two_halo_esds(two_halo_model):
-        zs = np.linspace(0.01, 1, 10)
-        mus = np.ones(10) * np.log(1e14)
+        zs = np.linspace(0.1, 1, 4)
+        mus = np.ones(4) * np.log(1e14)
         from_arcmin = 2 * np.pi / 360 / 60
         thetas = np.logspace(-4, np.log10(15*from_arcmin), 200)
 

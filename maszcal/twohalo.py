@@ -89,7 +89,7 @@ class TwoHaloModel:
     def _density_shape_interpolator(self, rs, zs):
         corr = self._correlation_interpolator(rs.flatten(), zs).reshape(zs.shape + rs.shape)
         corr = np.moveaxis(corr, 0, -1)
-        return 1 + corr
+        return corr
 
     def matter_density(self, zs):
         return (self.astropy_cosmology.Om(zs)
