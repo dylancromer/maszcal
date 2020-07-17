@@ -187,6 +187,39 @@ class MatchingGnfwBaryonConvergence:
         ) / self.sigma_crit(z_lens=zs)[:, None, None]
 
 
+@dataclass
+class MiscenteredMatchingGnfwBaryonConvergence(MatchingGnfwBaryonConvergence):
+    CMB_REDSHIFT = 1100
+
+    cosmo_params: maszcal.cosmology.CosmoParams
+    mass_definition: str
+    delta: float
+    units: u.Quantity
+    comoving_radii: bool
+    nfw_class: object
+    gnfw_class: object
+    sd_func: object
+    miscentering_func: object
+
+    def _init_gnfw(self):
+        self.gnfw = self.gnfw_class(
+            cosmo_params=self.cosmo_params,
+            mass_definition=self.mass_definition,
+            delta=self.delta,
+            units=self.units,
+            comoving_radii=self.comoving_radii,
+            nfw_model=self.nfw_model,
+            miscentering_func=self.miscentering_func,
+        )
+
+    def kappa_total(self, rs, zs, mus, cons, alphas, betas, gammas, misc_scales):
+        return np.moveaxis(
+            self.sd_func(rs, lambda r: self.gnfw.rho_tot(r, zs, mus, cons, alphas, betas, gammas, misc_scales)) * (u.Msun/u.Mpc**2).to(self.units),
+            0,
+            1,
+        ) / self.sigma_crit(z_lens=zs)[:, None, None]
+
+
 class MatchingGnfwBaryonShear(GnfwBaryonShear):
     def delta_sigma_bary(self, rs, zs, mus, cons, alphas, betas, gammas):
         '''

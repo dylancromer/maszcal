@@ -7,6 +7,37 @@ import maszcal.nfw
 import maszcal.concentration
 
 
+def describe_MatchingMiscenteredGnfw():
+
+    @pytest.fixture
+    def nfw_model():
+        return maszcal.nfw.MatchingNfwModel()
+
+    @pytest.fixture
+    def gnfw_model(nfw_model):
+        return maszcal.gnfw.MatchingMiscenteredGnfw(
+            cosmo_params=maszcal.cosmology.CosmoParams(),
+            mass_definition='mean',
+            delta=200,
+            units=u.Msun/u.pc**2,
+            comoving_radii=True,
+            nfw_model=nfw_model,
+        )
+
+    def it_calculates_the_cdm_and_baryonic_densities(gnfw_model):
+        rs = np.logspace(-1, 1, 5)
+        mus = np.linspace(32, 33, 4)
+        zs = np.linspace(0, 1, 4)
+        cons = np.linspace(2, 3, 3)
+        alphas = np.linspace(0.5, 1, 3)
+        betas = np.linspace(3, 4, 3)
+        gammas = np.linspace(0.1, 0.3, 3)
+        misc_scales = np.logspace(-4, -1, 3)
+        rho_tot = gnfw_model.rho_tot(rs, zs, mus, cons, alphas, betas, gammas, misc_scales)
+        assert rho_tot.shape == (5, 4, 3)
+        assert np.all(rho_tot > 0)
+
+
 def describe_Gnfw():
 
     @pytest.fixture

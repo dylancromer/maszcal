@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import numpy as np
 import astropy.units as u
 import projector
+import meso
 import maszcal.nfw
 import maszcal.concentration
 import maszcal.matter
@@ -12,6 +13,7 @@ import maszcal.lensing._core as _core
 @dataclass
 class MatchingBaryonConvergenceModel(_core.MatchingBaryonModel):
     convergence_class: object = _core.MatchingGnfwBaryonConvergence
+    gnfw_class: object = maszcal.gnfw.MatchingConvergenceGnfw
     sd_func: object = projector.sd
 
     def __post_init__(self):
@@ -22,7 +24,7 @@ class MatchingBaryonConvergenceModel(_core.MatchingBaryonModel):
             units=self.units,
             comoving_radii=self.comoving_radii,
             nfw_class=maszcal.nfw.MatchingNfwModel,
-            gnfw_class=maszcal.gnfw.MatchingConvergenceGnfw,
+            gnfw_class=self.gnfw_class,
             sd_func=self.sd_func,
         )
         self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
@@ -47,6 +49,48 @@ class MatchingBaryonConvergenceModel(_core.MatchingBaryonModel):
         'SHAPE a_sz, r, params'
         num_clusters = self.sz_masses.size
         profiles = self.kappa_total(thetas, cons, alphas, betas, gammas, a_szs).reshape(num_clusters, a_szs.size, thetas.size, -1)
+        weights = self.normed_lensing_weights(a_szs).reshape(num_clusters, a_szs.size)
+        return (weights[:, :, None, None] * profiles).sum(axis=0)
+
+
+@dataclass
+class MiscenteredMatchingBaryonConvergenceModel(MatchingBaryonConvergenceModel):
+    convergence_class: object = _core.MiscenteredMatchingGnfwBaryonConvergence
+    gnfw_class: object = maszcal.gnfw.MatchingMiscenteredGnfw
+    sd_func: object = projector.sd
+    miscentering_func: object = meso.Rho().miscenter
+
+    def __post_init__(self):
+        self._convergence = self.convergence_class(
+            cosmo_params=self.cosmo_params,
+            mass_definition=self.mass_definition,
+            delta=self.delta,
+            units=self.units,
+            comoving_radii=self.comoving_radii,
+            nfw_class=maszcal.nfw.MatchingNfwModel,
+            gnfw_class=self.gnfw_class,
+            sd_func=self.sd_func,
+            miscentering_func=self.miscentering_func,
+        )
+        self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
+
+    def _radius_space_kappa_total(self, rs, zs, mus, cons, alphas, betas, gammas, misc_scales, a_szs):
+        return self._convergence.kappa_total(rs, zs, mus, cons, alphas, betas, gammas, misc_scales)
+
+    def kappa_total(self, thetas, cons, alphas, betas, gammas, misc_scales, a_szs):
+        mus = self.mu_from_sz_mu(np.log(self.sz_masses), a_szs).flatten()
+        zs = np.repeat(self.redshifts, a_szs.size)
+        radii_of_z = [thetas * self._comoving_distance(z) for z in zs]
+        kappas = np.array([
+            self._radius_space_kappa_total(rs, zs[i:i+1], mus[i:i+1], cons, alphas, betas, gammas, misc_scales, a_szs)
+            for i, rs in enumerate(radii_of_z)
+        ]).squeeze()
+        return kappas.reshape(thetas.shape + zs.shape + (-1,))
+
+    def stacked_kappa(self, thetas, cons, alphas, betas, gammas, misc_scales, a_szs):
+        'SHAPE a_sz, r, params'
+        num_clusters = self.sz_masses.size
+        profiles = self.kappa_total(thetas, cons, alphas, betas, gammas, misc_scales, a_szs).reshape(num_clusters, a_szs.size, thetas.size, -1)
         weights = self.normed_lensing_weights(a_szs).reshape(num_clusters, a_szs.size)
         return (weights[:, :, None, None] * profiles).sum(axis=0)
 

@@ -16,6 +16,11 @@ def fake_projector_sd(rs, rho_func):
     return np.ones(rhos.shape)
 
 
+def fake_miscentering_func(rs, rho_func, prob_func):
+    rhos = rho_func(rs)
+    return np.ones(rhos.shape + (1,))
+
+
 class FakeMatchingConModel:
     def __init__(self, mass_def, cosmology=None):
         pass
@@ -25,6 +30,40 @@ class FakeMatchingConModel:
 
     def convert_mass_def(self, masses, redshifts, old_def, new_def):
         return np.ones((masses.size))
+
+
+def describe_MiscenteredMatchingBaryonConvergenceModel():
+
+    def describe_stacked_kappa():
+
+        @pytest.fixture
+        def model():
+            NUM_CLUSTERS = 10
+            return maszcal.lensing.MiscenteredMatchingBaryonConvergenceModel(
+                sz_masses=2e13*np.random.randn(NUM_CLUSTERS) + 2e14,
+                redshifts=np.random.rand(NUM_CLUSTERS),
+                lensing_weights=np.random.rand(NUM_CLUSTERS),
+                cosmo_params=maszcal.cosmology.CosmoParams(),
+                mass_definition='mean',
+                delta=200,
+                units=u.Msun/u.pc**2,
+                sd_func=fake_projector_sd,
+                miscentering_func=fake_miscentering_func,
+            )
+
+        def it_calculates_stacked_kappa_profiles(model):
+            thetas = np.logspace(-4, np.log(15 * (2*np.pi/360)/(60)), 8)
+            cons = 2*np.ones(2)
+            alphas = np.ones(2)
+            betas = np.ones(2)
+            gammas = np.ones(2)
+            misc_scales = np.ones(2) * 1e-3
+            a_szs = np.array([-1, 0, 1])
+
+            sds = model.stacked_kappa(thetas, cons, alphas, betas, gammas, misc_scales, a_szs)
+
+            assert np.all(sds >= 0)
+            assert sds.shape == (3, 8, 2)
 
 
 def describe_MatchingBaryonConvergenceModel():

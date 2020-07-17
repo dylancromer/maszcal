@@ -2,6 +2,7 @@ from functools import partial
 from dataclasses import dataclass
 import numpy as np
 import astropy.units as u
+import meso
 import maszcal.cosmology
 import maszcal.mathutils
 
@@ -250,54 +251,53 @@ class MatchingGnfw(Gnfw):
         return norm * profile_shape
 
 
-class MatchingConvergenceGnfw(Gnfw):
-    CMB_REDSHIFT = 1100
+@dataclass
+class MatchingMiscenteredGnfw:
+    cosmo_params: maszcal.cosmology.CosmoParams
+    mass_definition: str
+    delta: float
+    units: u.Quantity
+    comoving_radii: bool
+    nfw_model: object
+    miscentering_func: object = meso.Rho().miscenter
+
+    def _init_gnfw(self):
+        self.gnfw = MatchingGnfw(
+            cosmo_params=self.cosmo_params,
+            mass_definition=self.mass_definition,
+            delta=self.delta,
+            units=self.units,
+            comoving_radii=self.comoving_radii,
+            nfw_model=self.nfw_model,
+        )
 
     def __post_init__(self):
-        self.baryon_frac = self.cosmo_params.omega_bary/self.cosmo_params.omega_matter
-        self.sigma_crit = partial(
-            maszcal.cosmology.SigmaCrit(self.cosmo_params, units=self.units).sdc,
-            z_source=np.array([self.CMB_REDSHIFT]),
+        self._init_gnfw()
+
+    def _move_radius_axes_to_front(self, arr, start, stop):
+        return self.gnfw._move_radius_axes_to_front(arr, start, stop)
+
+    def _rho_tot(self, rs, zs, mus, cons, alphas, betas, gammas):
+        rho_cdm = self._move_radius_axes_to_front(self.gnfw.rho_cdm(rs, zs, mus, cons), 1, -1)
+        return self.gnfw.rho_bary(rs, zs, mus, cons, alphas, betas, gammas) + rho_cdm
+
+    def _miscentering_dist(self, rs, misc_scales):
+        misc_scales = maszcal.mathutils.atleast_kd(misc_scales, rs.ndim+1, append_dims=False)
+        rs = rs[..., None]
+        return (rs/misc_scales**2) * np.exp(-(rs/misc_scales)**2 / 2)
+
+    def rho_tot(self, rs, zs, mus, cons, alphas, betas, gammas, misc_scales):
+        '''
+        SHAPE mu, z, r, params
+        '''
+        return self.miscentering_func(
+            rs,
+            lambda r: self._rho_tot(r, zs, mus, cons, alphas, betas, gammas),
+            lambda r: self._miscentering_dist(r, misc_scales),
         )
 
-    def gnfw_shape(self, rs, zs, mus, alphas, betas, gammas):
-        '''
-        SHAPE cluster, rs.shape, params
-        '''
-        ys = (rs[None, ...]/maszcal.mathutils.atleast_kd(self._r_delta(zs, mus), rs.ndim+1)) / self.CORE_RADIUS
-        ys = ys[..., None]
 
-        alphas = alphas.reshape((rs.ndim + 1)*(1,) + (alphas.size,))
-        betas = betas.reshape((rs.ndim + 1)*(1,) + (betas.size,))
-        gammas = gammas.reshape((rs.ndim + 1)*(1,) + (gammas.size,))
-
-        return 1 / (ys**gammas * (1 + ys**(1/alphas))**((betas-gammas) * alphas))
-
-    def _gnfw_norm(self, zs, mus, cons, alphas, betas, gammas):
-        '''
-        SHAPE cluster, params
-        '''
-        rs = np.linspace(
-            self.MIN_INTEGRATION_RADIUS,
-            self.MAX_INTEGRATION_RADIUS,
-            self.NUM_INTEGRATION_RADII,
-        )
-
-        drs = np.gradient(rs)
-
-        top_integrand = self._rho_nfw(rs, zs, mus, cons) * rs[None, :, None]**2
-        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[None, :, None]**2
-
-        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-2)
-                / maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=-2))
-
-    def _rho_gnfw(self, rs, zs, mus, cons, alphas, betas, gammas):
-        norm = self._gnfw_norm(zs, mus, cons, alphas, betas, gammas)
-        norm = norm.reshape(rs.ndim*(1,) + norm.shape)
-        profile_shape = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas)
-        profile_shape = self._move_radius_axes_to_front(profile_shape, 1, -1)
-        return norm * profile_shape
-
+class MatchingConvergenceGnfw(MatchingGnfw):
     def _rho_tot(self, rs, zs, mus, cons, alphas, betas, gammas):
         rho_cdm = self._move_radius_axes_to_front(self.rho_cdm(rs, zs, mus, cons), 1, -1)
         return self.rho_bary(rs, zs, mus, cons, alphas, betas, gammas) + rho_cdm
