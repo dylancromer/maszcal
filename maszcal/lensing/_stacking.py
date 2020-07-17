@@ -7,6 +7,7 @@ from maszcal.cosmo_utils import get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
 from maszcal.concentration import ConModel
 import maszcal.nfw
+import maszcal.gnfw
 import maszcal.matter
 import maszcal.mathutils
 import maszcal.ioutils
@@ -40,6 +41,7 @@ class BaryonShearModel:
             units=self.units,
             comoving_radii=self.comoving_radii,
             nfw_class=maszcal.nfw.NfwModel,
+            gnfw_class=maszcal.gnfw.Gnfw,
             esd_func=self.esd_func,
         )
 
@@ -90,6 +92,7 @@ class BaryonCmShearModel(BaryonShearModel):
             units=self.units,
             comoving_radii=self.comoving_radii,
             nfw_class=maszcal.nfw.NfwCmModel,
+            gnfw_class=maszcal.gnfw.CmGnfw,
             con_class=self.con_class,
             esd_func=self.esd_func,
         )

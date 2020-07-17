@@ -31,6 +31,7 @@ class Matching2HaloShearModel:
             units=self.units,
             comoving_radii=self.comoving_radii,
             nfw_class=maszcal.nfw.MatchingNfwModel,
+            gnfw_class=maszcal.gnfw.MatchingConvergenceGnfw,
             esd_func=self.esd_func,
         )
 
@@ -94,6 +95,7 @@ class Matching2HaloConvergenceModel:
             units=self.units,
             comoving_radii=self.comoving_radii,
             nfw_class=maszcal.nfw.MatchingNfwModel,
+            gnfw_class=maszcal.gnfw.MatchingConvergenceGnfw,
             sd_func=self.sd_func,
         )
 

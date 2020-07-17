@@ -10,14 +10,18 @@ import maszcal.concentration
 def describe_Gnfw():
 
     @pytest.fixture
-    def gnfw_model():
+    def nfw_model():
+        return maszcal.nfw.NfwModel()
+
+    @pytest.fixture
+    def gnfw_model(nfw_model):
         return maszcal.gnfw.Gnfw(
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
             units=u.Msun/u.pc**2,
             comoving_radii=True,
-            nfw_class=maszcal.nfw.NfwModel,
+            nfw_model=nfw_model,
         )
 
     def it_calculates_the_cdm_and_baryonic_densities(gnfw_model):
@@ -77,14 +81,18 @@ class FakeConModel:
 def describe_CmGnfw():
 
     @pytest.fixture
-    def gnfw_model():
+    def nfw_model():
+        return maszcal.nfw.NfwCmModel()
+
+    @pytest.fixture
+    def gnfw_model(nfw_model):
         return maszcal.gnfw.CmGnfw(
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
             units=u.Msun/u.pc**2,
             comoving_radii=True,
-            nfw_class=maszcal.nfw.NfwCmModel,
+            nfw_model=nfw_model,
             con_class=FakeConModel,
         )
 

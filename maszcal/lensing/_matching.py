@@ -22,6 +22,7 @@ class MatchingBaryonConvergenceModel(_core.MatchingBaryonModel):
             units=self.units,
             comoving_radii=self.comoving_radii,
             nfw_class=maszcal.nfw.MatchingNfwModel,
+            gnfw_class=maszcal.gnfw.MatchingConvergenceGnfw,
             sd_func=self.sd_func,
         )
         self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
@@ -63,6 +64,7 @@ class MatchingBaryonShearModel(_core.MatchingBaryonModel):
             units=self.units,
             comoving_radii=self.comoving_radii,
             nfw_class=maszcal.nfw.MatchingNfwModel,
+            gnfw_class=maszcal.gnfw.MatchingGnfw,
             esd_func=self.esd_func,
         )
 
@@ -93,6 +95,7 @@ class MatchingCmBaryonShearModel(MatchingBaryonShearModel):
             units=self.units,
             comoving_radii=self.comoving_radii,
             nfw_class=maszcal.nfw.MatchingCmNfwModel,
+            gnfw_class=maszcal.gnfw.MatchingCmGnfw,
             con_class=self.con_class,
             esd_func=self.esd_func,
         )

@@ -33,6 +33,7 @@ class SingleMassBaryonShearModel:
             units=self.units,
             comoving_radii=self.comoving_radii,
             nfw_class=maszcal.nfw.SingleMassNfwModel,
+            gnfw_class=maszcal.gnfw.SingleMassGnfw,
             esd_func=projector.esd,
         )
 

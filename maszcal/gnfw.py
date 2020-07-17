@@ -1,3 +1,4 @@
+from functools import partial
 from dataclasses import dataclass
 import numpy as np
 import astropy.units as u
@@ -17,7 +18,7 @@ class Gnfw:
     delta: float
     units: u.Quantity
     comoving_radii: bool
-    nfw_class: object
+    nfw_model: object
 
     def __post_init__(self):
         self.baryon_frac = self.cosmo_params.omega_bary/self.cosmo_params.omega_matter
@@ -25,25 +26,12 @@ class Gnfw:
     def mass_from_mu(self, mu):
         return np.exp(mu)
 
-    def _init_nfw(self):
-        self.nfw_model = self.nfw_class(
-            cosmo_params=self.cosmo_params,
-            units=self.units,
-            delta=self.delta,
-            mass_definition=self.mass_definition,
-            comoving=self.comoving_radii,
-        )
-
     def _r_delta(self, zs, mus):
         '''
         SHAPE mu, z
         '''
         masses = self.mass_from_mu(mus)
-        try:
-            return self.nfw_model.radius_delta(zs, masses)
-        except AttributeError:
-            self._init_nfw()
-            return self.nfw_model.radius_delta(zs, masses)
+        return self.nfw_model.radius_delta(zs, masses)
 
     def gnfw_shape(self, rs, zs, mus, alphas, betas, gammas):
         '''
@@ -94,11 +82,7 @@ class Gnfw:
     def _rho_nfw(self, rs, zs, mus, cons):
         masses = self.mass_from_mu(mus)
 
-        try:
-            return self.nfw_model.rho(rs, zs, masses, cons)
-        except AttributeError:
-            self._init_nfw()
-            return self.nfw_model.rho(rs, zs, masses, cons)
+        return self.nfw_model.rho(rs, zs, masses, cons)
 
     def rho_bary(self, rs, zs, mus, cons, alphas, betas, gammas):
         '''
@@ -119,11 +103,7 @@ class SingleMassGnfw(Gnfw):
         SHAPE z, params
         '''
         masses = self.mass_from_mu(mus)
-        try:
-            return self.nfw_model.radius_delta(zs, masses).T
-        except AttributeError:
-            self._init_nfw()
-            return self.nfw_model.radius_delta(zs, masses).T
+        return self.nfw_model.radius_delta(zs, masses).T
 
     def gnfw_shape(self, rs, zs, mus, alphas, betas, gammas):
         '''
@@ -173,7 +153,7 @@ class CmGnfw(Gnfw):
     units: u.Quantity
     comoving_radii: bool
     con_class: object
-    nfw_class: object
+    nfw_model: object
 
     def _init_con_model(self):
         mass_def = str(self.delta) + self.mass_definition[0]
@@ -214,12 +194,7 @@ class CmGnfw(Gnfw):
     def _rho_nfw(self, rs, zs, mus):
         masses = self.mass_from_mu(mus)
         cons = self._con(zs, masses)
-
-        try:
-            return self.nfw_model.rho(rs, zs, masses, cons)
-        except AttributeError:
-            self._init_nfw()
-            return self.nfw_model.rho(rs, zs, masses, cons)
+        return self.nfw_model.rho(rs, zs, masses, cons)
 
     def rho_bary(self, rs, zs, mus, alphas, betas, gammas):
         '''
@@ -235,11 +210,48 @@ class CmGnfw(Gnfw):
 
 
 @dataclass
+class MatchingGnfw(Gnfw):
+    def gnfw_shape(self, rs, zs, mus, alphas, betas, gammas):
+        '''
+        SHAPE cluster, rs.shape, params
+        '''
+        ys = (rs[None, ...]/maszcal.mathutils.atleast_kd(self._r_delta(zs, mus), rs.ndim+1)) / self.CORE_RADIUS
+        ys = ys[..., None]
+
+        alphas = alphas.reshape((rs.ndim + 1)*(1,) + (alphas.size,))
+        betas = betas.reshape((rs.ndim + 1)*(1,) + (betas.size,))
+        gammas = gammas.reshape((rs.ndim + 1)*(1,) + (gammas.size,))
+
+        return 1 / (ys**gammas * (1 + ys**(1/alphas))**((betas-gammas) * alphas))
+
+    def _gnfw_norm(self, zs, mus, cons, alphas, betas, gammas):
+        '''
+        SHAPE cluster, params
+        '''
+        rs = np.linspace(
+            self.MIN_INTEGRATION_RADIUS,
+            self.MAX_INTEGRATION_RADIUS,
+            self.NUM_INTEGRATION_RADII,
+        )
+
+        drs = np.gradient(rs)
+
+        top_integrand = self._rho_nfw(rs, zs, mus, cons) * rs[None, :, None]**2
+        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[None, :, None]**2
+
+        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-2)
+                / maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=-2))
+
+    def _rho_gnfw(self, rs, zs, mus, cons, alphas, betas, gammas):
+        norm = self._gnfw_norm(zs, mus, cons, alphas, betas, gammas)
+        norm = norm.reshape(rs.ndim*(1,) + norm.shape)
+        profile_shape = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas)
+        profile_shape = self._move_radius_axes_to_front(profile_shape, 1, -1)
+        return norm * profile_shape
+
+
 class MatchingConvergenceGnfw(Gnfw):
     CMB_REDSHIFT = 1100
-
-    nfw_class: object
-    sd_func: object
 
     def __post_init__(self):
         self.baryon_frac = self.cosmo_params.omega_bary/self.cosmo_params.omega_matter
@@ -294,17 +306,10 @@ class MatchingConvergenceGnfw(Gnfw):
         '''
         SHAPE mu, z, r, params
         '''
-        try:
-            return self._rho_tot(rs, zs, mus, cons, alphas, betas, gammas)
-        except AttributeError:
-            self._init_nfw()
-            return self._rho_tot(rs, zs, mus, cons, alphas, betas, gammas)
+        return self._rho_tot(rs, zs, mus, cons, alphas, betas, gammas)
 
 
-@dataclass
 class MatchingCmGnfw(CmGnfw):
-    nfw_class: object
-
     def _init_con_model(self):
         mass_def = str(self.delta) + self.mass_definition[0]
         self._con_model = self.con_class(mass_def, cosmology=self.cosmo_params)
