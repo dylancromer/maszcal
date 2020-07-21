@@ -2,7 +2,6 @@ from functools import partial
 from dataclasses import dataclass
 import numpy as np
 from astropy import units as u
-import projector
 import maszcal.nfw
 import maszcal.gnfw
 import maszcal.matter
@@ -45,7 +44,7 @@ class GnfwBaryonShear:
     def __post_init__(self):
         self._init_nfw()
         self._init_gnfw()
-        self.baryon_frac = self.gnfw.baryon_frac
+        self.baryon_frac = self.cosmo_params.omega_bary/self.cosmo_params.omega_matter
 
     def mass_from_mu(self, mu):
         return self.gnfw.mass_from_mu(mu)
@@ -227,6 +226,40 @@ class MatchingGnfwBaryonShear(GnfwBaryonShear):
         '''
         return np.moveaxis(
             self.esd_func(rs, lambda r: self.gnfw.rho_bary(r, zs, mus, cons, alphas, betas, gammas)) * (u.Msun/u.Mpc**2).to(self.units),
+            0,
+            1,
+        )
+
+
+@dataclass
+class MiscenteredMatchingGnfwBaryonShear(MatchingGnfwBaryonShear):
+    cosmo_params: maszcal.cosmology.CosmoParams
+    mass_definition: str
+    delta: float
+    units: u.Quantity
+    comoving_radii: bool
+    nfw_class: object
+    gnfw_class: object
+    esd_func: object
+    miscentering_func: object
+
+    def _init_gnfw(self):
+        self.gnfw = self.gnfw_class(
+            cosmo_params=self.cosmo_params,
+            mass_definition=self.mass_definition,
+            delta=self.delta,
+            units=self.units,
+            comoving_radii=self.comoving_radii,
+            nfw_model=self.nfw_model,
+            miscentering_func=self.miscentering_func,
+        )
+
+    def delta_sigma_total(self, rs, zs, mus, cons, alphas, betas, gammas, misc_scales):
+        '''
+        SHAPE cluster, r, params
+        '''
+        return np.moveaxis(
+            self.esd_func(rs, lambda r: self.gnfw.rho_tot(r, zs, mus, cons, alphas, betas, gammas, misc_scales)) * (u.Msun/u.Mpc**2).to(self.units),
             0,
             1,
         )

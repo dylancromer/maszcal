@@ -97,6 +97,10 @@ class Gnfw:
         '''
         return (1-self.baryon_frac) * self._rho_nfw(rs, zs, mus, cons)
 
+    def _rho_tot(self, rs, zs, mus, cons, alphas, betas, gammas):
+        rho_cdm = self._move_radius_axes_to_front(self.rho_cdm(rs, zs, mus, cons), 1, -1)
+        return self.rho_bary(rs, zs, mus, cons, alphas, betas, gammas) + rho_cdm
+
 
 class SingleMassGnfw(Gnfw):
     def _r_delta(self, zs, mus):

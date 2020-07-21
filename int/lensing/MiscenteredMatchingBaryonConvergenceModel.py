@@ -38,7 +38,7 @@ def describe_MiscenteredMatchingBaryonConvergenceModel():
             alphas = 0.5*np.ones(1)
             betas = 3.8*np.ones(1)
             gammas = 0.5*np.ones(1)
-            miscenter_scales = np.logspace(1e-3, 1e-2, 3)
+            miscenter_scales = np.logspace(1e-2, 8e-1, 4)
             a_szs = 0.3*np.ones(1)
 
             sds = baryon_model.stacked_kappa(thetas, cons, alphas, betas, gammas, miscenter_scales, a_szs)

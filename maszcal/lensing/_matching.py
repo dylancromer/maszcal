@@ -98,6 +98,7 @@ class MiscenteredMatchingBaryonConvergenceModel(MatchingBaryonConvergenceModel):
 @dataclass
 class MatchingBaryonShearModel(_core.MatchingBaryonModel):
     shear_class: object = _core.MatchingGnfwBaryonShear
+    gnfw_class: object = maszcal.gnfw.MatchingGnfw
     esd_func: object = projector.esd
 
     def __post_init__(self):
@@ -108,7 +109,7 @@ class MatchingBaryonShearModel(_core.MatchingBaryonModel):
             units=self.units,
             comoving_radii=self.comoving_radii,
             nfw_class=maszcal.nfw.MatchingNfwModel,
-            gnfw_class=maszcal.gnfw.MatchingGnfw,
+            gnfw_class=self.gnfw_class,
             esd_func=self.esd_func,
         )
 
@@ -123,6 +124,40 @@ class MatchingBaryonShearModel(_core.MatchingBaryonModel):
         profiles = self.delta_sigma_total(rs, cons, alphas, betas, gammas, a_szs).reshape(num_clusters, a_szs.size, rs.size, -1)
         weights = self.normed_lensing_weights(a_szs).reshape(num_clusters, a_szs.size)
         return (weights[:, :, None, None] * profiles).sum(axis=0)
+
+
+@dataclass
+class MiscenteredMatchingBaryonShearModel(MatchingBaryonShearModel):
+    shear_class: object = _core.MiscenteredMatchingGnfwBaryonShear
+    gnfw_class: object = maszcal.gnfw.MatchingMiscenteredGnfw
+    esd_func: object = projector.esd
+    miscentering_func: object = meso.Rho().miscenter
+
+    def __post_init__(self):
+        self._shear = self.shear_class(
+            cosmo_params=self.cosmo_params,
+            mass_definition=self.mass_definition,
+            delta=self.delta,
+            units=self.units,
+            comoving_radii=self.comoving_radii,
+            nfw_class=maszcal.nfw.MatchingNfwModel,
+            gnfw_class=self.gnfw_class,
+            esd_func=self.esd_func,
+            miscentering_func=self.miscentering_func,
+        )
+
+    def delta_sigma_total(self, rs, cons, alphas, betas, gammas, misc_scales, a_szs):
+        mus = self.mu_from_sz_mu(np.log(self.sz_masses), a_szs).flatten()
+        zs = np.repeat(self.redshifts, a_szs.size)
+        return self._shear.delta_sigma_total(rs, zs, mus, cons, alphas, betas, gammas, misc_scales)
+
+    def stacked_delta_sigma(self, rs, cons, alphas, betas, gammas, misc_scales, a_szs):
+        'SHAPE a_sz, r, params'
+        num_clusters = self.sz_masses.size
+        profiles = self.delta_sigma_total(rs, cons, alphas, betas, gammas, misc_scales, a_szs).reshape(num_clusters, a_szs.size, rs.size, -1)
+        weights = self.normed_lensing_weights(a_szs).reshape(num_clusters, a_szs.size)
+        return (weights[:, :, None, None] * profiles).sum(axis=0)
+
 
 
 @dataclass
