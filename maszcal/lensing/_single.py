@@ -4,7 +4,7 @@ from astropy import units as u
 import projector
 from maszcal.cosmo_utils import get_astropy_cosmology
 from maszcal.cosmology import CosmoParams
-import maszcal.nfw
+import maszcal.density
 import maszcal.matter
 import maszcal.mathutils
 import maszcal.ioutils
@@ -15,26 +15,16 @@ import maszcal.lensing._core as _core
 @dataclass
 class SingleMassBaryonShearModel:
     redshifts: np.ndarray
+    rho_func: object
     units: u.Quantity = u.Msun/u.pc**2
-    comoving_radii: bool = True
-    delta: float = 200
-    mass_definition: str = 'mean'
-    cosmo_params: object = maszcal.defaults.DefaultCosmology()
-    shear_class: object = _core.SingleMassGnfwBaryonShear
+    shear_class: object = _core.Shear
+    esd_func: object = projector.esd
 
     def __post_init__(self):
-        if isinstance(self.cosmo_params, maszcal.defaults.DefaultCosmology):
-            self.cosmo_params = CosmoParams()
-
         self._shear = self.shear_class(
-            cosmo_params=self.cosmo_params,
-            mass_definition=self.mass_definition,
-            delta=self.delta,
+            rho_func=self.rho_func,
             units=self.units,
-            comoving_radii=self.comoving_radii,
-            nfw_class=maszcal.nfw.SingleMassNfwModel,
-            gnfw_class=maszcal.gnfw.SingleMassGnfw,
-            esd_func=projector.esd,
+            esd_func=self.esd_func,
         )
 
     def delta_sigma(self, rs, mus, cons, alphas, betas, gammas):
@@ -66,7 +56,7 @@ class SingleMassNfwShearModel:
         self.astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
 
     def _init_nfw(self):
-        self.nfw_model = maszcal.nfw.NfwModel(
+        self.nfw_model = maszcal.density.NfwModel(
             cosmo_params=self.cosmo_params,
             units=self.units,
             delta=self.delta,

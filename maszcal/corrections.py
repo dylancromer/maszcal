@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import numpy as np
 import astropy.units as u
 import projector
-import maszcal.nfw
+import maszcal.density
 import maszcal.cosmology
 import maszcal.lensing
 import maszcal.mathutils
@@ -14,6 +14,7 @@ class Matching2HaloShearModel:
     sz_masses: np.ndarray
     redshifts: np.ndarray
     lensing_weights: np.ndarray
+    one_halo_rho_func: object
     one_halo_shear_class: object
     two_halo_term_function: object
     cosmo_params: maszcal.cosmology.CosmoParams = maszcal.cosmology.CosmoParams()
@@ -25,18 +26,17 @@ class Matching2HaloShearModel:
 
     def __post_init__(self):
         self._one_halo_shear = self.one_halo_shear_class(
-            cosmo_params=self.cosmo_params,
-            mass_definition=self.mass_definition,
-            delta=self.delta,
+            rho_func=self.one_halo_rho_func,
             units=self.units,
-            comoving_radii=self.comoving_radii,
-            nfw_class=maszcal.nfw.MatchingNfwModel,
-            gnfw_class=maszcal.gnfw.MatchingConvergenceGnfw,
             esd_func=self.esd_func,
         )
 
     def _one_halo_delta_sigma(self, zs, mus, *args):
-        return self._one_halo_shear.delta_sigma_total(self.radii, zs, mus, *args)
+        return np.moveaxis(
+            self._one_halo_shear.delta_sigma_total(self.radii, zs, mus, *args),
+            0,
+            1,
+        )
 
     def normed_lensing_weights(self, a_szs):
         return np.repeat(
@@ -78,6 +78,7 @@ class Matching2HaloConvergenceModel:
     sz_masses: np.ndarray
     redshifts: np.ndarray
     lensing_weights: np.ndarray
+    one_halo_rho_func: object
     one_halo_convergence_class: object
     two_halo_term_function: object
     cosmo_params: maszcal.cosmology.CosmoParams = maszcal.cosmology.CosmoParams()
@@ -89,18 +90,18 @@ class Matching2HaloConvergenceModel:
 
     def __post_init__(self):
         self._one_halo_convergence = self.one_halo_convergence_class(
+            rho_func=self.one_halo_rho_func,
             cosmo_params=self.cosmo_params,
-            mass_definition=self.mass_definition,
-            delta=self.delta,
             units=self.units,
-            comoving_radii=self.comoving_radii,
-            nfw_class=maszcal.nfw.MatchingNfwModel,
-            gnfw_class=maszcal.gnfw.MatchingConvergenceGnfw,
             sd_func=self.sd_func,
         )
 
     def _one_halo_kappa(self, zs, mus, *args):
-        return self._one_halo_convergence.kappa_total(self.thetas, zs, mus, *args)
+        return np.moveaxis(
+            self._one_halo_convergence.kappa_total(self.thetas, zs, mus, *args),
+            0,
+            1,
+        )
 
     def normed_lensing_weights(self, a_szs):
         return np.repeat(

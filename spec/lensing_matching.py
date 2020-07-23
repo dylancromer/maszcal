@@ -21,15 +21,8 @@ def fake_miscentering_func(rs, rho_func, prob_func):
     return np.ones(rhos.shape + (1,))
 
 
-class FakeMatchingConModel:
-    def __init__(self, mass_def, cosmology=None):
-        pass
-
-    def c(self, masses, redshifts, mass_def):
-        return np.ones((masses.size))
-
-    def convert_mass_def(self, masses, redshifts, old_def, new_def):
-        return np.ones((masses.size))
+def fake_rho_total(rs, zs, mus, *params):
+    return np.ones(rs.shape + mus.shape + (params[0].size,))
 
 
 def describe_MatchingConvergenceModel():
@@ -39,29 +32,22 @@ def describe_MatchingConvergenceModel():
         @pytest.fixture
         def model():
             NUM_CLUSTERS = 10
-            rho_model = maszcal.density
             return maszcal.lensing.MatchingConvergenceModel(
                 sz_masses=2e13*np.random.randn(NUM_CLUSTERS) + 2e14,
                 redshifts=np.random.rand(NUM_CLUSTERS),
                 lensing_weights=np.random.rand(NUM_CLUSTERS),
+                rho_func=fake_rho_total,
                 cosmo_params=maszcal.cosmology.CosmoParams(),
-                mass_definition='mean',
-                delta=200,
                 units=u.Msun/u.pc**2,
                 sd_func=fake_projector_sd,
-                miscentering_func=fake_miscentering_func,
             )
 
         def it_calculates_stacked_kappa_profiles(model):
             thetas = np.logspace(-4, np.log(15 * (2*np.pi/360)/(60)), 8)
-            cons = 2*np.ones(2)
-            alphas = np.ones(2)
-            betas = np.ones(2)
-            gammas = np.ones(2)
-            misc_scales = np.ones(2) * 1e-3
+            rho_params = np.ones((np.random.randint(2, 10), 2))
             a_szs = np.array([-1, 0, 1])
 
-            sds = model.stacked_kappa(thetas, cons, alphas, betas, gammas, misc_scales, a_szs)
+            sds = model.stacked_kappa(thetas, a_szs, *rho_params)
 
             assert np.all(sds >= 0)
             assert sds.shape == (3, 8, 2)
@@ -77,59 +63,21 @@ def describe_MatchingShearModel():
             sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
             zs = np.random.rand(NUM_CLUSTERS)
             weights = np.random.rand(NUM_CLUSTERS)
-            cosmo_params = maszcal.cosmology.CosmoParams()
             return maszcal.lensing.MatchingShearModel(
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
-                cosmo_params=cosmo_params,
-                mass_definition='mean',
-                delta=200,
+                rho_func=fake_rho_total,
                 units=u.Msun/u.pc**2,
                 esd_func=fake_projector_esd,
             )
 
         def it_calculates_stacked_delta_sigma_profiles(model):
             rs = np.logspace(-1, 1, 8)
-            cons = 2*np.ones(2)
-            alphas = np.ones(2)
-            betas = np.ones(2)
-            gammas = np.ones(2)
+            rho_params = np.ones((np.random.randint(2, 10), 2))
             a_szs = np.array([-1, 0, 1])
 
-            esds = model.stacked_delta_sigma(rs, cons, alphas, betas, gammas, a_szs)
-
-            assert np.all(esds >= 0)
-            assert esds.shape == (3, 8, 2)
-
-
-def describe_MatchingCmShearModel():
-
-    def describe_stacked_delta_sigma():
-
-        @pytest.fixture
-        def model():
-            NUM_CLUSTERS = 10
-            return maszcal.lensing.MatchingCmShearModel(
-                sz_masses=2e13*np.random.randn(NUM_CLUSTERS) + 2e14,
-                redshifts=np.random.rand(NUM_CLUSTERS),
-                lensing_weights=np.random.rand(NUM_CLUSTERS),
-                cosmo_params=maszcal.cosmology.CosmoParams(),
-                mass_definition='mean',
-                delta=200,
-                units=u.Msun/u.pc**2,
-                con_class=FakeMatchingConModel,
-                esd_func=fake_projector_esd,
-            )
-
-        def it_calculates_stacked_delta_sigma_profiles(model):
-            rs = np.logspace(-1, 1, 8)
-            alphas = np.ones(2)
-            betas = np.ones(2)
-            gammas = np.ones(2)
-            a_szs = np.array([-1, 0, 1])
-
-            esds = model.stacked_delta_sigma(rs, alphas, betas, gammas, a_szs)
+            esds = model.stacked_delta_sigma(rs, a_szs, *rho_params)
 
             assert np.all(esds >= 0)
             assert esds.shape == (3, 8, 2)

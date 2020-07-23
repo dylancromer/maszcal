@@ -1,6 +1,6 @@
 from ._core import *
 from ._matching import *
-from ._stacking import *
+from ._integrated import *
 from ._single import *
 
 

@@ -6,8 +6,7 @@ from maszcal.tinker import TinkerHmf
 from maszcal.cosmo_utils import get_astropy_cosmology
 from maszcal.cosmology import CosmoParams, Constants
 from maszcal.concentration import ConModel
-import maszcal.nfw
-import maszcal.gnfw
+import maszcal.density
 import maszcal.matter
 import maszcal.mathutils
 import maszcal.ioutils
@@ -16,9 +15,10 @@ import maszcal.lensing._core as _core
 
 
 @dataclass
-class BaryonShearModel:
+class IntegratedShearModel:
     mu_bins: np.ndarray
     redshift_bins: np.ndarray
+    rho_func: object
     selection_func_file: object = maszcal.defaults.DefaultSelectionFunc()
     lensing_weights_file: object = maszcal.defaults.DefaultLensingWeights()
     cosmo_params: object = maszcal.defaults.DefaultCosmology()
@@ -27,7 +27,7 @@ class BaryonShearModel:
     delta: float = 200
     mass_definition: str = 'mean'
     sz_scatter: float = 0.2
-    shear_class: object = _core.GnfwBaryonShear
+    shear_class: object = _core.Shear
     esd_func: object = projector.esd
 
     def __post_init__(self):
@@ -35,13 +35,8 @@ class BaryonShearModel:
             self.cosmo_params = CosmoParams()
 
         self._shear = self.shear_class(
-            cosmo_params=self.cosmo_params,
-            mass_definition=self.mass_definition,
-            delta=self.delta,
+            rho_func=self.rho_func,
             units=self.units,
-            comoving_radii=self.comoving_radii,
-            nfw_class=maszcal.nfw.NfwModel,
-            gnfw_class=maszcal.gnfw.Gnfw,
             esd_func=self.esd_func,
         )
 
@@ -60,7 +55,11 @@ class BaryonShearModel:
         )
 
     def stacked_delta_sigma(self, rs, cons, alphas, betas, gammas, a_szs):
-        delta_sigmas = self._shear.delta_sigma_total(rs, self.redshift_bins, self.mu_bins, cons, alphas, betas, gammas)
+        delta_sigmas = np.moveaxis(
+            self._shear.delta_sigma_total(rs, self.redshift_bins, self.mu_bins, cons, alphas, betas, gammas),
+            0,
+            2,
+        )
 
         try:
             return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
@@ -74,37 +73,6 @@ class BaryonShearModel:
         except AttributeError:
             self._init_stacker()
             return self.stacker.weak_lensing_avg_mass(a_szs)
-
-
-@dataclass
-class BaryonCmShearModel(BaryonShearModel):
-    shear_class: object = _core.CmGnfwBaryonShear
-    con_class: object = ConModel
-
-    def __post_init__(self):
-        if isinstance(self.cosmo_params, maszcal.defaults.DefaultCosmology):
-            self.cosmo_params = CosmoParams()
-
-        self._shear = self.shear_class(
-            cosmo_params=self.cosmo_params,
-            mass_definition=self.mass_definition,
-            delta=self.delta,
-            units=self.units,
-            comoving_radii=self.comoving_radii,
-            nfw_class=maszcal.nfw.NfwCmModel,
-            gnfw_class=maszcal.gnfw.CmGnfw,
-            con_class=self.con_class,
-            esd_func=self.esd_func,
-        )
-
-    def stacked_delta_sigma(self, rs, alphas, betas, gammas, a_szs):
-        delta_sigmas = self._shear.delta_sigma_total(rs, self.redshift_bins, self.mu_bins, alphas, betas, gammas)
-
-        try:
-            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
-        except AttributeError:
-            self._init_stacker()
-            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
 
 
 @dataclass
@@ -521,7 +489,7 @@ class NfwShearModel:
             self.cosmo_params = CosmoParams()
 
     def _init_nfw(self):
-        self.nfw_model = maszcal.nfw.NfwModel(
+        self.nfw_model = maszcal.density.NfwModel(
             cosmo_params=self.cosmo_params,
             units=self.units,
             delta=self.delta,
@@ -606,7 +574,7 @@ class NfwCmShearModel(NfwShearModel):
             return self._con_model.c(masses, self.redshift_bins, mass_def)
 
     def _init_nfw(self):
-        self.nfw_model = maszcal.nfw.NfwCmModel(
+        self.nfw_model = maszcal.density.NfwCmModel(
             cosmo_params=self.cosmo_params,
             units=self.units,
             delta=self.delta,
@@ -670,7 +638,7 @@ class MiyatakeShearModel(NfwShearModel):
             return self._con_model.c(masses, self.redshift_bins, mass_def)
 
     def _init_nfw(self):
-        self.nfw_model = maszcal.nfw.NfwCmModel(
+        self.nfw_model = maszcal.density.NfwCmModel(
             cosmo_params=self.cosmo_params,
             units=self.units,
             delta=self.delta,

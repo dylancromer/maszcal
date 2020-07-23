@@ -27,7 +27,11 @@ class FakeConModel:
         return np.ones((masses.size, redshifts.size))
 
 
-def describe_BaryonCmShearModel():
+def fake_rho_total(rs, zs, mus, *params):
+    return np.ones(rs.shape + mus.shape + zs.shape + (params[0].size,))
+
+
+def describe_IntegratedShearModel():
 
     def describe_math():
 
@@ -35,111 +39,12 @@ def describe_BaryonCmShearModel():
         def baryon_model():
             mus = np.linspace(np.log(1e14), np.log(1e16), 9)
             zs = np.linspace(0, 1, 8)
-            return maszcal.lensing.BaryonCmShearModel(mus, zs, con_class=FakeConModel, esd_func=fake_projector_esd)
-
-        def it_can_calculate_an_nfw_delta_sigma(baryon_model):
-            radii = np.logspace(-1, 1, 10)
-            zs = np.linspace(0, 1, 8)
-            mus = np.log(1e14)*np.ones(1)
-
-            ds = baryon_model._shear.delta_sigma_cdm(radii, zs, mus)
-
-            assert np.all(ds > 0)
-
-        def it_can_calculate_a_gnfw_delta_sigma(baryon_model):
-            radii = np.logspace(-1, 1, 10)
-            zs = np.linspace(0, 1, 8)
-            mus = np.log(1e14)*np.ones(2)
-            alphas = np.ones(3)
-            betas = 2*np.ones(3)
-            gammas = np.ones(3)
-
-            ds = baryon_model._shear.delta_sigma_bary(radii, zs, mus, alphas, betas, gammas)
-
-            assert np.all(ds > 0)
-
-        def it_can_calculate_a_total_delta_sigma(baryon_model):
-            radii = np.logspace(-1, 1, 10)
-            zs = np.linspace(0, 1, 8)
-            mus = np.log(1e14)*np.ones(2)
-            alphas = np.ones(3)
-            betas = 2*np.ones(3)
-            gammas = np.ones(3)
-
-            ds = baryon_model._shear.delta_sigma_total(radii, zs, mus, alphas, betas, gammas)
-
-            assert np.all(ds > 0)
-
-        def it_can_calculate_a_stacked_delta_sigma(baryon_model):
-            radii = np.logspace(-1, 1, 10)
-            alphas = np.ones(3)
-            betas = 2*np.ones(3)
-            gammas = np.ones(3)
-            a_szs = np.zeros(3)
-
-            baryon_model._init_stacker()
-            baryon_model.stacker.dnumber_dlogmass = lambda : np.ones(
-                (baryon_model.mu_bins.size, baryon_model.redshift_bins.size)
+            return maszcal.lensing.IntegratedShearModel(
+                mus,
+                zs,
+                rho_func=fake_rho_total,
+                esd_func=fake_projector_esd,
             )
-            assert np.all(baryon_model.stacker.dnumber_dlogmass() == 1)
-
-            ds = baryon_model.stacked_delta_sigma(radii, alphas, betas, gammas, a_szs)
-
-            assert ds.shape == (10, 3)
-
-    def describe_units():
-
-        @pytest.fixture
-        def baryon_model():
-            mus = np.linspace(np.log(1e14), np.log(1e16), 9)
-            zs = np.linspace(0, 1, 8)
-            return maszcal.lensing.BaryonCmShearModel(mus, zs, units=u.Msun/u.pc**2, con_class=FakeConModel, esd_func=fake_projector_esd)
-
-        def it_has_correct_units(baryon_model):
-            radii = np.logspace(-1, 1, 10)
-            zs = np.linspace(0, 1, 8)
-            mus = np.log(1e14)*np.ones(2)
-            alphas = np.ones(3)
-            betas = 2*np.ones(3)
-            gammas = np.ones(3)
-
-            ds = baryon_model._shear.delta_sigma_bary(radii, zs, mus, alphas, betas, gammas)
-
-            assert np.all(radii[None, None, :, None]*ds < 1e2)
-
-
-def describe_BaryonShearModel():
-
-    def describe_math():
-
-        @pytest.fixture
-        def baryon_model():
-            mus = np.linspace(np.log(1e14), np.log(1e16), 9)
-            zs = np.linspace(0, 1, 8)
-            return maszcal.lensing.BaryonShearModel(mus, zs, esd_func=fake_projector_esd)
-
-        def it_can_calculate_an_nfw_delta_sigma(baryon_model):
-            radii = np.logspace(-1, 1, 10)
-            zs = np.linspace(0, 1, 8)
-            mus = np.log(1e14)*np.ones(1)
-            cs = 3*np.ones(1)
-
-            ds = baryon_model._shear.delta_sigma_cdm(radii, zs, mus, cs)
-
-            assert np.all(ds > 0)
-
-        def it_can_calculate_a_gnfw_delta_sigma(baryon_model):
-            radii = np.logspace(-1, 1, 10)
-            zs = np.linspace(0, 1, 8)
-            mus = np.log(1e14)*np.ones(2)
-            cs = 3*np.ones(3)
-            alphas = np.ones(3)
-            betas = 2*np.ones(3)
-            gammas = np.ones(3)
-
-            ds = baryon_model._shear.delta_sigma_bary(radii, zs, mus, cs, alphas, betas, gammas)
-
-            assert np.all(ds > 0)
 
         def it_can_calculate_a_total_delta_sigma(baryon_model):
             radii = np.logspace(-1, 1, 10)
@@ -178,7 +83,12 @@ def describe_BaryonShearModel():
         def baryon_model():
             mus = np.linspace(np.log(1e14), np.log(1e16), 9)
             zs = np.linspace(0, 1, 8)
-            return maszcal.lensing.BaryonShearModel(mus, zs, units=u.Msun/u.pc**2)
+            return maszcal.lensing.IntegratedShearModel(
+                mus,
+                zs,
+                rho_func=fake_rho_total,
+                units=u.Msun/u.pc**2,
+            )
 
         def it_has_correct_units(baryon_model):
             radii = np.logspace(-1, 1, 10)
@@ -189,9 +99,9 @@ def describe_BaryonShearModel():
             betas = 2*np.ones(3)
             gammas = np.ones(3)
 
-            ds = baryon_model._shear.delta_sigma_bary(radii, zs, mus, cs, alphas, betas, gammas)
+            ds = baryon_model._shear.delta_sigma_total(radii, zs, mus, cs, alphas, betas, gammas)
 
-            assert np.all(radii[None, None, :, None]*ds < 1e2)
+            assert np.all(radii[:, None, None, None]*ds < 1e2)
 
 
 def describe_CmStacker():
