@@ -32,14 +32,15 @@ class FakeMatchingConModel:
         return np.ones((masses.size))
 
 
-def describe_MiscenteredMatchingBaryonConvergenceModel():
+def describe_MatchingConvergenceModel():
 
     def describe_stacked_kappa():
 
         @pytest.fixture
         def model():
             NUM_CLUSTERS = 10
-            return maszcal.lensing.MiscenteredMatchingBaryonConvergenceModel(
+            rho_model = maszcal.density
+            return maszcal.lensing.MatchingConvergenceModel(
                 sz_masses=2e13*np.random.randn(NUM_CLUSTERS) + 2e14,
                 redshifts=np.random.rand(NUM_CLUSTERS),
                 lensing_weights=np.random.rand(NUM_CLUSTERS),
@@ -66,73 +67,7 @@ def describe_MiscenteredMatchingBaryonConvergenceModel():
             assert sds.shape == (3, 8, 2)
 
 
-def describe_MiscenteredMatchingBaryonShearModel():
-
-    def describe_stacked_kappa():
-
-        @pytest.fixture
-        def model():
-            NUM_CLUSTERS = 10
-            return maszcal.lensing.MiscenteredMatchingBaryonShearModel(
-                sz_masses=2e13*np.random.randn(NUM_CLUSTERS) + 2e14,
-                redshifts=np.random.rand(NUM_CLUSTERS),
-                lensing_weights=np.random.rand(NUM_CLUSTERS),
-                cosmo_params=maszcal.cosmology.CosmoParams(),
-                mass_definition='mean',
-                delta=200,
-                units=u.Msun/u.pc**2,
-                esd_func=fake_projector_esd,
-                miscentering_func=fake_miscentering_func,
-            )
-
-        def it_calculates_stacked_kappa_profiles(model):
-            rs = np.logspace(-1, 1, 8)
-            cons = 2*np.ones(2)
-            alphas = np.ones(2)
-            betas = np.ones(2)
-            gammas = np.ones(2)
-            misc_scales = np.ones(2) * 1e-3
-            a_szs = np.array([-1, 0, 1])
-
-            eds = model.stacked_delta_sigma(rs, cons, alphas, betas, gammas, misc_scales, a_szs)
-
-            assert np.all(eds >= 0)
-            assert eds.shape == (3, 8, 2)
-
-
-def describe_MatchingBaryonConvergenceModel():
-
-    def describe_stacked_kappa():
-
-        @pytest.fixture
-        def model():
-            NUM_CLUSTERS = 10
-            return maszcal.lensing.MatchingBaryonConvergenceModel(
-                sz_masses=2e13*np.random.randn(NUM_CLUSTERS) + 2e14,
-                redshifts=np.random.rand(NUM_CLUSTERS),
-                lensing_weights=np.random.rand(NUM_CLUSTERS),
-                cosmo_params=maszcal.cosmology.CosmoParams(),
-                mass_definition='mean',
-                delta=200,
-                units=u.Msun/u.pc**2,
-                sd_func=fake_projector_sd,
-            )
-
-        def it_calculates_stacked_kappa_profiles(model):
-            thetas = np.logspace(-4, np.log(15 * (2*np.pi/360)/(60)), 8)
-            cons = 2*np.ones(2)
-            alphas = np.ones(2)
-            betas = np.ones(2)
-            gammas = np.ones(2)
-            a_szs = np.array([-1, 0, 1])
-
-            sds = model.stacked_kappa(thetas, cons, alphas, betas, gammas, a_szs)
-
-            assert np.all(sds >= 0)
-            assert sds.shape == (3, 8, 2)
-
-
-def describe_MatchingBaryonShearModel():
+def describe_MatchingShearModel():
 
     def describe_stacked_delta_sigma():
 
@@ -143,7 +78,7 @@ def describe_MatchingBaryonShearModel():
             zs = np.random.rand(NUM_CLUSTERS)
             weights = np.random.rand(NUM_CLUSTERS)
             cosmo_params = maszcal.cosmology.CosmoParams()
-            return maszcal.lensing.MatchingBaryonShearModel(
+            return maszcal.lensing.MatchingShearModel(
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
@@ -168,14 +103,14 @@ def describe_MatchingBaryonShearModel():
             assert esds.shape == (3, 8, 2)
 
 
-def describe_MatchingCmBaryonShearModel():
+def describe_MatchingCmShearModel():
 
     def describe_stacked_delta_sigma():
 
         @pytest.fixture
         def model():
             NUM_CLUSTERS = 10
-            return maszcal.lensing.MatchingCmBaryonShearModel(
+            return maszcal.lensing.MatchingCmShearModel(
                 sz_masses=2e13*np.random.randn(NUM_CLUSTERS) + 2e14,
                 redshifts=np.random.rand(NUM_CLUSTERS),
                 lensing_weights=np.random.rand(NUM_CLUSTERS),

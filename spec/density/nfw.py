@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 import astropy.units as u
 from maszcal.cosmology import CosmoParams
-import maszcal.nfw
+import maszcal.density
 
 
 def describe_MatchingNfwModel():
@@ -11,7 +11,7 @@ def describe_MatchingNfwModel():
     @pytest.fixture
     def nfw_model():
         cosmo = CosmoParams()
-        return maszcal.nfw.MatchingNfwModel(cosmo_params=cosmo)
+        return maszcal.density.MatchingNfwModel(cosmo_params=cosmo)
 
     def it_calculates_delta_sigma(nfw_model):
         rs = np.logspace(-1, 1, 10)
@@ -41,7 +41,7 @@ def describe_MatchingCmNfwModel():
     @pytest.fixture
     def nfw_model():
         cosmo = CosmoParams()
-        return maszcal.nfw.MatchingCmNfwModel(cosmo_params=cosmo)
+        return maszcal.density.MatchingCmNfwModel(cosmo_params=cosmo)
 
     def it_calculates_delta_sigma(nfw_model):
         rs = np.logspace(-1, 1, 10)
@@ -71,7 +71,7 @@ def describe_NfwCmModel():
     @pytest.fixture
     def nfw_model():
         cosmo = CosmoParams()
-        return maszcal.nfw.NfwCmModel(cosmo_params=cosmo)
+        return maszcal.density.NfwCmModel(cosmo_params=cosmo)
 
     def it_calculates_delta_sigma(nfw_model):
         rs = np.logspace(-1, 1, 10)
@@ -96,7 +96,7 @@ def describe_NfwCmModel():
             hubble_constant=70,
             h=0.7,
         )
-        return maszcal.nfw.NfwCmModel(cosmo_params=cosmo)
+        return maszcal.density.NfwCmModel(cosmo_params=cosmo)
 
     def it_can_use_different_cosmologies(nfw_model, nfw_model_alt_cosmo):
         rs = np.logspace(-1, 1, 10)
@@ -111,7 +111,7 @@ def describe_NfwCmModel():
         assert np.all(ds != ds_alt_cosmo)
 
     def it_can_use_different_units(nfw_model):
-        nfw_model_other_units = maszcal.nfw.NfwCmModel(units=u.Msun/u.Mpc**2)
+        nfw_model_other_units = maszcal.density.NfwCmModel(units=u.Msun/u.Mpc**2)
 
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 3)
@@ -125,7 +125,7 @@ def describe_NfwCmModel():
         assert np.all(ds_other_units > ds)
 
     def it_can_use_different_mass_definitions(nfw_model):
-        nfw_model_500c = maszcal.nfw.NfwCmModel(delta=500, mass_definition='crit')
+        nfw_model_500c = maszcal.density.NfwCmModel(delta=500, mass_definition='crit')
 
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 3)
@@ -140,10 +140,10 @@ def describe_NfwCmModel():
 
     def it_must_use_a_correct_mass_definition():
         with pytest.raises(ValueError):
-            maszcal.nfw.NfwCmModel(mass_definition='oweijf')
+            maszcal.density.NfwCmModel(mass_definition='oweijf')
 
     def it_can_use_comoving_coordinates(nfw_model):
-        nfw_model_nocomoving = maszcal.nfw.NfwCmModel(units=u.Msun/u.pc**2, comoving=False)
+        nfw_model_nocomoving = maszcal.density.NfwCmModel(units=u.Msun/u.pc**2, comoving=False)
 
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(1, 2, 3)
@@ -183,7 +183,7 @@ def describe_NfwModel():
     @pytest.fixture
     def nfw_model():
         cosmo = CosmoParams()
-        return maszcal.nfw.NfwModel(cosmo_params=cosmo)
+        return maszcal.density.NfwModel(cosmo_params=cosmo)
 
     def it_calculates_delta_sigma(nfw_model):
         rs = np.logspace(-1, 1, 10)
@@ -208,7 +208,7 @@ def describe_NfwModel():
             hubble_constant=70,
             h=0.7,
         )
-        return maszcal.nfw.NfwModel(cosmo_params=cosmo)
+        return maszcal.density.NfwModel(cosmo_params=cosmo)
 
     def it_can_use_different_cosmologies(nfw_model, nfw_model_alt_cosmo):
         rs = np.logspace(-1, 1, 10)
@@ -222,7 +222,7 @@ def describe_NfwModel():
         assert np.all(ds != ds_alt_cosmo)
 
     def it_can_use_different_units(nfw_model):
-        nfw_model_other_units = maszcal.nfw.NfwModel(units=u.Msun/u.Mpc**2)
+        nfw_model_other_units = maszcal.density.NfwModel(units=u.Msun/u.Mpc**2)
 
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 3)
@@ -235,7 +235,7 @@ def describe_NfwModel():
         assert np.all(ds_other_units > ds)
 
     def it_can_use_different_mass_definitions(nfw_model):
-        nfw_model_500c = maszcal.nfw.NfwModel(delta=500, mass_definition='crit')
+        nfw_model_500c = maszcal.density.NfwModel(delta=500, mass_definition='crit')
 
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 3)
@@ -249,10 +249,10 @@ def describe_NfwModel():
 
     def it_must_use_a_correct_mass_definition():
         with pytest.raises(ValueError):
-            maszcal.nfw.NfwModel(mass_definition='oweijf')
+            maszcal.density.NfwModel(mass_definition='oweijf')
 
     def it_can_use_comoving_coordinates(nfw_model):
-        nfw_model_nocomoving = maszcal.nfw.NfwModel(units=u.Msun/u.pc**2, comoving=False)
+        nfw_model_nocomoving = maszcal.density.NfwModel(units=u.Msun/u.pc**2, comoving=False)
 
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(1, 2, 3)
@@ -291,7 +291,7 @@ def describe_SingleMassNfwModel():
     @pytest.fixture
     def nfw_model():
         cosmo = CosmoParams()
-        return maszcal.nfw.SingleMassNfwModel(cosmo_params=cosmo)
+        return maszcal.density.SingleMassNfwModel(cosmo_params=cosmo)
 
     def it_calculates_delta_sigma(nfw_model):
         rs = np.logspace(-1, 1, 10)

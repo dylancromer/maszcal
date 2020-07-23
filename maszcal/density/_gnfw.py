@@ -97,8 +97,8 @@ class Gnfw:
         '''
         return (1-self.baryon_frac) * self._rho_nfw(rs, zs, mus, cons)
 
-    def _rho_tot(self, rs, zs, mus, cons, alphas, betas, gammas):
-        rho_cdm = self._move_radius_axes_to_front(self.rho_cdm(rs, zs, mus, cons), 1, -1)
+    def rho_tot(self, rs, zs, mus, cons, alphas, betas, gammas):
+        rho_cdm = self._move_radius_axes_to_front(self.rho_cdm(rs, zs, mus, cons), 2, -1)
         return self.rho_bary(rs, zs, mus, cons, alphas, betas, gammas) + rho_cdm
 
 
@@ -143,6 +143,10 @@ class SingleMassGnfw(Gnfw):
         norm = self._gnfw_norm(zs, mus, cons, alphas, betas, gammas)[None, ...]
         profile_shape = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas)
         return norm * profile_shape
+
+    def rho_tot(self, rs, zs, mus, cons, alphas, betas, gammas):
+        rho_cdm = self._move_radius_axes_to_front(self.rho_cdm(rs, zs, mus, cons), 1, -1)
+        return self.rho_bary(rs, zs, mus, cons, alphas, betas, gammas) + rho_cdm
 
 
 @dataclass
@@ -213,6 +217,14 @@ class CmGnfw(Gnfw):
         '''
         return (1-self.baryon_frac) * self._rho_nfw(rs, zs, mus)
 
+    def rho_tot(self, rs, zs, mus, alphas, betas, gammas):
+        rho_cdm = self._move_radius_axes_to_front(
+            maszcal.mathutils.atleast_kd(self.rho_cdm(rs, zs, mus), rs.ndim+3),
+            2,
+            -1,
+        )
+        return self.rho_bary(rs, zs, mus, alphas, betas, gammas) + rho_cdm
+
 
 @dataclass
 class MatchingGnfw(Gnfw):
@@ -253,6 +265,10 @@ class MatchingGnfw(Gnfw):
         profile_shape = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas)
         profile_shape = self._move_radius_axes_to_front(profile_shape, 1, -1)
         return norm * profile_shape
+
+    def rho_tot(self, rs, zs, mus, cons, alphas, betas, gammas):
+        rho_cdm = self._move_radius_axes_to_front(self.rho_cdm(rs, zs, mus, cons), 1, -1)
+        return self.rho_bary(rs, zs, mus, cons, alphas, betas, gammas) + rho_cdm
 
 
 @dataclass
@@ -301,18 +317,6 @@ class MatchingMiscenteredGnfw:
         )
 
 
-class MatchingConvergenceGnfw(MatchingGnfw):
-    def _rho_tot(self, rs, zs, mus, cons, alphas, betas, gammas):
-        rho_cdm = self._move_radius_axes_to_front(self.rho_cdm(rs, zs, mus, cons), 1, -1)
-        return self.rho_bary(rs, zs, mus, cons, alphas, betas, gammas) + rho_cdm
-
-    def rho_tot(self, rs, zs, mus, cons, alphas, betas, gammas):
-        '''
-        SHAPE mu, z, r, params
-        '''
-        return self._rho_tot(rs, zs, mus, cons, alphas, betas, gammas)
-
-
 class MatchingCmGnfw(CmGnfw):
     def _init_con_model(self):
         mass_def = str(self.delta) + self.mass_definition[0]
@@ -343,10 +347,10 @@ class MatchingCmGnfw(CmGnfw):
 
         drs = np.gradient(rs)
 
-        top_integrand = self._rho_nfw(rs, zs, mus)[..., None] * rs[None, :, None]**2
+        top_integrand = self._rho_nfw(rs, zs, mus) * rs[None, :]**2
         bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[None, :, None]**2
 
-        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-2)
+        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-1)[:, None]
                 / maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=-2))
 
     def _rho_gnfw(self, rs, zs, mus, alphas, betas, gammas):
@@ -361,5 +365,12 @@ class MatchingCmGnfw(CmGnfw):
             tuple(radius_axes),
             tuple(new_radius_axes),
         )
-
         return norm * profile_shape
+
+    def rho_tot(self, rs, zs, mus, alphas, betas, gammas):
+        rho_cdm = self._move_radius_axes_to_front(
+            maszcal.mathutils.atleast_kd(self.rho_cdm(rs, zs, mus), rs.ndim+2),
+            1,
+            -1,
+        )
+        return self.rho_bary(rs, zs, mus, alphas, betas, gammas) + rho_cdm
