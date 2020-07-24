@@ -21,7 +21,7 @@ def describe_single_mass_bin():
 
     def the_plot_looks_correct():
         z = np.array([0.43])
-        single_mass_model = SingleMassNfwShearModel(redshift=z, delta=500, mass_definition='crit')
+        single_mass_model = SingleMassNfwShearModel(redshifts=z, delta=500, mass_definition='crit')
 
         rs = np.logspace(-1, 1, 50)
         mu = np.array([np.log(4.26e14)])

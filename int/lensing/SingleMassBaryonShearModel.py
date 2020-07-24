@@ -10,14 +10,26 @@ rcParams.update({'figure.autolayout': True})
 import seaborn as sns
 sns.set(style='whitegrid', font_scale=1.5, rc={"lines.linewidth": 2,'lines.markersize': 8.0,})
 from maszcal.lensing import SingleMassBaryonShearModel
+import maszcal.density
 
 
 def describe_single_mass_bin():
 
     @pytest.fixture
-    def single_mass_model():
+    def density_model():
+        return maszcal.density.SingleMassGnfw(
+            cosmo_params=maszcal.cosmology.CosmoParams(),
+            mass_definition='mean',
+            delta=200,
+            units=u.Msun/u.pc**2,
+            comoving_radii=True,
+            nfw_class=maszcal.density.MatchingNfwModel,
+        )
+
+    @pytest.fixture
+    def single_mass_model(density_model):
         zs = np.ones(1)
-        return SingleMassBaryonShearModel(redshifts=zs)
+        return SingleMassBaryonShearModel(redshifts=zs, rho_func=density_model.rho_tot)
 
     def the_plot_looks_correct(single_mass_model):
         z = np.array([0.43])

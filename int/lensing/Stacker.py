@@ -45,7 +45,7 @@ def test_power_spectrum():
 
 def test_comoving_vol():
     vols = stacker.comoving_vol()
-    zs = stacker.zs
+    zs = stacker.redshift_bins
 
     plt.plot(zs, vols)
     plt.xlabel(r'$ z $')
@@ -91,8 +91,8 @@ def test_tinker_mf():
                   * stacker.cosmo_params.omega_matter
                   / h**2)
 
+    stacker.mu_bins = np.linspace(np.log(1e10), np.log(1e16), 100)
     stacker.mu_szs = np.linspace(np.log(1e10), np.log(1e16), 100)
-    stacker.mus = np.linspace(np.log(1e10), np.log(1e16), 100)
 
     z = 0
     mink = 1e-4
@@ -102,7 +102,7 @@ def test_tinker_mf():
 
         stacker.calc_power_spect()
 
-        masses = stacker.mass(stacker.mus)
+        masses = stacker.mass(stacker.mu_bins)
         dn_dlnms = stacker.dnumber_dlogmass() #masses, zs
         dn_dms = dn_dlnms[:, 0]/masses
 
