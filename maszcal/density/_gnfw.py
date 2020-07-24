@@ -19,10 +19,20 @@ class Gnfw:
     delta: float
     units: u.Quantity
     comoving_radii: bool
-    nfw_model: object
+    nfw_class: object
+
+    def _init_nfw(self):
+        self.nfw_model = self.nfw_class(
+            cosmo_params=self.cosmo_params,
+            units=self.units,
+            delta=self.delta,
+            mass_definition=self.mass_definition,
+            comoving=self.comoving_radii,
+        )
 
     def __post_init__(self):
         self.baryon_frac = self.cosmo_params.omega_bary/self.cosmo_params.omega_matter
+        self._init_nfw()
 
     def mass_from_mu(self, mu):
         return np.exp(mu)
@@ -162,7 +172,7 @@ class CmGnfw(Gnfw):
     units: u.Quantity
     comoving_radii: bool
     con_class: object
-    nfw_model: object
+    nfw_class: object
 
     def _init_con_model(self):
         mass_def = str(self.delta) + self.mass_definition[0]
@@ -278,7 +288,7 @@ class MatchingMiscenteredGnfw:
     delta: float
     units: u.Quantity
     comoving_radii: bool
-    nfw_model: object
+    nfw_class: object
     miscentering_func: object = meso.Rho().miscenter
 
     def _init_gnfw(self):
@@ -288,7 +298,7 @@ class MatchingMiscenteredGnfw:
             delta=self.delta,
             units=self.units,
             comoving_radii=self.comoving_radii,
-            nfw_model=self.nfw_model,
+            nfw_class=self.nfw_class,
         )
 
     def __post_init__(self):

@@ -9,18 +9,18 @@ import maszcal.concentration
 def describe_MatchingMiscenteredGnfw():
 
     @pytest.fixture
-    def nfw_model():
-        return maszcal.density.MatchingNfwModel()
+    def nfw_class():
+        return maszcal.density.MatchingNfwModel
 
     @pytest.fixture
-    def gnfw_model(nfw_model):
+    def gnfw_model(nfw_class):
         return maszcal.density.MatchingMiscenteredGnfw(
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
             units=u.Msun/u.pc**2,
             comoving_radii=True,
-            nfw_model=nfw_model,
+            nfw_class=nfw_class,
         )
 
     def it_calculates_the_cdm_and_baryonic_densities(gnfw_model):
@@ -39,18 +39,18 @@ def describe_MatchingMiscenteredGnfw():
 
 def describe_MatchingGnfw():
     @pytest.fixture
-    def nfw_model():
-        return maszcal.density.MatchingNfwModel()
+    def nfw_class():
+        return maszcal.density.MatchingNfwModel
 
     @pytest.fixture
-    def gnfw_model(nfw_model):
+    def gnfw_model(nfw_class):
         return maszcal.density.MatchingGnfw(
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
             units=u.Msun/u.pc**2,
             comoving_radii=True,
-            nfw_model=nfw_model,
+            nfw_class=nfw_class,
         )
 
     def it_calculates_the_cdm_and_baryonic_densities(gnfw_model):
@@ -108,18 +108,18 @@ class FakeMatchingConModel:
 
 def describe_MatchingCmGnfw():
     @pytest.fixture
-    def nfw_model():
-        return maszcal.density.MatchingCmNfwModel()
+    def nfw_class():
+        return maszcal.density.MatchingCmNfwModel
 
     @pytest.fixture
-    def gnfw_model(nfw_model):
+    def gnfw_model(nfw_class):
         return maszcal.density.MatchingCmGnfw(
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
             units=u.Msun/u.pc**2,
             comoving_radii=True,
-            nfw_model=nfw_model,
+            nfw_class=nfw_class,
             con_class=FakeMatchingConModel,
         )
 
@@ -166,18 +166,18 @@ def describe_MatchingCmGnfw():
 def describe_Gnfw():
 
     @pytest.fixture
-    def nfw_model():
-        return maszcal.density.NfwModel()
+    def nfw_class():
+        return maszcal.density.NfwModel
 
     @pytest.fixture
-    def gnfw_model(nfw_model):
+    def gnfw_model(nfw_class):
         return maszcal.density.Gnfw(
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
             units=u.Msun/u.pc**2,
             comoving_radii=True,
-            nfw_model=nfw_model,
+            nfw_class=nfw_class,
         )
 
     def it_calculates_the_cdm_and_baryonic_densities(gnfw_model):
@@ -236,18 +236,18 @@ class FakeConModel:
 def describe_CmGnfw():
 
     @pytest.fixture
-    def nfw_model():
-        return maszcal.density.NfwCmModel()
+    def nfw_class():
+        return maszcal.density.NfwCmModel
 
     @pytest.fixture
-    def gnfw_model(nfw_model):
+    def gnfw_model(nfw_class):
         return maszcal.density.CmGnfw(
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
             units=u.Msun/u.pc**2,
             comoving_radii=True,
-            nfw_model=nfw_model,
+            nfw_class=nfw_class,
             con_class=FakeConModel,
         )
 
@@ -293,18 +293,18 @@ def describe_CmGnfw():
 
 def describe_SingleMassGnfw():
     @pytest.fixture
-    def nfw_model():
-        return maszcal.density.SingleMassNfwModel()
+    def nfw_class():
+        return maszcal.density.SingleMassNfwModel
 
     @pytest.fixture
-    def gnfw_model(nfw_model):
+    def gnfw_model(nfw_class):
         return maszcal.density.SingleMassGnfw(
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
             units=u.Msun/u.pc**2,
             comoving_radii=True,
-            nfw_model=nfw_model,
+            nfw_class=nfw_class,
         )
 
     def it_calculates_the_cdm_and_baryonic_densities(gnfw_model):

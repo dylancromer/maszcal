@@ -54,9 +54,9 @@ class IntegratedShearModel:
             sz_scatter=self.sz_scatter,
         )
 
-    def stacked_delta_sigma(self, rs, cons, alphas, betas, gammas, a_szs):
+    def stacked_delta_sigma(self, rs, a_szs, *rho_params):
         delta_sigmas = np.moveaxis(
-            self._shear.delta_sigma_total(rs, self.redshift_bins, self.mu_bins, cons, alphas, betas, gammas),
+            self._shear.delta_sigma_total(rs, self.redshift_bins, self.mu_bins, *rho_params),
             0,
             2,
         )

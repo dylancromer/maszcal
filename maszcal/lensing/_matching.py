@@ -66,8 +66,8 @@ class MatchingShearModel(_core.MatchingModel):
         return self._shear.delta_sigma_total(rs, zs, mus, *rho_params)
 
     def stacked_delta_sigma(self, rs, a_szs, *rho_params):
-        'SHAPE a_sz, r, params'
+        'SHAPE r, a_sz, params'
         num_clusters = self.sz_masses.size
-        profiles = self.delta_sigma_total(rs, a_szs, *rho_params).reshape(num_clusters, a_szs.size, rs.size, -1)
+        profiles = self.delta_sigma_total(rs, a_szs, *rho_params).reshape(rs.size, num_clusters, a_szs.size, -1)
         weights = self.normed_lensing_weights(a_szs).reshape(num_clusters, a_szs.size)
-        return (weights[:, :, None, None] * profiles).sum(axis=0)
+        return (weights[None, :, :, None] * profiles).sum(axis=1)
