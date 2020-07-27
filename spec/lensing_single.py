@@ -15,14 +15,39 @@ def fake_projector_esd(rs, rho_func):
     return np.ones(rhos.shape)
 
 
-def describe_SingleMassBaryonShearModel():
+def describe_SingleMassConvergenceModel():
+
+    def describe_math():
+
+        @pytest.fixture
+        def single_mass_model():
+            model = maszcal.lensing.SingleMassConvergenceModel(
+                rho_func=fake_rho_total,
+                sd_func=fake_projector_esd,
+            )
+            return model
+
+        def it_can_calculate_delta_sigma_of_mass(single_mass_model):
+            base = np.ones(11)
+
+            zs= 0.4*np.ones(2)
+            mus = np.log(1e15)*base
+            cons = 3*base
+            thetas = np.logspace(-4, -1, 5)
+
+            kappas = single_mass_model.kappa(thetas, zs, mus, cons)
+
+            assert kappas.shape == (5, 2, 11)
+
+
+def describe_SingleMassShearModel():
 
     def describe_math():
 
         @pytest.fixture
         def single_mass_model():
             redshifts = 0.4*np.ones(2)
-            model = maszcal.lensing.SingleMassBaryonShearModel(
+            model = maszcal.lensing.SingleMassShearModel(
                 redshifts=redshifts,
                 rho_func=fake_rho_total,
                 esd_func=fake_projector_esd,
@@ -45,7 +70,7 @@ def describe_SingleMassBaryonShearModel():
 
         def it_can_use_different_units():
             redshifts = 0.4*np.ones(1)
-            model = maszcal.lensing.SingleMassBaryonShearModel(
+            model = maszcal.lensing.SingleMassShearModel(
                 redshifts=redshifts,
                 rho_func=fake_rho_total,
                 units=u.Msun/u.Mpc**2,

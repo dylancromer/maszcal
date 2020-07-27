@@ -3,6 +3,7 @@ import astropy.units as u
 from maszcal.defaults import DefaultCosmology
 from maszcal.cosmology import CosmoParams
 from maszcal.cosmo_utils import get_astropy_cosmology
+import maszcal.mathutils as mathutils
 
 
 class NfwModel:
@@ -143,6 +144,27 @@ class NfwModel:
         return prefactor[:, :, None, :] * postfactor
 
 
+class ProjectorSafeNfwModel(NfwModel):
+    def scale_radius(self, zs, masses, cons):
+        '''
+        SHAPE z, params
+        '''
+        return self.radius_delta(zs, masses).T / cons[None, :]
+
+    def rho(self, rs, zs, masses, cons):
+        '''
+        SHAPE r, z, params
+        '''
+        scale_radii = self.scale_radius(zs, masses, cons)
+        scale_radii = mathutils.atleast_kd(scale_radii, rs.ndim+2, append_dims=False)
+        numerator = self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
+        numerator = mathutils.atleast_kd(numerator, rs.ndim+2, append_dims=False)
+        xs = mathutils.atleast_kd(rs, rs.ndim+2)/scale_radii
+
+        denominator = xs * (1+xs)**2
+        return numerator/denominator
+
+
 class SingleMassNfwModel(NfwModel):
     def scale_radius(self, zs, masses, cons):
         '''
@@ -239,7 +261,7 @@ class MatchingNfwModel(NfwModel):
         numerator = self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
         numerator = np.reshape(numerator, numerator.shape[:1] + rs.ndim*(1,) + numerator.shape[1:])
         xs = rs[None, ..., None]/np.reshape(scale_radii,
-                                                  scale_radii.shape[:1] + rs.ndim*(1,) + scale_radii.shape[1:])
+                                            scale_radii.shape[:1] + rs.ndim*(1,) + scale_radii.shape[1:])
         denominator = xs * (1+xs)**2
         return numerator/denominator
 

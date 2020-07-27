@@ -52,11 +52,11 @@ def describe_MatchingConvergenceModel():
             alphas = 0.5*np.ones(1)
             betas = np.linspace(2.8, 3.2, 3)
             gammas = 0.5*np.ones(1)
-            a_szs = 0.3*np.ones(1)
+            a_szs = np.array([0, 0.1, -0.1, 0.01])
 
             sds = convergence_model.stacked_kappa(thetas, a_szs, cons, alphas, betas, gammas)
 
-            plt.plot(thetas, thetas[:, None]*sds[0, ...])
+            plt.plot(thetas, thetas[:, None]*sds[..., 0])
             plt.xscale('log')
 
             plt.xlabel(r'$\theta$')

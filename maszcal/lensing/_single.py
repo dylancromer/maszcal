@@ -13,7 +13,39 @@ import maszcal.lensing._core as _core
 
 
 @dataclass
-class SingleMassBaryonShearModel:
+class SingleMassConvergenceModel:
+    rho_func: object
+    units: u.Quantity = u.Msun/u.pc**2
+    convergence_class: object = _core.Convergence
+    cosmo_params: maszcal.cosmology.CosmoParams = maszcal.cosmology.CosmoParams()
+    sd_func: object = projector.sd
+
+    def __post_init__(self):
+        self._convergence = self.convergence_class(
+            rho_func=self.rho_func,
+            cosmo_params=self.cosmo_params,
+            units=self.units,
+            sd_func=self.sd_func,
+        )
+        self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
+
+    def _radius_space_kappa(self, rs, zs, mus, *rho_params):
+        return self._convergence.kappa(rs, zs, mus, *rho_params)
+
+    def _comoving_distance(self, z):
+        return self.astropy_cosmology.comoving_distance(z).to(u.Mpc).value
+
+    def kappa(self, thetas, zs, mus, *rho_params):
+        radii_of_z = [thetas * self._comoving_distance(z) for z in zs]
+        kappas = np.array([
+            self._radius_space_kappa(rs, zs[i:i+1], mus, *rho_params)
+            for i, rs in enumerate(radii_of_z)
+        ]).squeeze()
+        return kappas.reshape(thetas.shape + zs.shape + (-1,))
+
+
+@dataclass
+class SingleMassShearModel:
     redshifts: np.ndarray
     rho_func: object
     units: u.Quantity = u.Msun/u.pc**2
@@ -27,8 +59,8 @@ class SingleMassBaryonShearModel:
             esd_func=self.esd_func,
         )
 
-    def delta_sigma(self, rs, mus, cons, alphas, betas, gammas):
-        return self._shear.delta_sigma_total(rs, self.redshifts, mus, cons, alphas, betas, gammas)
+    def delta_sigma(self, rs, mus, *rho_params):
+        return self._shear.delta_sigma_total(rs, self.redshifts, mus, *rho_params)
 
 
 class SingleMassNfwShearModel:

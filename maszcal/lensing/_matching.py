@@ -11,7 +11,7 @@ import maszcal.lensing._core as _core
 
 @dataclass
 class MatchingConvergenceModel(_core.MatchingModel):
-    convergence_class: object = _core.MatchingConvergence
+    convergence_class: object = _core.Convergence
     cosmo_params: maszcal.cosmology.CosmoParams = maszcal.cosmology.CosmoParams()
     sd_func: object = projector.sd
 
@@ -24,28 +24,32 @@ class MatchingConvergenceModel(_core.MatchingModel):
         )
         self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
 
-    def _radius_space_kappa_total(self, rs, zs, mus, *rho_params):
-        return self._convergence.kappa_total(rs, zs, mus, *rho_params)
+    def _radius_space_kappa(self, rs, zs, mus, *rho_params):
+        return self._convergence.kappa(rs, zs, mus, *rho_params)
 
     def _comoving_distance(self, z):
         return self.astropy_cosmology.comoving_distance(z).to(u.Mpc).value
 
-    def kappa_total(self, thetas, a_szs, *rho_params):
+    def kappa(self, thetas, a_szs, *rho_params):
         mus = self.mu_from_sz_mu(np.log(self.sz_masses), a_szs).flatten()
         zs = np.repeat(self.redshifts, a_szs.size)
         radii_of_z = [thetas * self._comoving_distance(z) for z in zs]
         kappas = np.array([
-            self._radius_space_kappa_total(rs, zs[i:i+1], mus[i:i+1], *rho_params)
+            self._radius_space_kappa(rs, zs[i:i+1], mus[i:i+1], *rho_params)
             for i, rs in enumerate(radii_of_z)
         ]).squeeze()
-        return kappas.reshape(thetas.shape + zs.shape + (-1,))
+        return np.moveaxis(
+            kappas,
+            1,
+            0,
+        )
 
     def stacked_kappa(self, thetas, a_szs, *rho_params):
         'SHAPE a_sz, r, params'
         num_clusters = self.sz_masses.size
-        profiles = self.kappa_total(thetas, a_szs, *rho_params).reshape(num_clusters, a_szs.size, thetas.size, -1)
+        profiles = self.kappa(thetas, a_szs, *rho_params).reshape(thetas.size, num_clusters, a_szs.size, -1)
         weights = self.normed_lensing_weights(a_szs).reshape(num_clusters, a_szs.size)
-        return (weights[:, :, None, None] * profiles).sum(axis=0)
+        return (weights[None, :, :, None] * profiles).sum(axis=1)
 
 
 @dataclass

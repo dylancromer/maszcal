@@ -50,7 +50,7 @@ def describe_MatchingConvergenceModel():
             sds = model.stacked_kappa(thetas, a_szs, *rho_params)
 
             assert np.all(sds >= 0)
-            assert sds.shape == (3, 8, 2)
+            assert sds.shape == (8, 3, 2)
 
 
 def describe_MatchingShearModel():
@@ -80,4 +80,4 @@ def describe_MatchingShearModel():
             esds = model.stacked_delta_sigma(rs, a_szs, *rho_params)
 
             assert np.all(esds >= 0)
-            assert esds.shape == (3, 8, 2)
+            assert esds.shape == (8, 3, 2)

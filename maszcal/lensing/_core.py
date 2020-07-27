@@ -23,7 +23,7 @@ class Shear:
 
 
 @dataclass
-class MatchingConvergence:
+class Convergence:
     CMB_REDSHIFT = 1100
 
     rho_func: object
@@ -32,13 +32,12 @@ class MatchingConvergence:
     sd_func: object
 
     def __post_init__(self):
-        self.baryon_frac = self.cosmo_params.omega_bary/self.cosmo_params.omega_matter
         self.sigma_crit = partial(
             maszcal.cosmology.SigmaCrit(self.cosmo_params, units=self.units).sdc,
             z_source=np.array([self.CMB_REDSHIFT]),
         )
 
-    def kappa_total(self, rs, zs, mus, *rho_params):
+    def kappa(self, rs, zs, mus, *rho_params):
         return self.sd_func(
             rs,
             lambda r: self.rho_func(r, zs, mus, *rho_params),

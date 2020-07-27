@@ -98,7 +98,7 @@ class Matching2HaloConvergenceModel:
 
     def _one_halo_kappa(self, zs, mus, *args):
         return np.moveaxis(
-            self._one_halo_convergence.kappa_total(self.thetas, zs, mus, *args),
+            self._one_halo_convergence.kappa(self.thetas, zs, mus, *args),
             0,
             1,
         )
@@ -122,7 +122,7 @@ class Matching2HaloConvergenceModel:
         combination[two_halo_indices] = two_halo[two_halo_indices]
         return combination
 
-    def kappa_total(self, a_2hs, a_szs, *one_halo_args):
+    def kappa(self, a_2hs, a_szs, *one_halo_args):
         mus = self.mu_from_sz_mu(np.log(self.sz_masses), a_szs).flatten()
         zs = np.repeat(self.redshifts, a_szs.size)
         two_halo_kappas = self.kappa_2_halo(zs, mus)
@@ -132,6 +132,6 @@ class Matching2HaloConvergenceModel:
     def stacked_kappa(self, a_2hs, a_szs, *one_halo_args):
         'SHAPE a_sz, r, params'
         num_clusters = self.sz_masses.size
-        profiles = self.kappa_total(a_2hs, a_szs, *one_halo_args).reshape(num_clusters, a_szs.size, self.thetas.size, -1)
+        profiles = self.kappa(a_2hs, a_szs, *one_halo_args).reshape(num_clusters, a_szs.size, self.thetas.size, -1)
         weights = self.normed_lensing_weights(a_szs).reshape(num_clusters, a_szs.size)
         return (weights[:, :, None, None] * profiles).sum(axis=0)

@@ -81,7 +81,7 @@ def describe_Matching2HaloBaryonConvergenceModel():
                 redshifts=zs,
                 lensing_weights=weights,
                 one_halo_rho_func=fake_rho_total,
-                one_halo_convergence_class=maszcal.lensing.MatchingConvergence,
+                one_halo_convergence_class=maszcal.lensing.Convergence,
                 two_halo_term_function=fake_2_halo_func,
                 cosmo_params=cosmo_params,
                 mass_definition='mean',
