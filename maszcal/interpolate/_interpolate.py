@@ -3,7 +3,7 @@ import numpy as np
 import sklearn.gaussian_process
 import sklearn.gaussian_process.kernels
 import smolyak
-from .rbf import Rbf
+from scipy.interpolate import Rbf
 from maszcal.interp_utils import make_flat
 import maszcal.mathutils
 import maszcal.nothing
