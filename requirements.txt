@@ -1,17 +1,17 @@
 astropy==4.0.1.post1
 camb==1.1.3
 colossus==1.2.16
--e git+https://github.com/dylancromer/mcfit.git@30f59a2f7b6f092e7afb4b24175baa59d5bb3870#egg=mcfit
--e git+https://github.com/dylancromer/meso.git@9a8dcc62656e39ff83d484ce700a40a97b679762#egg=meso
+-e git+https://github.com/dylancromer/mcfit.git#egg=mcfit
+-e git+https://github.com/dylancromer/meso.git#egg=meso
 numpy==1.19.1
--e git+https://github.com/dylancromer/pality.git@db8f9a07e5d20bc2c12f85d6f42deff7795dc6d2#egg=pality
+-e git+https://github.com/dylancromer/pality.git#egg=pality
 pretend==1.0.9
--e git+https://github.com/dylancromer/projector.git@94682d3468a594822dd01e432d249cb02f45c7ef#egg=projector
+-e git+https://github.com/dylancromer/projector.git#egg=projector
 pytest==5.4.3
 pytest-benchmark==3.2.3
 pytest-describe==1.0.0
 pytest-mock==3.2.0
 scikit-learn==0.23.1
 scipy==1.5.2
--e git+https://github.com/dylancromer/smolyak.git@9b82818ddf43cfae1a62ba6a86bdd18e5f422f2f#egg=smolyak
--e git+https://github.com/dylancromer/supercubos.git@3b57a0014219d3b6b7747d57714b103487e02d7f#egg=supercubos
+-e git+https://github.com/dylancromer/smolyak.git#egg=smolyak
+-e git+https://github.com/dylancromer/supercubos.git#egg=supercubos
