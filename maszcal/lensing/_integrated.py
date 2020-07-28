@@ -107,12 +107,12 @@ class Stacker:
         if isinstance(self.selection_func_file, maszcal.defaults.DefaultSelectionFunc):
             self.selection_func = self._default_selection_func
         else:
-            self.selection_func = maszcal.ioutils.get_selection_func_interpolator(selection_func_file)
+            self.selection_func = maszcal.ioutils.get_selection_func_interpolator(self.selection_func_file)
 
         if isinstance(self.lensing_weights_file, maszcal.defaults.DefaultLensingWeights):
             self.lensing_weights = self._default_lensing_weights
         else:
-            self.lensing_weights = maszcal.ioutils.get_lensing_weights_interpolator(lensing_weights_file)
+            self.lensing_weights = maszcal.ioutils.get_lensing_weights_interpolator(self.lensing_weights_file)
 
         if self.delta is None:
             raise ValueError('delta must be specified')
@@ -128,7 +128,6 @@ class Stacker:
 
         if self.comoving is None:
             raise ValueError('comoving must be specified')
-
 
     def _default_selection_func(self, mu_szs, zs):
         '''
@@ -476,7 +475,7 @@ class NfwShearModel:
     mu_bins: np.ndarray
     redshift_bins: np.ndarray
     selection_func_file: str = maszcal.defaults.DefaultSelectionFunc()
-    lensing_weights_file: str  = maszcal.defaults.DefaultLensingWeights()
+    lensing_weights_file: str = maszcal.defaults.DefaultLensingWeights()
     cosmo_params: object = maszcal.defaults.DefaultCosmology()
     units: u.Quantity = u.Msun/u.pc**2
     comoving_radii: bool = True

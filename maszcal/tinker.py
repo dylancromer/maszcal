@@ -3,20 +3,19 @@ import numpy as np
 import astropy.units as u
 from scipy.interpolate import InterpolatedUnivariateSpline as iuSpline
 import scipy.integrate
-#np.seterr(divide='ignore', invalid='ignore')
 
 
 tinker_data = np.transpose([[float(x) for x in line.split()]
                             for line in
-    """200 0.186 1.47 2.57 1.19
-       300 0.200 1.52 2.25 1.27
-       400 0.212 1.56 2.05 1.34
-       600 0.218 1.61 1.87 1.45
-       800 0.248 1.87 1.59 1.58
-      1200 0.255 2.13 1.51 1.80
-      1600 0.260 2.30 1.46 1.97
-      2400 0.260 2.53 1.44 2.24
-      3200 0.260 2.66 1.41 2.44""".split('\n')])
+                            """200 0.186 1.47 2.57 1.19
+                               300 0.200 1.52 2.25 1.27
+                               400 0.212 1.56 2.05 1.34
+                               600 0.218 1.61 1.87 1.45
+                               800 0.248 1.87 1.59 1.58
+                              1200 0.255 2.13 1.51 1.80
+                              1600 0.260 2.30 1.46 1.97
+                              2400 0.260 2.53 1.44 2.24
+                              3200 0.260 2.66 1.41 2.44""".split('\n')])
 
 tinker_splines = None
 
@@ -101,44 +100,6 @@ def sigma_sq_integral(rs, power_spect, ks):
     """
     integrand = top_hatf(rs[None, ...] * ks[:, None, None])**2 * power_spect.T[:, None, :] * ks[:, None, None]**2
     return scipy.integrate.simps(integrand/(2 * np.pi**2), x=ks, axis=0)
-
-
-def fnl_correction(sigma2, fnl):
-    d_c = 1.686
-    S3 = 3.15e-4 * fnl / (sigma2**(0.838/2.0))
-    del_cor = np.sqrt(1 - d_c*S3/3.0)
-    return np.exp(S3 * d_c**3/(sigma2*6.0))*(d_c**2/(6.0*del_cor)*(-0.838*S3)+del_cor)
-
-
-def dsigma_dkmax_dM(M, z, rho, k, P, comoving=False):
-    """
-    M      is  (nM)  or  (nM, nz)
-    z      is  (nz)
-    rho    is  (nz)
-    delta  is  (nz)  or  scalar
-    k      is  (nk)
-    P      is  (nz,nk)
-
-    Somewhat awkwardly, k and P are comoving.  rho really isn't.
-
-    return is  (nM,nz)
-    """
-    if M.ndim == 1:
-        M = M[:, None]
-
-    R = radius_from_mass(M, rho)
-    if not comoving:
-        R = R * np.transpose(1+z)
-
-    sigma_k = np.zeros(len(k)-3)
-    kmax_out = np.zeros(len(k)-3)
-
-    for ii in range(len(k)-3):
-        iii = ii + 3
-        sigma_k[iii] = sigma_sq_integral(R, P[:iii], k[:iii])**.5
-        kmax_out[iii] = k[iii]
-
-    return kmax_out, sigma_k
 
 
 def tinker_bias_params(delta):
