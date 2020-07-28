@@ -1,7 +1,6 @@
 astropy==4.0.1.post1
 camb==1.1.3
 colossus==1.2.16
--e git+git@github.com:dylancromer/maszcal.git@0af3e98f0bd544dd732b7d1290e9fd6449bafe32#egg=maszcal
 -e git+git@github.com:dylancromer/mcfit.git@30f59a2f7b6f092e7afb4b24175baa59d5bb3870#egg=mcfit
 -e git+git@github.com:dylancromer/meso.git@9a8dcc62656e39ff83d484ce700a40a97b679762#egg=meso
 numpy==1.19.1
