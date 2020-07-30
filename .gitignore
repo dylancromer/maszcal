@@ -1,4 +1,5 @@
 #
+._github
 *.npy
 docs/*.ipynb
 data/act-hsc
