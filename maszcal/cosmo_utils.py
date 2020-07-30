@@ -1,7 +1,7 @@
 import numpy as np
-import camb
 from astropy.cosmology import Flatw0waCDM
 import astropy.units as u
+import camb
 
 
 def get_camb_params(cosmology_params, max_k, zs, nonlinear_matter_power):
