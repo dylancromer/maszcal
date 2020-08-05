@@ -2,6 +2,7 @@ import datetime
 import time
 import numpy as np
 import pathos.pools as pp
+import astropy.units as u
 import maszcal.data.sims
 import maszcal.data.obs
 import maszcal.lensing
@@ -18,16 +19,19 @@ NFW_PARAM_MAXES = np.array([np.log(5e15), 6])
 CM_PARAM_MINS = np.array([np.log(6e12)])
 CM_PARAM_MAXES = np.array([np.log(5e15)])
 
-BARYON_PARAM_MINS = np.array([np.log(6e12), 0, 0.1, 2])
-BARYON_PARAM_MAXES = np.array([np.log(5e15), 6, 2, 7])
+BARYON_PARAM_MINS = np.array([np.log(6e12), 0, 0.01, 0.01])
+BARYON_PARAM_MAXES = np.array([np.log(5e15), 6, 7, 7])
 
-BARYON_CM_PARAM_MINS = np.array([np.log(6e12), 0.1, 2])
-BARYON_CM_PARAM_MAXES = np.array([np.log(5e15), 2, 7])
+BARYON_CM_PARAM_MINS = np.array([np.log(6e12), 0.01, 0.01])
+BARYON_CM_PARAM_MAXES = np.array([np.log(5e15), 7, 7])
+
 
 LOWER_RADIUS_CUT = 0.125
 UPPER_RADIUS_CUT = 3
 
 COVARIANCE_REDUCTION_FACTOR = 1/400
+
+FIXED_GAMMA = np.array([0.2])
 
 
 class bcolors:
@@ -103,16 +107,22 @@ def calculate_cm_fits(i, z, sim_data, fisher_matrix):
 
 
 def calculate_baryon_fits(i, z, sim_data, fisher_matrix):
-    baryon_model = maszcal.lensing.SingleMassBaryonShearModel(
-        redshifts=np.array([z]),
-        delta=500,
-        mass_definition='crit',
+    density_model = maszcal.density.SingleMassGnfw(
         cosmo_params=sim_data.cosmology,
+        mass_definition='crit',
+        delta=500,
+        units=u.Msun/u.pc**2,
+        comoving_radii=True,
+        nfw_class=maszcal.density.MatchingNfwModel,
+    )
+
+    baryon_model = maszcal.lensing.SingleMassShearModel(
+        redshifts=np.array([z]),
+        rho_func=density_model.rho_tot,
     )
 
     def esd_model_func(radii, params):
-        gamma = np.array([0.2])
-        return baryon_model.delta_sigma(radii, params[0:1], params[1:2], params[2:3], params[3:4], gamma)
+        return baryon_model.delta_sigma(radii, params[0:1], params[1:2], params[2:3], params[3:4], FIXED_GAMMA)
 
     def _pool_func(data): return _get_best_fit(data, sim_data.radii, esd_model_func, fisher_matrix, BARYON_PARAM_MINS, BARYON_PARAM_MAXES)
 
@@ -120,18 +130,25 @@ def calculate_baryon_fits(i, z, sim_data, fisher_matrix):
 
 
 def calculate_baryon_cm_fits(i, z, sim_data, fisher_matrix):
-    baryon_model = maszcal.lensing.SingleMassBaryonShearModel(
-        redshifts=np.array([z]),
-        delta=500,
-        mass_definition='crit',
+    density_model = maszcal.density.SingleMassGnfw(
         cosmo_params=sim_data.cosmology,
+        mass_definition='crit',
+        delta=500,
+        units=u.Msun/u.pc**2,
+        comoving_radii=True,
+        nfw_class=maszcal.density.MatchingNfwModel,
+    )
+
+    baryon_model = maszcal.lensing.SingleMassShearModel(
+        redshifts=np.array([z]),
+        rho_func=density_model.rho_tot,
     )
 
     def esd_model_func(radii, params):
         mu = params[0:1]
         alpha = params[1:2]
         beta = params[2:3]
-        gamma = np.array([0.2])
+        gamma = FIXED_GAMMA
 
         mass = np.exp(mu)
         con_model = maszcal.concentration.ConModel('500c', cosmology=sim_data.cosmology)
