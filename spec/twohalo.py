@@ -63,9 +63,8 @@ def describe_TwoHaloConvergenceModel():
         from_arcmin = 2 * np.pi / 360 / 60
         thetas = np.logspace(-4, np.log10(15*from_arcmin), 2)
 
-        sds = two_halo_model.kappa(thetas, mus, zs)
+        sds = two_halo_model.kappa(thetas, zs, mus)
 
-        assert np.all(sds >= 0)
         assert not np.any(np.isnan(sds))
         assert sds.shape == zs.shape + thetas.shape
 
@@ -88,9 +87,8 @@ def describe_TwoHaloShearModel():
         mus = np.linspace(32, 33, 4)
         rs = np.logspace(-1, 1, 2)
 
-        esds = two_halo_model.esd(rs, mus, zs)
+        esds = two_halo_model.esd(rs, zs, mus)
 
-        assert np.all(esds >= 0)
         assert not np.any(np.isnan(esds))
         assert esds.shape == zs.shape + rs.shape
 
@@ -113,9 +111,8 @@ def describe_TwoHaloModel():
         mus = np.linspace(32, 33, 4)
         rs = np.logspace(-1, 1, 2)
 
-        xis = two_halo_model.halo_matter_correlation(rs, mus, zs)
+        xis = two_halo_model.halo_matter_correlation(rs, zs, mus)
 
-        assert np.all(xis >= 0)
         assert not np.any(np.isnan(xis))
         assert xis.shape == zs.shape + rs.shape
 

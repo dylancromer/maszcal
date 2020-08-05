@@ -54,7 +54,7 @@ class TwoHaloModel:
         dummy_zs = np.linspace(self.MIN_REDSHIFT, self.MAX_REDSHIFT, self.NUM_INTERP_ZS)
         self._power_interpolator = power.get_spectrum_interpolator(dummy_ks, dummy_zs, is_nonlinear=self.USE_NONLINEAR_MATTER_POWER_FOR_BIAS)
 
-    def _bias(self, mus, zs):
+    def _bias(self, zs, mus):
         masses = np.exp(mus)
         ks = np.logspace(np.log10(self.MIN_K), np.log10(self.MAX_BIAS_K), self.NUM_BIAS_KS)
 
@@ -95,8 +95,8 @@ class TwoHaloModel:
         return (self.astropy_cosmology.Om(zs)
                 * self.astropy_cosmology.critical_density(zs)).to(u.Msun/u.Mpc**3).value
 
-    def halo_matter_correlation(self, rs, mus, zs):
-        bias = self._bias(mus, zs)[:, None]
+    def halo_matter_correlation(self, rs, zs, mus):
+        bias = self._bias(zs, mus)[:, None]
         mm_corr = self._correlation_interpolator(rs, zs)
         return bias * mm_corr
 
@@ -105,13 +105,13 @@ class TwoHaloShearModel(TwoHaloModel):
     def _esd_radial_shape(self, rs, zs):
         return projector.esd(rs, lambda radii: self._density_shape_interpolator(radii, zs), **self.projector_kwargs)
 
-    def _esd(self, rs, mus, zs):
-        bias = self._bias(mus, zs)[:, None]
+    def _esd(self, rs, zs, mus):
+        bias = self._bias(zs, mus)[:, None]
         esd_radial_shape = self._esd_radial_shape(rs, zs).T
         return bias * esd_radial_shape
 
-    def esd(self, rs, mus, zs):
-        return self.matter_density(zs)[:, None] * self._esd(rs, mus, zs) * (u.Msun/u.Mpc**2).to(self.units)
+    def esd(self, rs, zs, mus):
+        return self.matter_density(zs)[:, None] * self._esd(rs, zs, mus) * (u.Msun/u.Mpc**2).to(self.units)
 
 
 class TwoHaloConvergenceModel(TwoHaloModel):
@@ -129,18 +129,18 @@ class TwoHaloConvergenceModel(TwoHaloModel):
     def _sd_radial_shape(self, rs, zs):
         return projector.sd(rs, lambda radii: self._density_shape_interpolator(radii, zs), **self.projector_kwargs)
 
-    def __radius_space_kappa(self, rs, mus, zs):
-        bias = self._bias(mus, zs)[:, None]
-        sd_radial_shape = self._sd_radial_shape(rs, zs).T * (u.Msun/u.Mpc**2).to(self.units)
+    def __radius_space_kappa(self, rs, zs, mus):
+        bias = self._bias(zs, mus)[:, None]
+        sd_radial_shape = self._sd_radial_shape(rs, zs).T
         return bias * sd_radial_shape / self.sigma_crit(z_lens=zs)[:, None]
 
-    def _radius_space_kappa(self, rs, mus, zs):
-        return self.matter_density(zs)[:, None] * self.__radius_space_kappa(rs, mus, zs)
+    def _radius_space_kappa(self, rs, zs, mus):
+        return self.matter_density(zs)[:, None] * self.__radius_space_kappa(rs, zs, mus) * (u.Msun/u.Mpc**2).to(self.units)
 
     def _comoving_distance(self, z):
         return self.astropy_cosmology.comoving_distance(z).to(u.Mpc).value
 
-    def kappa(self, thetas, mus, zs):
+    def kappa(self, thetas, zs, mus):
         radii_of_z = [thetas * self._comoving_distance(z) for z in zs]
         return np.array([
             self._radius_space_kappa(rs, zs[i:i+1], mus[i:i+1])

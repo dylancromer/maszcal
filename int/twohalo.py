@@ -3,7 +3,6 @@ import pytest
 import numpy as np
 import matplotlib
 matplotlib.rcParams['text.usetex'] = True
-matplotlib.rcParams['text.latex.unicode'] = True
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
@@ -27,9 +26,10 @@ def describe_TwoHaloShearModel():
         mus = np.ones(10) * np.log(1e14)
         rs = np.logspace(-3, 3, 200)
 
-        esds = two_halo_model.esd(rs, mus, zs)
+        esds = two_halo_model.esd(rs, zs, mus)
 
         assert not np.any(np.isnan(esds))
+        assert np.all(np.abs(rs[None, :]*esds) < 500)
         assert esds.shape == zs.shape + rs.shape
 
         plt.plot(rs, esds.T)
@@ -45,7 +45,7 @@ def describe_TwoHaloShearModel():
         mus = np.ones(1) * np.log(1e14)
         rs = np.logspace(-2, 3, 600)
 
-        xis = two_halo_model.halo_matter_correlation(rs, mus, zs)
+        xis = two_halo_model.halo_matter_correlation(rs, zs, mus)
 
         assert not np.any(np.isnan(xis))
         assert xis.shape == zs.shape + rs.shape
@@ -71,17 +71,27 @@ def describe_TwoHaloConvergenceModel():
         zs = np.linspace(0.1, 1, 4)
         mus = np.ones(4) * np.log(1e14)
         from_arcmin = 2 * np.pi / 360 / 60
-        thetas = np.logspace(-4, np.log10(15*from_arcmin), 200)
+        to_arcmin = 1/from_arcmin
+        thetas = np.geomspace(1e-2*from_arcmin, 360*from_arcmin, 200)
 
-        kappas = two_halo_model.kappa(thetas, mus, zs)
+        kappas = two_halo_model.kappa(thetas, zs, mus)
 
         assert not np.any(np.isnan(kappas))
+        assert np.all(np.abs(kappas) < 1)
         assert kappas.shape == zs.shape + thetas.shape
 
-        plt.plot(thetas, thetas[:, None] * kappas.T)
+        plt.plot(thetas*to_arcmin, thetas[:, None] * kappas.T)
         plt.xscale('log')
         plt.xlabel(r'$\theta$')
         plt.ylabel(r'$\theta \kappa(\theta)$')
+        plt.savefig('figs/test/two_halo_theta_times_kappa.svg')
+
+        plt.gcf().clear()
+
+        plt.plot(thetas*to_arcmin, kappas.T)
+        plt.xscale('log')
+        plt.xlabel(r'$\theta$')
+        plt.ylabel(r'$\kappa(\theta)$')
         plt.savefig('figs/test/two_halo_kappa.svg')
 
         plt.gcf().clear()

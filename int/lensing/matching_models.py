@@ -3,7 +3,6 @@ import numpy as np
 import astropy.units as u
 import matplotlib
 matplotlib.rcParams['text.usetex'] = True
-matplotlib.rcParams['text.latex.unicode'] = True
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
@@ -32,7 +31,7 @@ def describe_MatchingConvergenceModel():
 
         @pytest.fixture
         def convergence_model(density_model):
-            NUM_CLUSTERS = 10
+            NUM_CLUSTERS = 1
             sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
             zs = np.random.rand(NUM_CLUSTERS)
             weights = np.ones(NUM_CLUSTERS)
@@ -47,7 +46,8 @@ def describe_MatchingConvergenceModel():
 
         def the_plots_look_right(convergence_model):
             from_arcmin = 2 * np.pi / 360 / 60
-            thetas = np.logspace(np.log10(0.05*from_arcmin), np.log10(15*from_arcmin), 30)
+            to_arcmin = 1/from_arcmin
+            thetas = np.geomspace(0.05*from_arcmin, 60*from_arcmin, 60)
             cons = 3*np.ones(1)
             alphas = 0.5*np.ones(1)
             betas = np.linspace(2.8, 3.2, 3)
@@ -56,12 +56,17 @@ def describe_MatchingConvergenceModel():
 
             sds = convergence_model.stacked_kappa(thetas, a_szs, cons, alphas, betas, gammas)
 
-            plt.plot(thetas, thetas[:, None]*sds[..., 0])
+            plt.plot(thetas*to_arcmin, thetas[:, None]*sds[..., 0])
             plt.xscale('log')
-
             plt.xlabel(r'$\theta$')
             plt.ylabel(r'$\theta \; \kappa(\theta)$')
+            plt.savefig('figs/test/matching_stacked_gnfw_theta_times_kappa.svg')
+            plt.gcf().clear()
 
+            plt.plot(thetas*to_arcmin, sds[..., 0])
+            plt.xscale('log')
+            plt.xlabel(r'$\theta$')
+            plt.ylabel(r'$\kappa(\theta)$')
             plt.savefig('figs/test/matching_stacked_gnfw_kappa.svg')
             plt.gcf().clear()
 
