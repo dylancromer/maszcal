@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-import numpy as np
 import sklearn.gaussian_process
 import sklearn.gaussian_process.kernels
 import smolyak

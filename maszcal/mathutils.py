@@ -16,7 +16,7 @@ def trapz_(arr, axis, dx=None):
     arr = np.moveaxis(arr, axis, 0)
 
     if dx is None:
-        dx_ = np.ones(arr.shape[0])
+        dx = np.ones(arr.shape[0])
     dx = atleast_kd(dx, arr.ndim)
 
     arr = dx*arr

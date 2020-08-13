@@ -2,7 +2,6 @@ from dataclasses import dataclass
 import numpy as np
 import astropy.units as u
 import projector
-import meso
 import maszcal.concentration
 import maszcal.matter
 import maszcal.cosmo_utils

@@ -33,8 +33,6 @@ class Power:
         camb_results = camb.get_results(camb_params)
         camb_results.calc_power_spectra()
 
-        h = self.cosmo_params.h
-
         ret_ks, ret_zs, ps = camb_results.get_matter_power_spectrum(maxkh=ks.max(), npoints=ks.size)
 
         return ret_ks, ps
@@ -48,7 +46,7 @@ class Correlations:
     NUM_ZS = 40
     MIN_Z = 0
     MAX_Z = 1.1
-    EXTRAPOLATE_OPTION = 1 # 0->extrapolate, 1->0-fill, 2->ValueError, 3->boundary_value
+    EXTRAPOLATE_OPTION = 1  # 0->extrapolate, 1->0-fill, 2->ValueError, 3->boundary_value
 
     def __init__(self, radius_samples, redshift_samples, xi_samples):
         num_zs = redshift_samples.size

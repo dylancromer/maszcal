@@ -70,7 +70,6 @@ class TwoHaloModel:
             self._init_tinker_bias()
             return self.__bias(masses, zs, ks, power_spect)
 
-
     def _init_correlation_interpolator(self, zs):
         self.__correlation_interpolator = maszcal.matter.Correlations.from_cosmology(
             self.cosmo_params,

@@ -1,8 +1,6 @@
-from functools import partial
 from dataclasses import dataclass
 import numpy as np
 import astropy.units as u
-import meso
 import maszcal.cosmology
 import maszcal.mathutils
 
