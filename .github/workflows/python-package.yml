@@ -31,9 +31,10 @@ jobs:
         key: ${{ runner.os }}-venv-${{ hashFiles('requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-venv-
-    - name: Install dependencies
+    - name: Install gfortran
       run: |
         sudo apt-get install gfortran
+    - name: Install dependencies
     # Build a virtualenv, but only if it doesn't already exist
       run: python -m venv ./.venv && . ./.venv/bin/activate && 
            pip install -r requirements.txt &&
