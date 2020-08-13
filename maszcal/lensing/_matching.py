@@ -37,7 +37,7 @@ class MatchingConvergenceModel(_core.MatchingModel):
         kappas = np.array([
             self._radius_space_kappa(rs, zs[i:i+1], mus[i:i+1], *rho_params)
             for i, rs in enumerate(radii_of_z)
-        ]).squeeze()
+        ]).squeeze(axis=2)
         return np.moveaxis(
             kappas,
             1,
