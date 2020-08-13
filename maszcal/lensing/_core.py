@@ -10,6 +10,25 @@ import maszcal.concentration
 
 
 @dataclass
+class Miscentering:
+    rho_func: object
+    misc_distrib: object
+    miscentering_func: object
+
+    def _misc_rho(self, radii, misc_dist_params, rho_params):
+        return self.miscentering_func(
+            radii,
+            lambda r: self.rho_func(r, *rho_params),
+            lambda r: self.misc_distrib(r, *misc_dist_params),
+        )
+
+    def rho(self, radii, misc_params, rho_params):
+        prob_centered = misc_params[-1]
+        return (prob_centered*self.rho_func(radii, *rho_params)
+                + (1-prob_centered)*self._misc_rho(radii, misc_params[:-1], rho_params))
+
+
+@dataclass
 class Shear:
     rho_func: object
     units: u.Quantity
