@@ -281,52 +281,6 @@ class MatchingGnfw(Gnfw):
         return self.rho_bary(rs, zs, mus, cons, alphas, betas, gammas) + rho_cdm
 
 
-@dataclass
-class MatchingMiscenteredGnfw:
-    cosmo_params: maszcal.cosmology.CosmoParams
-    mass_definition: str
-    delta: float
-    units: u.Quantity
-    comoving_radii: bool
-    nfw_class: object
-    miscentering_func: object = meso.Rho().miscenter
-
-    def _init_gnfw(self):
-        self.gnfw = MatchingGnfw(
-            cosmo_params=self.cosmo_params,
-            mass_definition=self.mass_definition,
-            delta=self.delta,
-            units=self.units,
-            comoving_radii=self.comoving_radii,
-            nfw_class=self.nfw_class,
-        )
-
-    def __post_init__(self):
-        self._init_gnfw()
-
-    def _move_radius_axes_to_front(self, arr, start, stop):
-        return self.gnfw._move_radius_axes_to_front(arr, start, stop)
-
-    def _rho_tot(self, rs, zs, mus, cons, alphas, betas, gammas):
-        rho_cdm = self._move_radius_axes_to_front(self.gnfw.rho_cdm(rs, zs, mus, cons), 1, -1)
-        return self.gnfw.rho_bary(rs, zs, mus, cons, alphas, betas, gammas) + rho_cdm
-
-    def _miscentering_dist(self, rs, misc_scales):
-        misc_scales = maszcal.mathutils.atleast_kd(misc_scales, rs.ndim+1, append_dims=False)
-        rs = rs[..., None]
-        return (rs/misc_scales**2) * np.exp(-(rs/misc_scales)**2 / 2)
-
-    def rho_tot(self, rs, zs, mus, cons, alphas, betas, gammas, misc_scales):
-        '''
-        SHAPE mu, z, r, params
-        '''
-        return self.miscentering_func(
-            rs,
-            lambda r: self._rho_tot(r, zs, mus, cons, alphas, betas, gammas),
-            lambda r: self._miscentering_dist(r, misc_scales),
-        )
-
-
 class MatchingCmGnfw(CmGnfw):
     def _init_con_model(self):
         mass_def = str(self.delta) + self.mass_definition[0]
