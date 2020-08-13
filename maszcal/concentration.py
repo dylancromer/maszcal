@@ -11,6 +11,23 @@ import maszcal.defaults as defaults
 
 @dataclass
 class ConInterpolator:
+    '''
+    Interpolates the concentration-mass relation.
+
+    Used for quick calculations of concentration in c-m models.
+
+    Parameters
+    ----------
+    mass_samples : ndarray
+        Array of masses over which to interpolate.
+    redshift_samples : ndarray
+        Array of redshifts over which to interpolate.
+    mass_definition : str
+        String identifying which mass definition to use. Must be in the form `"<int>m"` or `"<int>c"`,
+        e.g. `"500c"` for a 500-critical mass definition.
+    cosmo_params : CosmoParams
+        Cosmology parameters to be used for the c-m relation.
+    '''
     mass_samples: np.ndarray
     redshift_samples: np.ndarray
     mass_definition: str
