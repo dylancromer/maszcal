@@ -38,7 +38,7 @@ jobs:
         sudo apt-get install gfortran
         python -m pip install --upgrade pip
         pip install -e .
-        pip install flake8 pytest pytest-describe pytest-mock pretend
+        pip install flake8 pytest pytest-describe pytest-mock pretend wheel setuptools
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
