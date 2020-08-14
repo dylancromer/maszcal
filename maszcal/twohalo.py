@@ -126,7 +126,7 @@ class TwoHaloConvergenceModel(TwoHaloModel):
         )
 
     def _sd_radial_shape(self, rs, zs):
-        return projector.sd(rs, lambda radii: self._density_shape_interpolator(radii, zs), **self.projector_kwargs)
+        return projector.sd_alt(rs, lambda radii: self._density_shape_interpolator(radii, zs), **self.projector_kwargs)
 
     def __radius_space_kappa(self, rs, zs, mus):
         bias = self._bias(zs, mus)[:, None]
