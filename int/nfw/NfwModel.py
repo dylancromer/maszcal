@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 import astropy.units as u
-from maszcal.nfw import NfwModel
+from maszcal.density import NfwModel
 import projector
 
 
