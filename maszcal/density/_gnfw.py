@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 import numpy as np
-import astropy.units as u
 import maszcal.cosmology
 import maszcal.mathutils
 
@@ -15,14 +14,12 @@ class Gnfw:
     cosmo_params: maszcal.cosmology.CosmoParams
     mass_definition: str
     delta: float
-    units: u.Quantity
     comoving_radii: bool
     nfw_class: object
 
     def _init_nfw(self):
         self.nfw_model = self.nfw_class(
             cosmo_params=self.cosmo_params,
-            units=self.units,
             delta=self.delta,
             mass_definition=self.mass_definition,
             comoving=self.comoving_radii,
@@ -167,7 +164,6 @@ class CmGnfw(Gnfw):
     cosmo_params: maszcal.cosmology.CosmoParams
     mass_definition: str
     delta: float
-    units: u.Quantity
     comoving_radii: bool
     con_class: object
     nfw_class: object

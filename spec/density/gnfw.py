@@ -1,6 +1,5 @@
 import pytest
 import numpy as np
-import astropy.units as u
 import maszcal.density
 import maszcal.cosmology
 import maszcal.concentration
@@ -17,7 +16,6 @@ def describe_MatchingGnfw():
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
-            units=u.Msun/u.pc**2,
             comoving_radii=True,
             nfw_class=nfw_class,
         )
@@ -86,7 +84,6 @@ def describe_MatchingCmGnfw():
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
-            units=u.Msun/u.pc**2,
             comoving_radii=True,
             nfw_class=nfw_class,
             con_class=FakeMatchingConModel,
@@ -144,7 +141,6 @@ def describe_Gnfw():
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
-            units=u.Msun/u.pc**2,
             comoving_radii=True,
             nfw_class=nfw_class,
         )
@@ -214,7 +210,6 @@ def describe_CmGnfw():
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
-            units=u.Msun/u.pc**2,
             comoving_radii=True,
             nfw_class=nfw_class,
             con_class=FakeConModel,
@@ -271,7 +266,6 @@ def describe_SingleMassGnfw():
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
-            units=u.Msun/u.pc**2,
             comoving_radii=True,
             nfw_class=nfw_class,
         )

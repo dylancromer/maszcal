@@ -1,9 +1,7 @@
 import pytest
 import numpy as np
-import astropy.units as u
 import matplotlib
 matplotlib.rcParams['text.usetex'] = True
-matplotlib.rcParams['text.latex.unicode'] = True
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
@@ -24,7 +22,6 @@ def describe_GnfwCm_model():
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 mass_definition='mean',
                 delta=200,
-                units=u.Msun/u.pc**2,
                 comoving_radii=True,
                 nfw_class=maszcal.density.NfwCmModel,
                 con_class=maszcal.concentration.ConModel,
@@ -58,7 +55,6 @@ def describe_GnfwCm_model():
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 mass_definition='mean',
                 delta=200,
-                units=u.Msun/u.pc**2,
                 comoving_radii=True,
                 nfw_class=maszcal.density.NfwCmModel,
                 con_class=maszcal.concentration.ConModel,
@@ -97,7 +93,6 @@ def describe_GnfwCm_model():
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 mass_definition='mean',
                 delta=200,
-                units=u.Msun/u.pc**2,
                 comoving_radii=True,
                 nfw_class=maszcal.density.NfwCmModel,
                 con_class=maszcal.concentration.ConModel,
@@ -138,7 +133,6 @@ def describe_Gnfw_model():
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 mass_definition='mean',
                 delta=200,
-                units=u.Msun/u.pc**2,
                 comoving_radii=True,
                 nfw_class=maszcal.density.NfwModel,
             )
@@ -172,7 +166,6 @@ def describe_Gnfw_model():
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 mass_definition='mean',
                 delta=200,
-                units=u.Msun/u.pc**2,
                 comoving_radii=True,
                 nfw_class=maszcal.density.NfwModel,
             )
@@ -183,7 +176,6 @@ def describe_Gnfw_model():
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 mass_definition='mean',
                 delta=200,
-                units=u.Msun/u.pc**2,
                 comoving_radii=True,
                 nfw_class=maszcal.density.NfwModel,
             )
@@ -251,7 +243,6 @@ def describe_Gnfw_model():
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 mass_definition='mean',
                 delta=200,
-                units=u.Msun/u.pc**2,
                 comoving_radii=True,
                 nfw_class=maszcal.density.NfwModel,
             )

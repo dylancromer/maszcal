@@ -1,6 +1,5 @@
 import pytest
 import numpy as np
-import astropy.units as u
 import matplotlib
 matplotlib.rcParams['text.usetex'] = True
 import matplotlib.pyplot as plt
@@ -26,7 +25,6 @@ def describe_MatchingConvergenceModel():
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 mass_definition='mean',
                 delta=200,
-                units=u.Msun/u.pc**2,
                 comoving_radii=True,
                 nfw_class=maszcal.density.MatchingNfwModel,
             )
@@ -83,7 +81,6 @@ def describe_MatchingShearModel():
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 mass_definition='mean',
                 delta=200,
-                units=u.Msun/u.pc**2,
                 comoving_radii=True,
                 nfw_class=maszcal.density.MatchingNfwModel,
             )
@@ -132,7 +129,6 @@ def describe_MatchingCmShearModel():
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 mass_definition='mean',
                 delta=200,
-                units=u.Msun/u.pc**2,
                 comoving_radii=True,
                 nfw_class=maszcal.density.MatchingCmNfwModel,
                 con_class=maszcal.concentration.MatchingConModel,
@@ -181,7 +177,6 @@ def describe_miscentered_MatchingShearModel():
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 mass_definition='mean',
                 delta=200,
-                units=u.Msun/u.pc**2,
                 comoving_radii=True,
                 nfw_class=maszcal.density.MatchingNfwModel,
             )
@@ -248,7 +243,6 @@ def describe_miscentered_MatchingConvergenceModel():
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 mass_definition='mean',
                 delta=200,
-                units=u.Msun/u.pc**2,
                 comoving_radii=True,
                 nfw_class=maszcal.density.MatchingNfwModel,
             )
