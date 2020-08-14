@@ -22,14 +22,14 @@ class TwoHaloModel:
     MIN_REDSHIFT = 0
     MAX_REDSHIFT = 1
     NUM_INTERP_ZS = 40
-    USE_NONLINEAR_MATTER_POWER_FOR_BIAS = True
+    USE_NONLINEAR_MATTER_POWER_FOR_BIAS = False
 
     cosmo_params: object
     units: object = u.Msun/u.pc**2
     delta: int = 200
     mass_definition: str = 'mean'
     comoving: bool = True
-    is_nonlinear: bool = True
+    is_nonlinear: bool = False
     matter_power_class: object = maszcal.matter.Power
     projector_kwargs: object = MappingProxyType({})
 
