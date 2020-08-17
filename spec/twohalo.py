@@ -46,27 +46,64 @@ def fake_camb_get_results(params):
 
 def describe_TwoHaloConvergenceModel():
 
-    @pytest.fixture
-    def two_halo_model(mocker):
-        mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
-        cosmo = maszcal.cosmology.CosmoParams()
-        model = maszcal.twohalo.TwoHaloConvergenceModel(cosmo_params=cosmo, matter_power_class=FakePower)
+    def describe_angle_scale_distance():
 
-        model.NUM_INTERP_ZS = 3
-        model.NUM_INTERP_RADII = 4
+        @pytest.fixture
+        def model_comoving(mocker):
+            mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
+            cosmo = maszcal.cosmology.CosmoParams()
+            model = maszcal.twohalo.TwoHaloConvergenceModel(
+                cosmo_params=cosmo,
+                matter_power_class=FakePower,
+                comoving=True,
+            )
+            model.NUM_INTERP_ZS = 3
+            model.NUM_INTERP_RADII = 4
+            return model
 
-        return model
+        @pytest.fixture
+        def model_physical(mocker):
+            mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
+            cosmo = maszcal.cosmology.CosmoParams()
+            model = maszcal.twohalo.TwoHaloConvergenceModel(
+                cosmo_params=cosmo,
+                matter_power_class=FakePower,
+                comoving=False,
+            )
+            model.NUM_INTERP_ZS = 3
+            model.NUM_INTERP_RADII = 4
+            return model
 
-    def it_calculates_two_halo_kappas(two_halo_model):
-        zs = np.linspace(0.1, 1, 4)
-        mus = np.linspace(32, 33, 4)
-        from_arcmin = 2 * np.pi / 360 / 60
-        thetas = np.logspace(-4, np.log10(15*from_arcmin), 2)
+        def it_differs_between_comoving_and_noncomoving_cases(model_physical, model_comoving):
+            zs = np.random.rand(4) + 0.1
+            scale_physical = model_physical.angle_scale_distance(zs)
+            scale_comoving = model_comoving.angle_scale_distance(zs)
+            assert np.all(scale_physical != scale_comoving)
 
-        sds = two_halo_model.kappa(thetas, zs, mus)
 
-        assert not np.any(np.isnan(sds))
-        assert sds.shape == zs.shape + thetas.shape
+    def describe_kappa():
+
+        @pytest.fixture
+        def two_halo_model(mocker):
+            mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
+            cosmo = maszcal.cosmology.CosmoParams()
+            model = maszcal.twohalo.TwoHaloConvergenceModel(cosmo_params=cosmo, matter_power_class=FakePower)
+
+            model.NUM_INTERP_ZS = 3
+            model.NUM_INTERP_RADII = 4
+
+            return model
+
+        def it_calculates_two_halo_kappas(two_halo_model):
+            zs = np.linspace(0.1, 1, 4)
+            mus = np.linspace(32, 33, 4)
+            from_arcmin = 2 * np.pi / 360 / 60
+            thetas = np.logspace(-4, np.log10(15*from_arcmin), 2)
+
+            sds = two_halo_model.kappa(thetas, zs, mus)
+
+            assert not np.any(np.isnan(sds))
+            assert sds.shape == zs.shape + thetas.shape
 
 
 def describe_TwoHaloShearModel():

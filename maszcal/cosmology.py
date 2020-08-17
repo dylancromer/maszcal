@@ -77,6 +77,7 @@ class Constants:
 @dataclass
 class SigmaCrit:
     cosmo_params: object
+    comoving: bool
     units: object = u.Msun/u.pc**2
 
     def __post_init__(self):
@@ -89,9 +90,24 @@ class SigmaCrit:
     def prefac(self):
         return const.c**2 / (4 * np.pi * const.G)
 
+    def comoving_distance_z1z2(self, z1, z2):
+        return self.astropy_cosmology.comoving_distance(z2) - self.astropy_cosmology.comoving_distance(z1)
+
+    def distance_to(self, z):
+        if self.comoving:
+            return self.astropy_cosmology.comoving_distance(z)
+        else:
+            return self.astropy_cosmology.angular_diameter_distance(z)
+
+    def distance_between(self, z1, z2):
+        if self.comoving:
+            return self.comoving_distance_z1z2(z1, z2)
+        else:
+            return self.astropy_cosmology.angular_diameter_distance_z1z2(z1, z2)
+
     def sdc(self, z_source, z_lens):
         self._check_zs(z_source, z_lens)
-        d_source = self.astropy_cosmology.angular_diameter_distance(z_source)
-        d_lens = self.astropy_cosmology.angular_diameter_distance(z_lens)
-        d_lens_source = self.astropy_cosmology.angular_diameter_distance_z1z2(z_lens, z_source)
+        d_source = self.distance_to(z_source)
+        d_lens = self.distance_to(z_lens)
+        d_lens_source = self.distance_between(z_lens, z_source)
         return (self.prefac() * d_source / (d_lens * d_lens_source)).to(self.units).value

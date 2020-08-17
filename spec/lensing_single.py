@@ -17,6 +17,32 @@ def fake_projector_esd(rs, rho_func):
 
 def describe_SingleMassConvergenceModel():
 
+    def describe_angle_scale_distance():
+
+        @pytest.fixture
+        def model_comoving():
+            model = maszcal.lensing.SingleMassConvergenceModel(
+                rho_func=fake_rho_total,
+                comoving=True,
+                sd_func=fake_projector_esd,
+            )
+            return model
+
+        @pytest.fixture
+        def model_physical():
+            model = maszcal.lensing.SingleMassConvergenceModel(
+                rho_func=fake_rho_total,
+                comoving=False,
+                sd_func=fake_projector_esd,
+            )
+            return model
+
+        def it_differs_between_comoving_and_noncomoving_cases(model_physical, model_comoving):
+            zs = np.random.rand(4) + 0.1
+            scale_physical = model_physical.angle_scale_distance(zs)
+            scale_comoving = model_comoving.angle_scale_distance(zs)
+            assert np.all(scale_physical != scale_comoving)
+
     def describe_math():
 
         @pytest.fixture

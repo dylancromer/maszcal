@@ -118,10 +118,8 @@ class TwoHaloConvergenceModel(TwoHaloModel):
 
     def __post_init__(self):
         self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
-        if not self.comoving:
-            raise NotImplementedError('TwoHaloModel has not yet implemented a non-comoving option')
         self.sigma_crit = partial(
-            maszcal.cosmology.SigmaCrit(self.cosmo_params, units=self.units).sdc,
+            maszcal.cosmology.SigmaCrit(self.cosmo_params, comoving=self.comoving, units=self.units).sdc,
             z_source=np.array([self.CMB_REDSHIFT]),
         )
 
@@ -139,8 +137,17 @@ class TwoHaloConvergenceModel(TwoHaloModel):
     def _comoving_distance(self, z):
         return self.astropy_cosmology.comoving_distance(z).to(u.Mpc).value
 
+    def _angular_diameter_distance(self, z):
+        return self.astropy_cosmology.angular_diameter_distance(z).to(u.Mpc).value
+
+    def angle_scale_distance(self, z):
+        if self.comoving:
+            return self._comoving_distance(z)
+        else:
+            return self._angular_diameter_distance(z)
+
     def kappa(self, thetas, zs, mus):
-        radii_of_z = [thetas * self._comoving_distance(z) for z in zs]
+        radii_of_z = [thetas * self.angle_scale_distance(z) for z in zs]
         return np.array([
             self._radius_space_kappa(rs, zs[i:i+1], mus[i:i+1])
             for i, rs in enumerate(radii_of_z)

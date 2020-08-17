@@ -85,7 +85,7 @@ class Matching2HaloConvergenceModel:
     mass_definition: str = 'mean'
     delta: float = 200
     units: u.Quantity = u.Msun/u.pc**2
-    comoving_radii: bool = True
+    comoving: bool = True
     sd_func: object = projector.sd
 
     def __post_init__(self):
@@ -93,6 +93,7 @@ class Matching2HaloConvergenceModel:
             rho_func=self.one_halo_rho_func,
             cosmo_params=self.cosmo_params,
             units=self.units,
+            comoving=self.comoving,
             sd_func=self.sd_func,
         )
 

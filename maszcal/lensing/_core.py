@@ -47,12 +47,13 @@ class Convergence:
 
     rho_func: object
     cosmo_params: maszcal.cosmology.CosmoParams
+    comoving: bool
     units: u.Quantity
     sd_func: object
 
     def __post_init__(self):
         self.sigma_crit = partial(
-            maszcal.cosmology.SigmaCrit(self.cosmo_params, units=self.units).sdc,
+            maszcal.cosmology.SigmaCrit(self.cosmo_params, comoving=self.comoving, units=self.units).sdc,
             z_source=np.array([self.CMB_REDSHIFT]),
         )
 
