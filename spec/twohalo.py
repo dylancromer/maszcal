@@ -55,7 +55,6 @@ def describe_TwoHaloConvergenceModel():
             model = maszcal.twohalo.TwoHaloConvergenceModel(
                 cosmo_params=cosmo,
                 matter_power_class=FakePower,
-                comoving=True,
             )
             model.NUM_INTERP_ZS = 3
             model.NUM_INTERP_RADII = 4
@@ -68,10 +67,10 @@ def describe_TwoHaloConvergenceModel():
             model = maszcal.twohalo.TwoHaloConvergenceModel(
                 cosmo_params=cosmo,
                 matter_power_class=FakePower,
-                comoving=False,
             )
             model.NUM_INTERP_ZS = 3
             model.NUM_INTERP_RADII = 4
+            model.COMOVING = False
             return model
 
         def it_differs_between_comoving_and_noncomoving_cases(model_physical, model_comoving):

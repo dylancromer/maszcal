@@ -94,20 +94,17 @@ class SigmaCrit:
         return self.astropy_cosmology.comoving_distance(z2) - self.astropy_cosmology.comoving_distance(z1)
 
     def distance_to(self, z):
-        if self.comoving:
-            return self.astropy_cosmology.comoving_distance(z)
-        else:
-            return self.astropy_cosmology.angular_diameter_distance(z)
+        return self.astropy_cosmology.angular_diameter_distance(z)
 
     def distance_between(self, z1, z2):
-        if self.comoving:
-            return self.comoving_distance_z1z2(z1, z2)
-        else:
-            return self.astropy_cosmology.angular_diameter_distance_z1z2(z1, z2)
+        return self.astropy_cosmology.angular_diameter_distance_z1z2(z1, z2)
 
     def sdc(self, z_source, z_lens):
         self._check_zs(z_source, z_lens)
         d_source = self.distance_to(z_source)
         d_lens = self.distance_to(z_lens)
         d_lens_source = self.distance_between(z_lens, z_source)
-        return (self.prefac() * d_source / (d_lens * d_lens_source)).to(self.units).value
+        surface_dens_crit = (self.prefac() * d_source / (d_lens * d_lens_source)).to(self.units).value
+        if self.comoving:
+            surface_dens_crit = surface_dens_crit / (1+z_lens)**2
+        return surface_dens_crit

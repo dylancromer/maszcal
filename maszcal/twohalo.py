@@ -23,12 +23,12 @@ class TwoHaloModel:
     MAX_REDSHIFT = 1
     NUM_INTERP_ZS = 40
     USE_NONLINEAR_MATTER_POWER_FOR_BIAS = False
+    COMOVING = True
 
     cosmo_params: object
     units: object = u.Msun/u.pc**2
     delta: int = 200
     mass_definition: str = 'mean'
-    comoving: bool = True
     is_nonlinear: bool = False
     matter_power_class: object = maszcal.matter.Power
     projector_kwargs: object = MappingProxyType({})
@@ -36,15 +36,12 @@ class TwoHaloModel:
     def __post_init__(self):
         self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
 
-        if not self.comoving:
-            raise NotImplementedError('TwoHaloModel has not yet implemented a non-comoving option')
-
     def _init_tinker_bias(self):
         tinker_bias_model = maszcal.tinker.TinkerBias(
             delta=self.delta,
             mass_definition=self.mass_definition,
             astropy_cosmology=self.astropy_cosmology,
-            comoving=self.comoving,
+            comoving=self.COMOVING,
         )
         self.__bias = tinker_bias_model.bias
 
@@ -91,8 +88,12 @@ class TwoHaloModel:
         return corr
 
     def matter_density(self, zs):
-        return (self.astropy_cosmology.Om(zs)
-                * self.astropy_cosmology.critical_density(zs)).to(u.Msun/u.Mpc**3).value
+        if self.COMOVING:
+            return np.ones_like(zs)*(self.astropy_cosmology.Om0
+                    * self.astropy_cosmology.critical_density0).to(u.Msun/u.Mpc**3).value
+        else:
+            return (self.astropy_cosmology.Om(zs)
+                    * self.astropy_cosmology.critical_density(zs)).to(u.Msun/u.Mpc**3).value
 
     def halo_matter_correlation(self, rs, zs, mus):
         bias = self._bias(zs, mus)[:, None]
@@ -119,7 +120,7 @@ class TwoHaloConvergenceModel(TwoHaloModel):
     def __post_init__(self):
         self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
         self.sigma_crit = partial(
-            maszcal.cosmology.SigmaCrit(self.cosmo_params, comoving=self.comoving, units=self.units).sdc,
+            maszcal.cosmology.SigmaCrit(self.cosmo_params, comoving=self.COMOVING, units=self.units).sdc,
             z_source=np.array([self.CMB_REDSHIFT]),
         )
 
@@ -141,7 +142,7 @@ class TwoHaloConvergenceModel(TwoHaloModel):
         return self.astropy_cosmology.angular_diameter_distance(z).to(u.Mpc).value
 
     def angle_scale_distance(self, z):
-        if self.comoving:
+        if self.COMOVING:
             return self._comoving_distance(z)
         else:
             return self._angular_diameter_distance(z)
