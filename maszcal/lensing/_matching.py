@@ -85,3 +85,41 @@ class MatchingShearModel(_core.MatchingModel):
         profiles = self.delta_sigma_total(rs, a_szs, *rho_params).reshape(rs.size, num_clusters, a_szs.size, -1)
         weights = self.normed_lensing_weights(a_szs).reshape(num_clusters, a_szs.size)
         return (weights[None, :, :, None] * profiles).sum(axis=1)
+
+
+@dataclass
+class ScatteredMatchingShearModel(_core.ScatteredMatchingModel):
+    MUS = np.log(np.geomspace(1e12, 6e15, 64))
+
+    shear_class: object = _core.Shear
+    esd_func: object = projector.esd
+
+    def __post_init__(self):
+        self._shear = self.shear_class(
+            rho_func=self.rho_func,
+            units=self.units,
+            esd_func=self.esd_func,
+        )
+
+    def _get_mass_weights(self, mu_szs, a_szs):
+        unnormalized_mass_weights = (self.prob_musz_given_mu(self.MUS, mu_szs, a_szs)
+                                     * self.logmass_prob_dist_func(self.redshifts, self.MUS)[..., None])
+        normalization = maszcal.mathutils.trapz_(unnormalized_mass_weights, axis=0, dx=np.gradient(self.MUS))
+        return unnormalized_mass_weights/normalization
+
+    def delta_sigma_total(self, rs, a_szs, *rho_params):
+        delta_sigmas_over_mass_range = self._shear.delta_sigma_total(rs, self.redshifts, self.MUS, *rho_params)
+        mu_szs = np.log(self.sz_masses)
+        mass_weights = self._get_mass_weights(mu_szs, a_szs)
+        return maszcal.mathutils.trapz_(
+            delta_sigmas_over_mass_range[..., None, :]*mass_weights[None, ..., None],
+            axis=1,
+            dx=np.gradient(self.MUS)
+        )
+
+    def stacked_delta_sigma(self, rs, a_szs, *rho_params):
+        'SHAPE r, a_sz, params'
+        num_clusters = self.sz_masses.size
+        profiles = self.delta_sigma_total(rs, a_szs, *rho_params)
+        weights = self.normed_lensing_weights(a_szs)
+        return (weights[None, :, None, None] * profiles).sum(axis=1)

@@ -7,6 +7,7 @@ import maszcal.mathutils
 import maszcal.ioutils
 import maszcal.defaults
 import maszcal.concentration
+import maszcal.stats
 
 
 @dataclass
@@ -80,3 +81,25 @@ class MatchingModel:
 
     def mu_from_sz_mu(self, sz_mu, a_sz):
         return sz_mu[:, None] - a_sz[None, :]
+
+
+
+@dataclass
+class ScatteredMatchingModel:
+    B_SZ = np.ones(1)
+    SZ_SCATTER = np.array([0.2])
+
+    sz_masses: np.ndarray
+    redshifts: np.ndarray
+    lensing_weights: np.ndarray
+    rho_func: object
+    logmass_prob_dist_func: object
+    units: u.Quantity = u.Msun/u.pc**2
+
+    def normed_lensing_weights(self, a_szs):
+        return self.lensing_weights/self.lensing_weights.sum()
+
+    def prob_musz_given_mu(self, mus, mu_szs, a_szs):
+        return maszcal.stats.SzMassDistributions.lognormal_dist(mus, mu_szs, a_szs, self.B_SZ, self.SZ_SCATTER).squeeze(
+            axis=(3, 4),
+        )
