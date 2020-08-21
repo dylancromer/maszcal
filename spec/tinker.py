@@ -27,7 +27,7 @@ def describe_HmfInterpolator():
             matter_power_class=FakePower,
         )
 
-    def it_interpolates_the_cm_relation(hmf_interp):
+    def it_interpolates_the_hmf(hmf_interp):
         mus = np.log(np.geomspace(1e14, 2e14, 3))
         zs = np.linspace(0.2, 0.5, 5)
         dn_dmus = hmf_interp(zs, mus)
