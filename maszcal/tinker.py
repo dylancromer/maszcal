@@ -2,7 +2,10 @@ from dataclasses import dataclass
 import numpy as np
 import astropy.units as u
 from scipy.interpolate import InterpolatedUnivariateSpline as iuSpline
+import scipy.interpolate
 import scipy.integrate
+import maszcal.cosmology
+import maszcal.matter
 
 
 tinker_data = np.transpose([[float(x) for x in line.split()]
@@ -193,6 +196,53 @@ class TinkerHmf(TinkerModel):
             dmasses = np.gradient(np.log(masses))[0] * masses
 
         return tf * self._rho(zs) * dlogs / dmasses
+
+
+@dataclass
+class HmfInterpolator:
+    KS = np.geomspace(1e-4, 1e2, 600)
+
+    mu_samples: np.ndarray
+    redshift_samples: np.ndarray
+    delta: int
+    mass_definition: str
+    cosmo_params: maszcal.cosmology.CosmoParams
+    comoving: bool = True
+    matter_power_class: object = maszcal.matter.Power
+
+    def _get_power_spect(self):
+        return self.matter_power_class(cosmo_params=self.cosmo_params).spectrum(
+            self.KS,
+            self.redshift_samples,
+            is_nonlinear=False,
+        )
+
+    def _get_samples_of_hmf(self):
+        power_spect = self._get_power_spect()
+        masses = np.exp(self.mu_samples)
+        return TinkerHmf(
+            delta=self.delta,
+            mass_definition=self.mass_definition,
+            astropy_cosmology=maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params),
+            comoving=self.comoving,
+        ).dn_dlnm(
+            masses,
+            self.redshift_samples,
+            self.KS,
+            power_spect,
+        )
+
+    def __post_init__(self):
+        hmf_samples = self._get_samples_of_hmf()
+        self._log_hmf_interpolator = scipy.interpolate.interp2d(
+            self.redshift_samples,
+            self.mu_samples,
+            np.log(hmf_samples),
+            kind='cubic',
+        )
+
+    def __call__(self, z, mu):
+        return np.exp(self._log_hmf_interpolator(z, mu))
 
 
 class TinkerBias(TinkerModel):

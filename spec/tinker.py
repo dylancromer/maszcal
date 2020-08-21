@@ -2,7 +2,37 @@ from dataclasses import dataclass
 import pytest
 import numpy as np
 from astropy.cosmology import Planck15
+import maszcal.cosmology
 import maszcal.tinker
+
+
+@dataclass
+class FakePower:
+    cosmo_params: object
+
+    def spectrum(self, ks, zs, is_nonlinear):
+        return np.ones(zs.shape + ks.shape)/ks[None, :]**2
+
+
+def describe_HmfInterpolator():
+
+    @pytest.fixture
+    def hmf_interp():
+        return maszcal.tinker.HmfInterpolator(
+            mu_samples=np.log(np.geomspace(6e12, 3e15, 5)),
+            redshift_samples=np.linspace(0.01, 1, 4),
+            delta=200,
+            mass_definition='mean',
+            cosmo_params=maszcal.cosmology.CosmoParams(),
+            matter_power_class=FakePower,
+        )
+
+    def it_interpolates_the_cm_relation(hmf_interp):
+        mus = np.log(np.geomspace(1e14, 2e14, 3))
+        zs = np.linspace(0.2, 0.5, 5)
+        dn_dmus = hmf_interp(zs, mus)
+        assert dn_dmus.shape == mus.shape + zs.shape
+        assert not np.any(np.isnan(dn_dmus))
 
 
 def describe_TinkerBias():
