@@ -22,3 +22,17 @@ def trapz_(arr, axis, dx=None):
     arr = dx*arr
 
     return 0.5*(arr[0, ...] + 2*arr[1:-1, ...].sum(axis=0) + arr[-1, ...])
+
+
+def expand_parameter_dims(*args):
+    expanded_args = []
+    num_params = len(args)
+    for i, param in enumerate(args):
+        expanded_args.append(
+            atleast_kd(
+                atleast_kd(param, i+1, append_dims=False),
+                num_params,
+                append_dims=True,
+            )
+        )
+    return expanded_args
