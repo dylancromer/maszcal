@@ -335,10 +335,11 @@ def describe_MatchingCmShearModel():
 
         @pytest.fixture
         def shear_model(density_model):
-            NUM_CLUSTERS = 10
-            sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
-            zs = np.random.rand(NUM_CLUSTERS)
-            weights = np.random.rand(NUM_CLUSTERS)
+            NUM_CLUSTERS = 100
+            rng = np.random.default_rng(seed=13)
+            sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
+            zs = rng.random(size=NUM_CLUSTERS) + 0.01
+            weights = rng.random(size=NUM_CLUSTERS)
             cosmo_params = maszcal.cosmology.CosmoParams()
             return maszcal.lensing.MatchingShearModel(
                 sz_masses=sz_masses,
@@ -398,10 +399,11 @@ def describe_miscentered_MatchingShearModel():
 
         @pytest.fixture
         def shear_model(miscentered_rho_func):
-            NUM_CLUSTERS = 10
-            sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
-            zs = np.random.rand(NUM_CLUSTERS)
-            weights = np.random.rand(NUM_CLUSTERS)
+            NUM_CLUSTERS = 1
+            rng = np.random.default_rng(seed=13)
+            sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
+            zs = rng.random(size=NUM_CLUSTERS) + 0.01
+            weights = rng.random(size=NUM_CLUSTERS)
             cosmo_params = maszcal.cosmology.CosmoParams()
             return maszcal.lensing.MatchingShearModel(
                 sz_masses=sz_masses,
@@ -465,9 +467,10 @@ def describe_miscentered_MatchingConvergenceModel():
         @pytest.fixture
         def convergence_model(miscentered_rho_func):
             NUM_CLUSTERS = 1
-            sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
-            zs = np.random.rand(NUM_CLUSTERS)
-            weights = np.ones(NUM_CLUSTERS)
+            rng = np.random.default_rng(seed=13)
+            sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
+            zs = rng.random(size=NUM_CLUSTERS) + 0.01
+            weights = rng.random(size=NUM_CLUSTERS)
             cosmo_params = maszcal.cosmology.CosmoParams()
             return maszcal.lensing.MatchingConvergenceModel(
                 sz_masses=sz_masses,
@@ -503,4 +506,170 @@ def describe_miscentered_MatchingConvergenceModel():
             plt.xlabel(r'$\theta$')
             plt.ylabel(r'$\kappa(\theta)$')
             plt.savefig('figs/test/miscentered_matching_stacked_gnfw_kappa.svg')
+            plt.gcf().clear()
+
+
+def describe_miscentered_ScatteredMatchingShearModel():
+
+    def describe_stacked_kappa():
+
+        @pytest.fixture
+        def density_model():
+            return maszcal.density.Gnfw(
+                cosmo_params=maszcal.cosmology.CosmoParams(),
+                mass_definition='mean',
+                delta=200,
+                comoving_radii=True,
+                nfw_class=maszcal.density.NfwModel,
+            )
+
+        @pytest.fixture
+        def miscentering(density_model):
+            return maszcal.lensing.Miscentering(
+                rho_func=density_model.rho_tot,
+                misc_distrib=maszcal.stats.MiscenteringDistributions.rayleigh_dist,
+                miscentering_func=meso.Rho().miscenter,
+            )
+
+        @pytest.fixture
+        def miscentered_rho_func(miscentering):
+            def _misc_rho_func(radii, *params):
+                misc_params = params[-2:]
+                rho_params = params[:-2]
+                return miscentering.rho(radii, misc_params, rho_params)
+            return _misc_rho_func
+
+        @pytest.fixture
+        def hmf_interp():
+            return maszcal.tinker.HmfInterpolator(
+                mu_samples=np.log(np.geomspace(1e12, 1e16, 600)),
+                redshift_samples=np.linspace(0.01, 4, 120),
+                delta=200,
+                mass_definition='mean',
+                cosmo_params=maszcal.cosmology.CosmoParams(),
+            )
+
+        @pytest.fixture
+        def shear_model(miscentered_rho_func, hmf_interp):
+            NUM_CLUSTERS = 1
+            rng = np.random.default_rng(seed=13)
+            sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
+            zs = rng.random(size=NUM_CLUSTERS) + 0.01
+            weights = rng.random(size=NUM_CLUSTERS)
+            cosmo_params = maszcal.cosmology.CosmoParams()
+            return maszcal.lensing.ScatteredMatchingShearModel(
+                sz_masses=sz_masses,
+                redshifts=zs,
+                lensing_weights=weights,
+                rho_func=miscentered_rho_func,
+                logmass_prob_dist_func=hmf_interp,
+                num_mu_bins=20,
+            )
+
+        def the_plots_look_right(shear_model):
+            radii = np.logspace(-1, 1, 30)
+            cons = 3*np.ones(1)
+            alphas = 0.8*np.ones(1)
+            betas = 3.8*np.ones(1)
+            gammas = 0.2*np.ones(1)
+            miscenter_scales = 1e-1*np.ones(1)
+            centering_probs = np.linspace(0, 1, 3)
+            a_szs = 0*np.ones(1)
+
+            esds = shear_model.stacked_delta_sigma(radii, a_szs, cons, alphas, betas, gammas, miscenter_scales, centering_probs)
+
+            plt.plot(radii, radii[:, None]*esds[:, 0, :])
+            plt.xscale('log')
+
+            plt.xlabel(r'$R$')
+            plt.ylabel(r'$R \Delta\Sigma(R)$')
+
+            plt.savefig('figs/test/scattered_miscentered_matching_stacked_gnfw_delta_sigma.svg')
+            plt.gcf().clear()
+
+
+def describe_miscentered_ScatteredMatchingConvergenceModel():
+
+    def describe_stacked_kappa():
+
+        @pytest.fixture
+        def density_model():
+            return maszcal.density.Gnfw(
+                cosmo_params=maszcal.cosmology.CosmoParams(),
+                mass_definition='mean',
+                delta=200,
+                comoving_radii=True,
+                nfw_class=maszcal.density.NfwModel,
+            )
+
+        @pytest.fixture
+        def miscentering(density_model):
+            return maszcal.lensing.Miscentering(
+                rho_func=density_model.rho_tot,
+                misc_distrib=maszcal.stats.MiscenteringDistributions.rayleigh_dist,
+                miscentering_func=meso.Rho().miscenter,
+            )
+
+        @pytest.fixture
+        def miscentered_rho_func(miscentering):
+            def _misc_rho_func(radii, *params):
+                misc_params = params[-2:]
+                rho_params = params[:-2]
+                return miscentering.rho(radii, misc_params, rho_params)
+            return _misc_rho_func
+
+        @pytest.fixture
+        def hmf_interp():
+            return maszcal.tinker.HmfInterpolator(
+                mu_samples=np.log(np.geomspace(1e12, 1e16, 600)),
+                redshift_samples=np.linspace(0.01, 4, 120),
+                delta=200,
+                mass_definition='mean',
+                cosmo_params=maszcal.cosmology.CosmoParams(),
+            )
+
+        @pytest.fixture
+        def convergence_model(miscentered_rho_func, hmf_interp):
+            NUM_CLUSTERS = 1
+            rng = np.random.default_rng(seed=13)
+            sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
+            zs = rng.random(size=NUM_CLUSTERS) + 0.01
+            weights = rng.random(size=NUM_CLUSTERS)
+            cosmo_params = maszcal.cosmology.CosmoParams()
+            return maszcal.lensing.ScatteredMatchingConvergenceModel(
+                sz_masses=sz_masses,
+                redshifts=zs,
+                lensing_weights=weights,
+                cosmo_params=cosmo_params,
+                rho_func=miscentered_rho_func,
+                logmass_prob_dist_func=hmf_interp,
+                num_mu_bins=20,
+            )
+
+        def the_plots_look_right(convergence_model):
+            from_arcmin = 2 * np.pi / 360 / 60
+            to_arcmin = 1/from_arcmin
+            thetas = np.geomspace(0.05*from_arcmin, 60*from_arcmin, 30)
+            cons = 3*np.ones(1)
+            alphas = 0.8*np.ones(1)
+            betas = 3.8*np.ones(1)
+            gammas = 0.2*np.ones(1)
+            miscenter_scales = 1e-1*np.ones(1)
+            centering_probs = np.linspace(0, 1, 3)
+            a_szs = 0*np.ones(1)
+
+            sds = convergence_model.stacked_kappa(thetas, a_szs, cons, alphas, betas, gammas, miscenter_scales, centering_probs)
+
+            plt.plot(thetas*to_arcmin, thetas[:, None]*sds[:, 0, :])
+            plt.xscale('log')
+            plt.xlabel(r'$\theta$')
+            plt.ylabel(r'$\theta \; \kappa(\theta)$')
+            plt.savefig('figs/test/scattered_miscentered_matching_stacked_gnfw_theta_times_kappa.svg')
+            plt.gcf().clear()
+
+            plt.plot(thetas*to_arcmin, sds[:, 0, :])
+            plt.xscale('log')
+            plt.xlabel(r'$\theta$')
+            plt.ylabel(r'$\kappa(\theta)$')
+            plt.savefig('figs/test/scattered_miscentered_matching_stacked_gnfw_kappa.svg')
             plt.gcf().clear()
