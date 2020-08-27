@@ -102,9 +102,10 @@ def describe_MatchingConvergenceModel():
         @pytest.fixture
         def convergence_model(density_model):
             NUM_CLUSTERS = 1
-            sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
-            zs = np.random.rand(NUM_CLUSTERS)
-            weights = np.ones(NUM_CLUSTERS)
+            rng = np.random.default_rng(seed=13)
+            sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
+            zs = rng.random(size=NUM_CLUSTERS) + 0.01
+            weights = rng.random(size=NUM_CLUSTERS)
             cosmo_params = maszcal.cosmology.CosmoParams()
             return maszcal.lensing.MatchingConvergenceModel(
                 sz_masses=sz_masses,
@@ -141,6 +142,74 @@ def describe_MatchingConvergenceModel():
             plt.gcf().clear()
 
 
+def describe_ScatteredMatchingConvergenceModel():
+
+    def describe_stacked_kappa():
+
+        @pytest.fixture
+        def density_model():
+            return maszcal.density.Gnfw(
+                cosmo_params=maszcal.cosmology.CosmoParams(),
+                mass_definition='mean',
+                delta=200,
+                comoving_radii=True,
+                nfw_class=maszcal.density.NfwModel,
+            )
+
+        @pytest.fixture
+        def hmf_interp():
+            return maszcal.tinker.HmfInterpolator(
+                mu_samples=np.log(np.geomspace(1e12, 1e16, 600)),
+                redshift_samples=np.linspace(0.01, 4, 120),
+                delta=200,
+                mass_definition='mean',
+                cosmo_params=maszcal.cosmology.CosmoParams(),
+            )
+
+        @pytest.fixture
+        def convergence_model(density_model, hmf_interp):
+            NUM_CLUSTERS = 1
+            rng = np.random.default_rng(seed=13)
+            sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
+            zs = rng.random(size=NUM_CLUSTERS) + 0.01
+            weights = rng.random(size=NUM_CLUSTERS)
+            cosmo_params = maszcal.cosmology.CosmoParams()
+            return maszcal.lensing.ScatteredMatchingConvergenceModel(
+                sz_masses=sz_masses,
+                redshifts=zs,
+                lensing_weights=weights,
+                cosmo_params=cosmo_params,
+                rho_func=density_model.rho_tot,
+                logmass_prob_dist_func=hmf_interp,
+            )
+
+        def the_plots_look_right(convergence_model):
+            from_arcmin = 2 * np.pi / 360 / 60
+            to_arcmin = 1/from_arcmin
+            thetas = np.geomspace(0.05*from_arcmin, 60*from_arcmin, 60)
+            cons = 3*np.ones(1)
+            alphas = 0.5*np.ones(1)
+            betas = np.linspace(2.8, 3.2, 3)
+            gammas = 0.5*np.ones(1)
+            a_szs = np.array([0, 0.1, -0.1, 0.01])
+
+            sds = convergence_model.stacked_kappa(thetas, a_szs, cons, alphas, betas, gammas)
+
+            plt.plot(thetas*to_arcmin, thetas[:, None]*sds[..., 0])
+            plt.xscale('log')
+            plt.xlabel(r'$\theta$')
+            plt.ylabel(r'$\theta \; \kappa(\theta)$')
+            plt.savefig('figs/test/scattered_matching_stacked_gnfw_theta_times_kappa.svg')
+            plt.gcf().clear()
+
+            plt.plot(thetas*to_arcmin, sds[..., 0])
+            plt.xscale('log')
+            plt.xlabel(r'$\theta$')
+            plt.ylabel(r'$\kappa(\theta)$')
+            plt.savefig('figs/test/scattered_matching_stacked_gnfw_kappa.svg')
+            plt.gcf().clear()
+
+
 def describe_MatchingShearModel():
 
     def describe_stacked_delta_sigma():
@@ -160,7 +229,7 @@ def describe_MatchingShearModel():
             NUM_CLUSTERS = 100
             rng = np.random.default_rng(seed=13)
             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
-            zs = rng.random(size=NUM_CLUSTERS)
+            zs = rng.random(size=NUM_CLUSTERS) + 0.01
             weights = rng.random(size=NUM_CLUSTERS)
             cosmo_params = maszcal.cosmology.CosmoParams()
             return maszcal.lensing.MatchingShearModel(
@@ -219,7 +288,7 @@ def describe_ScatteredMatchingShearModel():
             NUM_CLUSTERS = 100
             rng = np.random.default_rng(seed=13)
             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
-            zs = rng.random(size=NUM_CLUSTERS)
+            zs = rng.random(size=NUM_CLUSTERS) + 0.01
             weights = rng.random(size=NUM_CLUSTERS)
             return maszcal.lensing.ScatteredMatchingShearModel(
                 sz_masses=sz_masses,
