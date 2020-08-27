@@ -68,6 +68,7 @@ class ScatteredMatchingConvergenceModel(_core.ScatteredMatchingModel):
     cosmo_params: maszcal.cosmology.CosmoParams = maszcal.cosmology.CosmoParams()
     comoving: bool = True
     sd_func: object = projector.sd
+    vectorized: bool = True
 
     def __post_init__(self):
         self._convergence = self.convergence_class(
@@ -113,7 +114,19 @@ class ScatteredMatchingConvergenceModel(_core.ScatteredMatchingModel):
             (0, 1),
         )
 
-    def kappa(self, thetas, a_szs, *rho_params):
+    def _kappa_over_mass_range_loop(self, thetas, mu, *rho_params):
+        radii_of_z = [thetas * self.angle_scale_distance(z) for z in self.redshifts]
+        kappas = np.array([
+            self._radius_space_kappa(rs, self.redshifts[i:i+1], mu, *rho_params)
+            for i, rs in enumerate(radii_of_z)
+        ]).squeeze(axis=(2, 3))
+        return np.moveaxis(
+            kappas,
+            1,
+            0,
+        )
+
+    def _kappa_vectorized(self, thetas, a_szs, *rho_params):
         mu_szs = np.log(self.sz_masses)
         mass_weights = self._get_mass_weights(mu_szs, a_szs)
         kappas_over_mass_range = self._kappa_over_mass_range(thetas, *rho_params)
@@ -122,6 +135,28 @@ class ScatteredMatchingConvergenceModel(_core.ScatteredMatchingModel):
             axis=1,
             dx=np.gradient(self.mus),
         )
+
+    def _kappa_loop(self, thetas, a_szs, *rho_params):
+        mu_szs = np.log(self.sz_masses)
+        mass_weights = self._get_mass_weights(mu_szs, a_szs)
+        kappa_test = self._kappa_over_mass_range_loop(thetas, self.mus[:1], *rho_params)
+        kappas_over_mass_range = np.zeros(kappa_test.shape[:2] + a_szs.shape + kappa_test.shape[2:])
+        dmus = np.gradient(self.mus)
+        for i, mu in enumerate(self.mus):
+            next_term = (self._kappa_over_mass_range_loop(thetas, np.array([mu]), *rho_params)[..., None, :]
+                         * mass_weights[None, i, ..., None]) * dmus[i]
+
+            if (i == 0) or (i == self.mus.size-1):
+                next_term *= 1/2
+
+            kappas_over_mass_range += next_term
+        return kappas_over_mass_range
+
+    def kappa(self, thetas, a_szs, *rho_params):
+        if self.vectorized:
+            return self._kappa_vectorized(thetas, a_szs, *rho_params)
+        else:
+            return self._kappa_loop(thetas, a_szs, *rho_params)
 
     def stacked_kappa(self, thetas, a_szs, *rho_params):
         'SHAPE a_sz, r, params'
@@ -160,6 +195,7 @@ class MatchingShearModel(_core.MatchingModel):
 class ScatteredMatchingShearModel(_core.ScatteredMatchingModel):
     shear_class: object = _core.Shear
     esd_func: object = projector.esd
+    vectorized: bool = True
 
     def __post_init__(self):
         self._shear = self.shear_class(
@@ -175,7 +211,7 @@ class ScatteredMatchingShearModel(_core.ScatteredMatchingModel):
         normalization = maszcal.mathutils.trapz_(unnormalized_mass_weights, axis=0, dx=np.gradient(self.mus))
         return unnormalized_mass_weights/normalization
 
-    def delta_sigma_total(self, rs, a_szs, *rho_params):
+    def _delta_sigma_total_vectorized(self, rs, a_szs, *rho_params):
         delta_sigmas_over_mass_range = self._shear.delta_sigma_total(rs, self.redshifts, self.mus, *rho_params)
         mu_szs = np.log(self.sz_masses)
         mass_weights = self._get_mass_weights(mu_szs, a_szs)
@@ -184,6 +220,31 @@ class ScatteredMatchingShearModel(_core.ScatteredMatchingModel):
             axis=1,
             dx=np.gradient(self.mus)
         )
+
+    def _delta_sigma_total_loop(self, rs, a_szs, *rho_params):
+        mu_szs = np.log(self.sz_masses)
+        mass_weights = self._get_mass_weights(mu_szs, a_szs)
+        dmus = np.gradient(self.mus)
+
+        def loop_func(mu): return self._shear.delta_sigma_total(rs, self.redshifts, mu, *rho_params).squeeze(axis=1)
+        esd_test = loop_func(self.mus[:1])
+
+        delta_sigmas_over_mass_range = np.zeros(esd_test.shape[:2] + a_szs.shape + esd_test.shape[2:])
+        for i, mu in enumerate(self.mus):
+            next_term = (loop_func(np.array([mu]))[..., None, :]
+                         * mass_weights[None, i, ..., None]) * dmus[i]
+
+            if (i == 0) or (i == self.mus.size-1):
+                next_term *= 1/2
+
+            delta_sigmas_over_mass_range += next_term
+        return delta_sigmas_over_mass_range
+
+    def delta_sigma_total(self, rs, a_szs, *rho_params):
+        if self.vectorized:
+            return self._delta_sigma_total_vectorized(rs, a_szs, *rho_params)
+        else:
+            return self._delta_sigma_total_loop(rs, a_szs, *rho_params)
 
     def stacked_delta_sigma(self, rs, a_szs, *rho_params):
         'SHAPE r, a_sz, params'

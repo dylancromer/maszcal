@@ -91,6 +91,32 @@ def describe_ScatteredMatchingConvergenceModel():
             assert np.all(sds >= 0)
             assert sds.shape == (8, 3, 2)
 
+        @pytest.fixture
+        def model_loop():
+            NUM_CLUSTERS = 10
+            return maszcal.lensing.ScatteredMatchingConvergenceModel(
+                sz_masses=2e13*np.random.randn(NUM_CLUSTERS) + 2e14,
+                redshifts=np.random.rand(NUM_CLUSTERS),
+                lensing_weights=np.random.rand(NUM_CLUSTERS),
+                rho_func=fake_scattered_rho_total,
+                cosmo_params=maszcal.cosmology.CosmoParams(),
+                units=u.Msun/u.pc**2,
+                logmass_prob_dist_func=fake_logmass_prob,
+                sd_func=fake_projector_sd,
+                vectorized=False,
+                num_mu_bins=4,
+            )
+
+        def the_non_vectorized_option_works(model_loop):
+            thetas = np.logspace(-4, np.log(15 * (2*np.pi/360)/(60)), 8)
+            rho_params = np.ones((np.random.randint(2, 10), 2))
+            a_szs = np.array([-1, 0, 1])
+
+            sds = model_loop.stacked_kappa(thetas, a_szs, *rho_params)
+
+            assert np.all(sds >= 0)
+            assert sds.shape == (8, 3, 2)
+
 
 def describe_MatchingConvergenceModel():
 
@@ -203,12 +229,40 @@ def describe_ScatteredMatchingShearModel():
                 units=u.Msun/u.pc**2,
             )
 
+        @pytest.fixture
+        def model_loop():
+            NUM_CLUSTERS = 10
+            sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
+            zs = np.random.rand(NUM_CLUSTERS)
+            weights = 0.5*np.random.rand(NUM_CLUSTERS)
+            return maszcal.lensing.ScatteredMatchingShearModel(
+                sz_masses=sz_masses,
+                redshifts=zs,
+                lensing_weights=weights,
+                rho_func=fake_scattered_rho_total,
+                esd_func=fake_projector_esd,
+                logmass_prob_dist_func=fake_logmass_prob,
+                units=u.Msun/u.pc**2,
+                vectorized=False,
+                num_mu_bins=4,
+            )
+
         def it_calculates_stacked_delta_sigma_profiles(model):
             rs = np.logspace(-1, 1, 8)
             rho_params = np.ones((np.random.randint(2, 10), 2))
             a_szs = np.array([-1, 0, 1])
 
             esds = model.stacked_delta_sigma(rs, a_szs, *rho_params)
+
+            assert np.all(esds >= 0)
+            assert esds.shape == (8, 3, 2)
+
+        def the_non_vectorized_option_works(model_loop):
+            rs = np.logspace(-1, 1, 8)
+            rho_params = np.ones((np.random.randint(2, 10), 2))
+            a_szs = np.array([-1, 0, 1])
+
+            esds = model_loop.stacked_delta_sigma(rs, a_szs, *rho_params)
 
             assert np.all(esds >= 0)
             assert esds.shape == (8, 3, 2)

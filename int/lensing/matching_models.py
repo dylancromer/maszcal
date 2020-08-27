@@ -183,6 +183,38 @@ def describe_ScatteredMatchingConvergenceModel():
                 logmass_prob_dist_func=hmf_interp,
             )
 
+        @pytest.fixture
+        def convergence_model_loop(density_model, hmf_interp):
+            NUM_CLUSTERS = 1
+            rng = np.random.default_rng(seed=13)
+            sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
+            zs = rng.random(size=NUM_CLUSTERS) + 0.01
+            weights = rng.random(size=NUM_CLUSTERS)
+            cosmo_params = maszcal.cosmology.CosmoParams()
+            return maszcal.lensing.ScatteredMatchingConvergenceModel(
+                sz_masses=sz_masses,
+                redshifts=zs,
+                lensing_weights=weights,
+                cosmo_params=cosmo_params,
+                rho_func=density_model.rho_tot,
+                logmass_prob_dist_func=hmf_interp,
+                vectorized=False,
+            )
+
+        def vectorized_and_loop_give_same_answer(convergence_model, convergence_model_loop):
+            from_arcmin = 2 * np.pi / 360 / 60
+            to_arcmin = 1/from_arcmin
+            thetas = np.geomspace(0.05*from_arcmin, 60*from_arcmin, 60)
+            cons = 3*np.ones(1)
+            alphas = 0.5*np.ones(1)
+            betas = np.linspace(2.8, 3.2, 3)
+            gammas = 0.5*np.ones(1)
+            a_szs = np.array([0, 0.1, -0.1, 0.01])
+
+            sds = convergence_model.stacked_kappa(thetas, a_szs, cons, alphas, betas, gammas)
+            sds_loop = convergence_model_loop.stacked_kappa(thetas, a_szs, cons, alphas, betas, gammas)
+            assert np.all(sds == sds_loop)
+
         def the_plots_look_right(convergence_model):
             from_arcmin = 2 * np.pi / 360 / 60
             to_arcmin = 1/from_arcmin
@@ -297,6 +329,34 @@ def describe_ScatteredMatchingShearModel():
                 rho_func=density_model.rho_tot,
                 logmass_prob_dist_func=hmf_interp,
             )
+
+        @pytest.fixture
+        def shear_model_loop(density_model, hmf_interp):
+            NUM_CLUSTERS = 100
+            rng = np.random.default_rng(seed=13)
+            sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
+            zs = rng.random(size=NUM_CLUSTERS) + 0.01
+            weights = rng.random(size=NUM_CLUSTERS)
+            return maszcal.lensing.ScatteredMatchingShearModel(
+                sz_masses=sz_masses,
+                redshifts=zs,
+                lensing_weights=weights,
+                rho_func=density_model.rho_tot,
+                logmass_prob_dist_func=hmf_interp,
+                vectorized=False,
+            )
+
+        def vectorized_and_loop_give_same_answer(shear_model, shear_model_loop):
+            radii = np.logspace(-1, 1, 30)
+            cons = 3*np.ones(1)
+            alphas = 0.8*np.ones(1)
+            betas = 3.4*np.ones(1)
+            gammas = 0.2*np.ones(1)
+            a_szs = np.linspace(0, 0.5, 4)
+
+            esds = shear_model.stacked_delta_sigma(radii, a_szs, cons, alphas, betas, gammas)
+            esds_loop = shear_model_loop.stacked_delta_sigma(radii, a_szs, cons, alphas, betas, gammas)
+            assert np.all(esds == esds_loop)
 
         def the_plots_look_right(shear_model):
             radii = np.logspace(-1, 1, 30)
@@ -563,7 +623,8 @@ def describe_miscentered_ScatteredMatchingShearModel():
                 lensing_weights=weights,
                 rho_func=miscentered_rho_func,
                 logmass_prob_dist_func=hmf_interp,
-                num_mu_bins=20,
+                num_mu_bins=64,
+                vectorized=False,
             )
 
         def the_plots_look_right(shear_model):
@@ -643,7 +704,8 @@ def describe_miscentered_ScatteredMatchingConvergenceModel():
                 cosmo_params=cosmo_params,
                 rho_func=miscentered_rho_func,
                 logmass_prob_dist_func=hmf_interp,
-                num_mu_bins=20,
+                num_mu_bins=64,
+                vectorized=False,
             )
 
         def the_plots_look_right(convergence_model):
