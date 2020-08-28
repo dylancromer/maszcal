@@ -6,6 +6,46 @@ import maszcal.density
 import maszcal.cosmology
 import maszcal.lensing
 import maszcal.mathutils
+import maszcal.interp_utils
+
+
+@dataclass
+class SingleMass2HaloShearModel:
+    radii: np.ndarray
+    one_halo_rho_func: object
+    one_halo_shear_class: object
+    two_halo_term_function: object
+    mass_definition: str = 'mean'
+    delta: int = 200
+    units: u.Quantity = u.Msun/u.pc**2
+    esd_func: object = projector.esd
+
+    def __post_init__(self):
+        self._one_halo_shear = self.one_halo_shear_class(
+            rho_func=self.one_halo_rho_func,
+            units=self.units,
+            esd_func=self.esd_func,
+        )
+
+    def _one_halo_delta_sigma(self, zs, mus, *args):
+        return self._one_halo_shear.delta_sigma_total(self.radii, zs, mus, *args)
+
+    def _two_halo_delta_sigma(self, zs, mus):
+        zs_twohalo, mus_twohalo = maszcal.interp_utils.cartesian_prod(zs, mus).T
+        return np.swapaxes(
+            self.two_halo_term_function(zs_twohalo, mus_twohalo).reshape(mus.size, zs.size, -1),
+            -1,
+            0,
+        )
+
+    def _combine_1_and_2_halo_terms(self, a_2hs, one_halo, two_halo):
+        two_halo = two_halo * a_2hs
+        return np.where(one_halo > two_halo, one_halo, two_halo)
+
+    def delta_sigma(self, a_2hs, zs, mus, *one_halo_params):
+        one_halo = self._one_halo_delta_sigma(zs, mus, *one_halo_params)
+        two_halo = self._two_halo_delta_sigma(zs, mus)
+        return self._combine_1_and_2_halo_terms(a_2hs, one_halo, two_halo)
 
 
 @dataclass
@@ -17,7 +57,6 @@ class Matching2HaloShearModel:
     one_halo_rho_func: object
     one_halo_shear_class: object
     two_halo_term_function: object
-    cosmo_params: maszcal.cosmology.CosmoParams = maszcal.cosmology.CosmoParams()
     mass_definition: str = 'mean'
     delta: float = 200
     units: u.Quantity = u.Msun/u.pc**2
@@ -47,20 +86,17 @@ class Matching2HaloShearModel:
     def mu_from_sz_mu(self, sz_mu, a_sz):
         return sz_mu[:, None] - a_sz[None, :]
 
-    def delta_sigma_2_halo(self, zs, mus):
+    def _two_halo_delta_sigma(self, zs, mus):
         return self.two_halo_term_function(zs, mus)
 
     def _combine_1_and_2_halo_terms(self, a_2hs, one_halo, two_halo):
         two_halo = two_halo[..., None] * a_2hs[None, None, :]
-        two_halo_indices = np.where(two_halo > one_halo)
-        combination = one_halo.copy()
-        combination[two_halo_indices] = two_halo[two_halo_indices]
-        return combination
+        return np.where(one_halo > two_halo, one_halo, two_halo)
 
     def delta_sigma_total(self, a_2hs, a_szs, *one_halo_args):
         mus = self.mu_from_sz_mu(np.log(self.sz_masses), a_szs).flatten()
         zs = np.repeat(self.redshifts, a_szs.size)
-        two_halo_delta_sigmas = self.delta_sigma_2_halo(zs, mus)
+        two_halo_delta_sigmas = self._two_halo_delta_sigma(zs, mus)
         one_halo_delta_sigmas = self._one_halo_delta_sigma(zs, mus, *one_halo_args)
         return self._combine_1_and_2_halo_terms(a_2hs, one_halo_delta_sigmas, two_halo_delta_sigmas)
 
