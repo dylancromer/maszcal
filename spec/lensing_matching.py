@@ -6,17 +6,11 @@ import maszcal.lensing
 import maszcal.cosmology
 
 
-def fake_projector_esd(rs, rho_func):
-    rhos = rho_func(rs)
-    return np.ones(rhos.shape)
+def fake_scattered_lensing_func(rs, zs, mus, *params):
+    return np.ones(rs.shape + mus.shape + zs.shape + (params[0].size,))
 
 
-def fake_projector_sd(rs, rho_func):
-    rhos = rho_func(rs)
-    return np.ones(rhos.shape)
-
-
-def fake_rho_total(rs, zs, mus, *params):
+def fake_lensing_func(rs, zs, mus, *params):
     return np.ones(rs.shape + mus.shape + (params[0].size,))
 
 
@@ -39,10 +33,9 @@ def describe_ScatteredMatchingConvergenceModel():
                 sz_masses=2e13*np.random.randn(NUM_CLUSTERS) + 2e14,
                 redshifts=np.random.rand(NUM_CLUSTERS),
                 lensing_weights=np.random.rand(NUM_CLUSTERS),
-                rho_func=fake_scattered_rho_total,
+                lensing_func=fake_scattered_lensing_func,
                 comoving=True,
                 logmass_prob_dist_func=fake_logmass_prob,
-                sd_func=fake_projector_sd,
             )
 
         @pytest.fixture
@@ -52,10 +45,9 @@ def describe_ScatteredMatchingConvergenceModel():
                 sz_masses=2e13*np.random.randn(NUM_CLUSTERS) + 2e14,
                 redshifts=np.random.rand(NUM_CLUSTERS),
                 lensing_weights=np.random.rand(NUM_CLUSTERS),
-                rho_func=fake_scattered_rho_total,
+                lensing_func=fake_scattered_lensing_func,
                 comoving=False,
                 logmass_prob_dist_func=fake_logmass_prob,
-                sd_func=fake_projector_sd,
             )
 
         def it_differs_between_comoving_and_noncomoving_cases(model_physical, model_comoving):
@@ -74,11 +66,10 @@ def describe_ScatteredMatchingConvergenceModel():
                 sz_masses=2e13*np.random.randn(NUM_CLUSTERS) + 2e14,
                 redshifts=np.random.rand(NUM_CLUSTERS),
                 lensing_weights=np.random.rand(NUM_CLUSTERS),
-                rho_func=fake_scattered_rho_total,
+                lensing_func=fake_scattered_lensing_func,
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 units=u.Msun/u.pc**2,
                 logmass_prob_dist_func=fake_logmass_prob,
-                sd_func=fake_projector_sd,
             )
 
         def it_calculates_stacked_kappa_profiles(model):
@@ -98,11 +89,10 @@ def describe_ScatteredMatchingConvergenceModel():
                 sz_masses=2e13*np.random.randn(NUM_CLUSTERS) + 2e14,
                 redshifts=np.random.rand(NUM_CLUSTERS),
                 lensing_weights=np.random.rand(NUM_CLUSTERS),
-                rho_func=fake_scattered_rho_total,
+                lensing_func=fake_scattered_lensing_func,
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 units=u.Msun/u.pc**2,
                 logmass_prob_dist_func=fake_logmass_prob,
-                sd_func=fake_projector_sd,
                 vectorized=False,
                 num_mu_bins=4,
             )
@@ -129,9 +119,8 @@ def describe_MatchingConvergenceModel():
                 sz_masses=2e13*np.random.randn(NUM_CLUSTERS) + 2e14,
                 redshifts=np.random.rand(NUM_CLUSTERS),
                 lensing_weights=np.random.rand(NUM_CLUSTERS),
-                rho_func=fake_rho_total,
+                lensing_func=fake_lensing_func,
                 comoving=True,
-                sd_func=fake_projector_sd,
             )
 
         @pytest.fixture
@@ -141,9 +130,8 @@ def describe_MatchingConvergenceModel():
                 sz_masses=2e13*np.random.randn(NUM_CLUSTERS) + 2e14,
                 redshifts=np.random.rand(NUM_CLUSTERS),
                 lensing_weights=np.random.rand(NUM_CLUSTERS),
-                rho_func=fake_rho_total,
+                lensing_func=fake_lensing_func,
                 comoving=False,
-                sd_func=fake_projector_sd,
             )
 
         def it_differs_between_comoving_and_noncomoving_cases(model_physical, model_comoving):
@@ -162,10 +150,9 @@ def describe_MatchingConvergenceModel():
                 sz_masses=2e13*np.random.randn(NUM_CLUSTERS) + 2e14,
                 redshifts=np.random.rand(NUM_CLUSTERS),
                 lensing_weights=np.random.rand(NUM_CLUSTERS),
-                rho_func=fake_rho_total,
+                lensing_func=fake_lensing_func,
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 units=u.Msun/u.pc**2,
-                sd_func=fake_projector_sd,
             )
 
         def it_calculates_stacked_kappa_profiles(model):
@@ -193,9 +180,8 @@ def describe_MatchingShearModel():
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
-                rho_func=fake_rho_total,
+                lensing_func=fake_lensing_func,
                 units=u.Msun/u.pc**2,
-                esd_func=fake_projector_esd,
             )
 
         def it_calculates_stacked_delta_sigma_profiles(model):
@@ -223,8 +209,7 @@ def describe_ScatteredMatchingShearModel():
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
-                rho_func=fake_scattered_rho_total,
-                esd_func=fake_projector_esd,
+                lensing_func=fake_scattered_lensing_func,
                 logmass_prob_dist_func=fake_logmass_prob,
                 units=u.Msun/u.pc**2,
             )
@@ -239,8 +224,7 @@ def describe_ScatteredMatchingShearModel():
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
-                rho_func=fake_scattered_rho_total,
-                esd_func=fake_projector_esd,
+                lensing_func=fake_scattered_lensing_func,
                 logmass_prob_dist_func=fake_logmass_prob,
                 units=u.Msun/u.pc**2,
                 vectorized=False,

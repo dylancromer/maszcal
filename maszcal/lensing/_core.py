@@ -70,7 +70,7 @@ class MatchingModel:
     sz_masses: np.ndarray
     redshifts: np.ndarray
     lensing_weights: np.ndarray
-    rho_func: object
+    lensing_func: object
     units: u.Quantity = u.Msun/u.pc**2
 
     def normed_lensing_weights(self, a_szs):
@@ -92,7 +92,7 @@ class ScatteredMatchingModel:
     sz_masses: np.ndarray
     redshifts: np.ndarray
     lensing_weights: np.ndarray
-    rho_func: object
+    lensing_func: object
     logmass_prob_dist_func: object
     num_mu_bins: int = 64
     units: u.Quantity = u.Msun/u.pc**2

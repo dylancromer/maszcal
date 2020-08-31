@@ -10,23 +10,14 @@ import maszcal.lensing._core as _core
 
 @dataclass
 class MatchingConvergenceModel(_core.MatchingModel):
-    convergence_class: object = _core.Convergence
     cosmo_params: maszcal.cosmology.CosmoParams = maszcal.cosmology.CosmoParams()
     comoving: bool = True
-    sd_func: object = projector.sd
 
     def __post_init__(self):
-        self._convergence = self.convergence_class(
-            rho_func=self.rho_func,
-            cosmo_params=self.cosmo_params,
-            units=self.units,
-            comoving=self.comoving,
-            sd_func=self.sd_func,
-        )
         self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
 
     def _radius_space_kappa(self, rs, zs, mus, *rho_params):
-        return self._convergence.kappa(rs, zs, mus, *rho_params)
+        return self.lensing_func(rs, zs, mus, *rho_params)
 
     def _comoving_distance(self, z):
         return self.astropy_cosmology.comoving_distance(z).to(u.Mpc).value
@@ -64,25 +55,16 @@ class MatchingConvergenceModel(_core.MatchingModel):
 
 @dataclass
 class ScatteredMatchingConvergenceModel(_core.ScatteredMatchingModel):
-    convergence_class: object = _core.Convergence
     cosmo_params: maszcal.cosmology.CosmoParams = maszcal.cosmology.CosmoParams()
     comoving: bool = True
-    sd_func: object = projector.sd
     vectorized: bool = True
 
     def __post_init__(self):
-        self._convergence = self.convergence_class(
-            rho_func=self.rho_func,
-            cosmo_params=self.cosmo_params,
-            units=self.units,
-            comoving=self.comoving,
-            sd_func=self.sd_func,
-        )
         self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
         self.mus = np.log(np.geomspace(1e12, 6e15, self.num_mu_bins))
 
     def _radius_space_kappa(self, rs, zs, mus, *rho_params):
-        return self._convergence.kappa(rs, zs, mus, *rho_params)
+        return self.lensing_func(rs, zs, mus, *rho_params)
 
     def _comoving_distance(self, z):
         return self.astropy_cosmology.comoving_distance(z).to(u.Mpc).value
@@ -166,22 +148,12 @@ class ScatteredMatchingConvergenceModel(_core.ScatteredMatchingModel):
         return (weights[None, :, None, None] * profiles).sum(axis=1)
 
 
-@dataclass
 class MatchingShearModel(_core.MatchingModel):
-    shear_class: object = _core.Shear
-    esd_func: object = projector.esd
-
-    def __post_init__(self):
-        self._shear = self.shear_class(
-            rho_func=self.rho_func,
-            units=self.units,
-            esd_func=self.esd_func,
-        )
 
     def delta_sigma_total(self, rs, a_szs, *rho_params):
         mus = self.mu_from_sz_mu(np.log(self.sz_masses), a_szs).flatten()
         zs = np.repeat(self.redshifts, a_szs.size)
-        return self._shear.delta_sigma_total(rs, zs, mus, *rho_params)
+        return self.lensing_func(rs, zs, mus, *rho_params)
 
     def stacked_delta_sigma(self, rs, a_szs, *rho_params):
         'SHAPE r, a_sz, params'
@@ -193,16 +165,9 @@ class MatchingShearModel(_core.MatchingModel):
 
 @dataclass
 class ScatteredMatchingShearModel(_core.ScatteredMatchingModel):
-    shear_class: object = _core.Shear
-    esd_func: object = projector.esd
     vectorized: bool = True
 
     def __post_init__(self):
-        self._shear = self.shear_class(
-            rho_func=self.rho_func,
-            units=self.units,
-            esd_func=self.esd_func,
-        )
         self.mus = np.log(np.geomspace(1e12, 6e15, self.num_mu_bins))
 
     def _get_mass_weights(self, mu_szs, a_szs):
@@ -212,7 +177,7 @@ class ScatteredMatchingShearModel(_core.ScatteredMatchingModel):
         return unnormalized_mass_weights/normalization
 
     def _delta_sigma_total_vectorized(self, rs, a_szs, *rho_params):
-        delta_sigmas_over_mass_range = self._shear.delta_sigma_total(rs, self.redshifts, self.mus, *rho_params)
+        delta_sigmas_over_mass_range = self.lensing_func(rs, self.redshifts, self.mus, *rho_params)
         mu_szs = np.log(self.sz_masses)
         mass_weights = self._get_mass_weights(mu_szs, a_szs)
         return maszcal.mathutils.trapz_(
@@ -226,7 +191,7 @@ class ScatteredMatchingShearModel(_core.ScatteredMatchingModel):
         mass_weights = self._get_mass_weights(mu_szs, a_szs)
         dmus = np.gradient(self.mus)
 
-        def loop_func(mu): return self._shear.delta_sigma_total(rs, self.redshifts, mu, *rho_params).squeeze(axis=1)
+        def loop_func(mu): return self.lensing_func(rs, self.redshifts, mu, *rho_params).squeeze(axis=1)
         esd_test = loop_func(self.mus[:1])
 
         delta_sigmas_over_mass_range = np.zeros(esd_test.shape[:2] + a_szs.shape + esd_test.shape[2:])
