@@ -53,7 +53,7 @@ def describe_SingleMassConvergenceModel():
             )
             return model
 
-        def it_can_calculate_delta_sigma_of_mass(single_mass_model):
+        def it_can_calculate_excess_surface_density_of_mass(single_mass_model):
             base = np.ones(11)
 
             zs= 0.4*np.ones(2)
@@ -61,9 +61,9 @@ def describe_SingleMassConvergenceModel():
             cons = 3*base
             thetas = np.logspace(-4, -1, 5)
 
-            kappas = single_mass_model.kappa(thetas, zs, mus, cons)
+            convergences = single_mass_model.convergence(thetas, zs, mus, cons)
 
-            assert kappas.shape == (5, 2, 11)
+            assert convergences.shape == (5, 2, 11)
 
 
 def describe_SingleMassShearModel():
@@ -80,7 +80,7 @@ def describe_SingleMassShearModel():
             )
             return model
 
-        def it_can_calculate_delta_sigma_of_mass(single_mass_model):
+        def it_can_calculate_excess_surface_density_of_mass(single_mass_model):
             base = np.ones(11)
 
             mus = np.log(1e15)*base
@@ -90,7 +90,7 @@ def describe_SingleMassShearModel():
             gammas = 0.2*base
             rs = np.logspace(-1, 1, 5)
 
-            delta_sigs = single_mass_model.delta_sigma(rs, mus, cons, alphas, betas, gammas)
+            delta_sigs = single_mass_model.excess_surface_density(rs, mus, cons, alphas, betas, gammas)
 
             assert delta_sigs.shape == (5, 2, 11)
 
@@ -111,7 +111,7 @@ def describe_SingleMassShearModel():
             gamma = np.array([0.2])
             rs = np.logspace(-1, 1, 5)
 
-            delta_sigs = model.delta_sigma(rs, mu, con, alpha, beta, gamma)/1e12
+            delta_sigs = model.excess_surface_density(rs, mu, con, alpha, beta, gamma)/1e12
 
             assert np.all(rs*delta_sigs < 1e6)
 
@@ -126,12 +126,12 @@ def describe_SingleMassNfwShearModel():
             model = maszcal.lensing.SingleMassNfwShearModel(redshifts=redshift)
             return model
 
-        def it_can_calculate_delta_sigma_of_mass(single_mass_model):
+        def it_can_calculate_excess_surface_density_of_mass(single_mass_model):
             mu = np.array([np.log(1e15)])
             con = np.array([3])
             rs = np.logspace(-1, 1, 5)
 
-            delta_sigs = single_mass_model.delta_sigma(rs, mu, con)
+            delta_sigs = single_mass_model.excess_surface_density(rs, mu, con)
 
             assert np.all(delta_sigs > 0)
             assert delta_sigs.shape == (1, 1, 5, 1)
@@ -144,7 +144,7 @@ def describe_SingleMassNfwShearModel():
             con = np.array([3])
             rs = np.logspace(-1, 1, 5)
 
-            delta_sigs = model.delta_sigma(rs, mu, con)/1e12
+            delta_sigs = model.excess_surface_density(rs, mu, con)/1e12
 
             assert np.all(rs*delta_sigs < 1e6)
 
@@ -158,12 +158,12 @@ def describe_SingleMassNfwShearModel():
             mass_def = 'crit'
             model = maszcal.lensing.SingleMassNfwShearModel(redshifts=redshift, delta=delta, mass_definition=mass_def)
 
-            delta_sigs_500c = model.delta_sigma(rs, mu, con)
+            delta_sigs_500c = model.excess_surface_density(rs, mu, con)
 
             delta = 200
             kind = 'mean'
             model = maszcal.lensing.SingleMassNfwShearModel(redshifts=redshift, delta=delta, mass_definition=mass_def)
 
-            delta_sigs_200m = model.delta_sigma(rs, mu, con)
+            delta_sigs_200m = model.excess_surface_density(rs, mu, con)
 
             assert np.all(delta_sigs_200m < delta_sigs_500c)

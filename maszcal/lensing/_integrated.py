@@ -54,18 +54,18 @@ class IntegratedShearModel:
             sz_scatter=self.sz_scatter,
         )
 
-    def stacked_delta_sigma(self, rs, a_szs, *rho_params):
-        delta_sigmas = np.moveaxis(
-            self._shear.delta_sigma_total(rs, self.redshift_bins, self.mu_bins, *rho_params),
+    def stacked_excess_surface_density(self, rs, a_szs, *rho_params):
+        excess_surface_densities = np.moveaxis(
+            self._shear.excess_surface_density(rs, self.redshift_bins, self.mu_bins, *rho_params),
             0,
             2,
         )
 
         try:
-            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
+            return self.stacker.stacked_excess_surface_density(excess_surface_densities, rs, a_szs)
         except AttributeError:
             self._init_stacker()
-            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
+            return self.stacker.stacked_excess_surface_density(excess_surface_densities, rs, a_szs)
 
     def weak_lensing_avg_mass(self, a_szs):
         try:
@@ -241,14 +241,14 @@ class Stacker:
 
         return z_integral
 
-    def stacked_delta_sigma(self, delta_sigmas, rs, a_szs):
+    def stacked_excess_surface_density(self, excess_surface_densities, rs, a_szs):
         '''
         SHAPE r, params
         '''
         dmu_szs = np.gradient(self.mu_szs)
         mu_sz_integral = maszcal.mathutils.trapz_(
             (self._sz_measure(a_szs)[:, :, :, None, :]
-             * delta_sigmas[None, ...]),
+             * excess_surface_densities[None, ...]),
             axis=0,
             dx=dmu_szs,
         )
@@ -310,14 +310,14 @@ class CmStacker(Stacker):
     '''
     Changes a method to allow use of a con-mass relation following Miyatake et al 2019
     '''
-    def stacked_delta_sigma(self, delta_sigmas, rs, a_szs):
+    def stacked_excess_surface_density(self, excess_surface_densities, rs, a_szs):
         '''
         SHAPE r, params
         '''
         dmu_szs = np.gradient(self.mu_szs)
         mu_sz_integral = maszcal.mathutils.trapz_(
             (self._sz_measure(a_szs)[:, :, :, None, :]
-             * delta_sigmas[None, ..., None]),
+             * excess_surface_densities[None, ..., None]),
             axis=0,
             dx=dmu_szs,
         )
@@ -385,14 +385,14 @@ class MiyatakeStacker(Stacker):
     '''
     Changes a method to allow use of a con-mass relation following Miyatake et al 2019
     '''
-    def stacked_delta_sigma(self, delta_sigmas, rs, a_szs):
+    def stacked_excess_surface_density(self, excess_surface_densities, rs, a_szs):
         '''
         SHAPE r, params
         '''
         dmu_szs = np.gradient(self.mu_szs)
         mu_sz_integral = maszcal.mathutils.trapz_(
             (self._sz_measure(a_szs)[:, :, :, None, :]
-             * delta_sigmas[None, ..., None]),
+             * excess_surface_densities[None, ..., None]),
             axis=0,
             dx=dmu_szs,
         )
@@ -513,26 +513,26 @@ class NfwShearModel:
     def mass(self, mus):
         return np.exp(mus)
 
-    def delta_sigma(self, rs, mus, cons):
+    def excess_surface_density(self, rs, mus, cons):
         '''
         SHAPE mu, z, r, params
         '''
         masses = self.mass(mus)
 
         try:
-            return self.nfw_model.delta_sigma(rs, self.redshift_bins, masses, cons)
+            return self.nfw_model.excess_surface_density(rs, self.redshift_bins, masses, cons)
         except AttributeError:
             self._init_nfw()
-            return self.nfw_model.delta_sigma(rs, self.redshift_bins, masses, cons)
+            return self.nfw_model.excess_surface_density(rs, self.redshift_bins, masses, cons)
 
-    def stacked_delta_sigma(self, rs, cons, a_szs):
-        delta_sigmas = self.delta_sigma(rs, self.mu_bins, cons)
+    def stacked_excess_surface_density(self, rs, cons, a_szs):
+        excess_surface_densities = self.excess_surface_density(rs, self.mu_bins, cons)
 
         try:
-            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
+            return self.stacker.stacked_excess_surface_density(excess_surface_densities, rs, a_szs)
         except AttributeError:
             self._init_stacker()
-            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
+            return self.stacker.stacked_excess_surface_density(excess_surface_densities, rs, a_szs)
 
     def weak_lensing_avg_mass(self, a_szs):
         try:
@@ -543,7 +543,7 @@ class NfwShearModel:
 
 
 @dataclass
-class NfwCmShearModel(NfwShearModel):
+class CmNfwShearModel(NfwShearModel):
     con_class: object = ConModel
 
     def _init_stacker(self):
@@ -573,7 +573,7 @@ class NfwCmShearModel(NfwShearModel):
             return self._con_model.c(masses, self.redshift_bins, mass_def)
 
     def _init_nfw(self):
-        self.nfw_model = maszcal.density.NfwCmModel(
+        self.nfw_model = maszcal.density.CmNfwModel(
             cosmo_params=self.cosmo_params,
             units=self.units,
             delta=self.delta,
@@ -581,26 +581,26 @@ class NfwCmShearModel(NfwShearModel):
             comoving=self.comoving_radii,
         )
 
-    def delta_sigma(self, rs, mus):
+    def excess_surface_density(self, rs, mus):
         '''
         SHAPE mu, z, r, params
         '''
         masses = self.mass(mus)
 
         try:
-            return self.nfw_model.delta_sigma(rs, self.redshift_bins, masses, self._con(masses))
+            return self.nfw_model.excess_surface_density(rs, self.redshift_bins, masses, self._con(masses))
         except AttributeError:
             self._init_nfw()
-            return self.nfw_model.delta_sigma(rs, self.redshift_bins, masses, self._con(masses))
+            return self.nfw_model.excess_surface_density(rs, self.redshift_bins, masses, self._con(masses))
 
-    def stacked_delta_sigma(self, rs, a_szs):
-        delta_sigmas = self.delta_sigma(rs, self.mu_bins)
+    def stacked_excess_surface_density(self, rs, a_szs):
+        excess_surface_densities = self.excess_surface_density(rs, self.mu_bins)
 
         try:
-            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
+            return self.stacker.stacked_excess_surface_density(excess_surface_densities, rs, a_szs)
         except AttributeError:
             self._init_stacker()
-            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
+            return self.stacker.stacked_excess_surface_density(excess_surface_densities, rs, a_szs)
 
 
 @dataclass
@@ -637,7 +637,7 @@ class MiyatakeShearModel(NfwShearModel):
             return self._con_model.c(masses, self.redshift_bins, mass_def)
 
     def _init_nfw(self):
-        self.nfw_model = maszcal.density.NfwCmModel(
+        self.nfw_model = maszcal.density.CmNfwModel(
             cosmo_params=self.cosmo_params,
             units=self.units,
             delta=self.delta,
@@ -645,23 +645,23 @@ class MiyatakeShearModel(NfwShearModel):
             comoving=self.comoving_radii,
         )
 
-    def delta_sigma(self, rs, mus):
+    def excess_surface_density(self, rs, mus):
         '''
         SHAPE mu, z, r, params
         '''
         masses = self.mass(mus)
 
         try:
-            return self.nfw_model.delta_sigma(rs, self.redshift_bins, masses, self._con(masses))
+            return self.nfw_model.excess_surface_density(rs, self.redshift_bins, masses, self._con(masses))
         except AttributeError:
             self._init_nfw()
-            return self.nfw_model.delta_sigma(rs, self.redshift_bins, masses, self._con(masses))
+            return self.nfw_model.excess_surface_density(rs, self.redshift_bins, masses, self._con(masses))
 
-    def stacked_delta_sigma(self, rs, a_szs):
-        delta_sigmas = self.delta_sigma(rs, self.mu_bins)
+    def stacked_excess_surface_density(self, rs, a_szs):
+        excess_surface_densities = self.excess_surface_density(rs, self.mu_bins)
 
         try:
-            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
+            return self.stacker.stacked_excess_surface_density(excess_surface_densities, rs, a_szs)
         except AttributeError:
             self._init_stacker()
-            return self.stacker.stacked_delta_sigma(delta_sigmas, rs, a_szs)
+            return self.stacker.stacked_excess_surface_density(excess_surface_densities, rs, a_szs)

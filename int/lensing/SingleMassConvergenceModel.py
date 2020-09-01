@@ -40,15 +40,15 @@ def describe_NfwOnly_example():
         mu = np.array([np.log(1.23e14)])
         con = np.array([3])
 
-        kappas = convergence_model.kappa(thetas, z, mu, con)
+        convergences = convergence_model.convergence(thetas, z, mu, con)
 
         to_arcmin = 1/from_arcmin
 
-        plt.plot(thetas*to_arcmin, kappas.squeeze())
+        plt.plot(thetas*to_arcmin, convergences.squeeze())
         plt.xlabel(r'$\theta$')
         plt.ylabel(r'$\kappa$')
 
         plt.yscale('log')
         plt.xscale('log')
-        plt.savefig('figs/test/single_mass_bin_nfw_kappa.svg')
+        plt.savefig('figs/test/single_mass_bin_nfw_convergence.svg')
         plt.gcf().clear()

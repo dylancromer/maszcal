@@ -57,7 +57,7 @@ def describe_ScatteredMatchingConvergenceModel():
             assert np.all(scale_physical != scale_comoving)
 
 
-    def describe_stacked_kappa():
+    def describe_stacked_convergence():
 
         @pytest.fixture
         def model():
@@ -72,12 +72,12 @@ def describe_ScatteredMatchingConvergenceModel():
                 logmass_prob_dist_func=fake_logmass_prob,
             )
 
-        def it_calculates_stacked_kappa_profiles(model):
+        def it_calculates_stacked_convergence_profiles(model):
             thetas = np.logspace(-4, np.log(15 * (2*np.pi/360)/(60)), 8)
             rho_params = np.ones((np.random.randint(2, 10), 2))
             a_szs = np.array([-1, 0, 1])
 
-            sds = model.stacked_kappa(thetas, a_szs, *rho_params)
+            sds = model.stacked_convergence(thetas, a_szs, *rho_params)
 
             assert np.all(sds >= 0)
             assert sds.shape == (8, 3, 2)
@@ -102,7 +102,7 @@ def describe_ScatteredMatchingConvergenceModel():
             rho_params = np.ones((np.random.randint(2, 10), 2))
             a_szs = np.array([-1, 0, 1])
 
-            sds = model_loop.stacked_kappa(thetas, a_szs, *rho_params)
+            sds = model_loop.stacked_convergence(thetas, a_szs, *rho_params)
 
             assert np.all(sds >= 0)
             assert sds.shape == (8, 3, 2)
@@ -141,7 +141,7 @@ def describe_MatchingConvergenceModel():
             assert np.all(scale_physical != scale_comoving)
 
 
-    def describe_stacked_kappa():
+    def describe_stacked_convergence():
 
         @pytest.fixture
         def model():
@@ -155,12 +155,12 @@ def describe_MatchingConvergenceModel():
                 units=u.Msun/u.pc**2,
             )
 
-        def it_calculates_stacked_kappa_profiles(model):
+        def it_calculates_stacked_convergence_profiles(model):
             thetas = np.logspace(-4, np.log(15 * (2*np.pi/360)/(60)), 8)
             rho_params = np.ones((np.random.randint(2, 10), 2))
             a_szs = np.array([-1, 0, 1])
 
-            sds = model.stacked_kappa(thetas, a_szs, *rho_params)
+            sds = model.stacked_convergence(thetas, a_szs, *rho_params)
 
             assert np.all(sds >= 0)
             assert sds.shape == (8, 3, 2)
@@ -168,7 +168,7 @@ def describe_MatchingConvergenceModel():
 
 def describe_MatchingShearModel():
 
-    def describe_stacked_delta_sigma():
+    def describe_stacked_excess_surface_density():
 
         @pytest.fixture
         def model():
@@ -184,12 +184,12 @@ def describe_MatchingShearModel():
                 units=u.Msun/u.pc**2,
             )
 
-        def it_calculates_stacked_delta_sigma_profiles(model):
+        def it_calculates_stacked_excess_surface_density_profiles(model):
             rs = np.logspace(-1, 1, 8)
             rho_params = np.ones((np.random.randint(2, 10), 2))
             a_szs = np.array([-1, 0, 1])
 
-            esds = model.stacked_delta_sigma(rs, a_szs, *rho_params)
+            esds = model.stacked_excess_surface_density(rs, a_szs, *rho_params)
 
             assert np.all(esds >= 0)
             assert esds.shape == (8, 3, 2)
@@ -197,7 +197,7 @@ def describe_MatchingShearModel():
 
 def describe_ScatteredMatchingShearModel():
 
-    def describe_stacked_delta_sigma():
+    def describe_stacked_excess_surface_density():
 
         @pytest.fixture
         def model():
@@ -231,12 +231,12 @@ def describe_ScatteredMatchingShearModel():
                 num_mu_bins=4,
             )
 
-        def it_calculates_stacked_delta_sigma_profiles(model):
+        def it_calculates_stacked_excess_surface_density_profiles(model):
             rs = np.logspace(-1, 1, 8)
             rho_params = np.ones((np.random.randint(2, 10), 2))
             a_szs = np.array([-1, 0, 1])
 
-            esds = model.stacked_delta_sigma(rs, a_szs, *rho_params)
+            esds = model.stacked_excess_surface_density(rs, a_szs, *rho_params)
 
             assert np.all(esds >= 0)
             assert esds.shape == (8, 3, 2)
@@ -246,7 +246,7 @@ def describe_ScatteredMatchingShearModel():
             rho_params = np.ones((np.random.randint(2, 10), 2))
             a_szs = np.array([-1, 0, 1])
 
-            esds = model_loop.stacked_delta_sigma(rs, a_szs, *rho_params)
+            esds = model_loop.stacked_excess_surface_density(rs, a_szs, *rho_params)
 
             assert np.all(esds >= 0)
             assert esds.shape == (8, 3, 2)

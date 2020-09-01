@@ -40,7 +40,7 @@ def describe_single_mass_bin():
         gamma = np.array([0.2])
         params = np.array([[mu, concentration, alpha, beta, gamma]])
 
-        ds = single_mass_model.delta_sigma(rs, mu, concentration, alpha, beta, gamma)
+        ds = single_mass_model.excess_surface_density(rs, mu, concentration, alpha, beta, gamma)
 
         plt.plot(rs, ds.flatten())
         plt.xlabel(r'$R \; (\mathrm{Mpc}/h)$')

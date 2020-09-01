@@ -27,10 +27,10 @@ class SingleMass2HaloShearModel:
             esd_func=self.esd_func,
         )
 
-    def _one_halo_delta_sigma(self, zs, mus, *args):
-        return self._one_halo_shear.delta_sigma_total(self.radii, zs, mus, *args)
+    def _one_halo_excess_surface_density(self, zs, mus, *args):
+        return self._one_halo_shear.excess_surface_density(self.radii, zs, mus, *args)
 
-    def _two_halo_delta_sigma(self, zs, mus):
+    def _two_halo_excess_surface_density(self, zs, mus):
         zs_twohalo, mus_twohalo = maszcal.interp_utils.cartesian_prod(zs, mus).T
         return np.swapaxes(
             self.two_halo_term_function(zs_twohalo, mus_twohalo).reshape(mus.size, zs.size, -1),
@@ -42,9 +42,9 @@ class SingleMass2HaloShearModel:
         two_halo = two_halo * a_2hs
         return np.where(one_halo > two_halo, one_halo, two_halo)
 
-    def delta_sigma(self, a_2hs, zs, mus, *one_halo_params):
-        one_halo = self._one_halo_delta_sigma(zs, mus, *one_halo_params)
-        two_halo = self._two_halo_delta_sigma(zs, mus)
+    def excess_surface_density(self, a_2hs, zs, mus, *one_halo_params):
+        one_halo = self._one_halo_excess_surface_density(zs, mus, *one_halo_params)
+        two_halo = self._two_halo_excess_surface_density(zs, mus)
         return self._combine_1_and_2_halo_terms(a_2hs, one_halo, two_halo)
 
 
@@ -70,9 +70,9 @@ class Matching2HaloShearModel:
             esd_func=self.esd_func,
         )
 
-    def _one_halo_delta_sigma(self, zs, mus, *args):
+    def _one_halo_excess_surface_density(self, zs, mus, *args):
         return np.moveaxis(
-            self._one_halo_shear.delta_sigma_total(self.radii, zs, mus, *args),
+            self._one_halo_shear.excess_surface_density(self.radii, zs, mus, *args),
             0,
             1,
         )
@@ -86,24 +86,24 @@ class Matching2HaloShearModel:
     def mu_from_sz_mu(self, sz_mu, a_sz):
         return sz_mu[:, None] - a_sz[None, :]
 
-    def _two_halo_delta_sigma(self, zs, mus):
+    def _two_halo_excess_surface_density(self, zs, mus):
         return self.two_halo_term_function(zs, mus)
 
     def _combine_1_and_2_halo_terms(self, a_2hs, one_halo, two_halo):
         two_halo = two_halo[..., None] * a_2hs[None, None, :]
         return np.where(one_halo > two_halo, one_halo, two_halo)
 
-    def delta_sigma_total(self, a_2hs, a_szs, *one_halo_args):
+    def excess_surface_density(self, a_2hs, a_szs, *one_halo_args):
         mus = self.mu_from_sz_mu(np.log(self.sz_masses), a_szs).flatten()
         zs = np.repeat(self.redshifts, a_szs.size)
-        two_halo_delta_sigmas = self._two_halo_delta_sigma(zs, mus)
-        one_halo_delta_sigmas = self._one_halo_delta_sigma(zs, mus, *one_halo_args)
-        return self._combine_1_and_2_halo_terms(a_2hs, one_halo_delta_sigmas, two_halo_delta_sigmas)
+        two_halo_excess_surface_densities = self._two_halo_excess_surface_density(zs, mus)
+        one_halo_excess_surface_densities = self._one_halo_excess_surface_density(zs, mus, *one_halo_args)
+        return self._combine_1_and_2_halo_terms(a_2hs, one_halo_excess_surface_densities, two_halo_excess_surface_densities)
 
-    def stacked_delta_sigma(self, a_2hs, a_szs, *one_halo_args):
+    def stacked_excess_surface_density(self, a_2hs, a_szs, *one_halo_args):
         'SHAPE a_sz, r, params'
         num_clusters = self.sz_masses.size
-        profiles = self.delta_sigma_total(a_2hs, a_szs, *one_halo_args).reshape(num_clusters, a_szs.size, self.radii.size, -1)
+        profiles = self.excess_surface_density(a_2hs, a_szs, *one_halo_args).reshape(num_clusters, a_szs.size, self.radii.size, -1)
         weights = self.normed_lensing_weights(a_szs).reshape(num_clusters, a_szs.size)
         return (weights[:, :, None, None] * profiles).sum(axis=0)
 
@@ -125,7 +125,7 @@ class Matching2HaloConvergenceModel:
     sd_func: object = projector.sd
 
     def __post_init__(self):
-        self._one_halo_convergence = self.one_halo_convergence_class(
+        self._one_halo_convergence_model = self.one_halo_convergence_class(
             rho_func=self.one_halo_rho_func,
             cosmo_params=self.cosmo_params,
             units=self.units,
@@ -133,9 +133,9 @@ class Matching2HaloConvergenceModel:
             sd_func=self.sd_func,
         )
 
-    def _one_halo_kappa(self, zs, mus, *args):
+    def _one_halo_convergence(self, zs, mus, *args):
         return np.moveaxis(
-            self._one_halo_convergence.kappa(self.thetas, zs, mus, *args),
+            self._one_halo_convergence_model.convergence(self.thetas, zs, mus, *args),
             0,
             1,
         )
@@ -149,7 +149,7 @@ class Matching2HaloConvergenceModel:
     def mu_from_sz_mu(self, sz_mu, a_sz):
         return sz_mu[:, None] - a_sz[None, :]
 
-    def kappa_2_halo(self, zs, mus):
+    def convergence_2_halo(self, zs, mus):
         return self.two_halo_term_function(zs, mus)
 
     def _combine_1_and_2_halo_terms(self, a_2hs, one_halo, two_halo):
@@ -159,16 +159,16 @@ class Matching2HaloConvergenceModel:
         combination[two_halo_indices] = two_halo[two_halo_indices]
         return combination
 
-    def kappa(self, a_2hs, a_szs, *one_halo_args):
+    def convergence(self, a_2hs, a_szs, *one_halo_args):
         mus = self.mu_from_sz_mu(np.log(self.sz_masses), a_szs).flatten()
         zs = np.repeat(self.redshifts, a_szs.size)
-        two_halo_kappas = self.kappa_2_halo(zs, mus)
-        one_halo_kappas = self._one_halo_kappa(zs, mus, *one_halo_args)
-        return self._combine_1_and_2_halo_terms(a_2hs, one_halo_kappas, two_halo_kappas)
+        two_halo_convergences = self.convergence_2_halo(zs, mus)
+        one_halo_convergences = self._one_halo_convergence(zs, mus, *one_halo_args)
+        return self._combine_1_and_2_halo_terms(a_2hs, one_halo_convergences, two_halo_convergences)
 
-    def stacked_kappa(self, a_2hs, a_szs, *one_halo_args):
+    def stacked_convergence(self, a_2hs, a_szs, *one_halo_args):
         'SHAPE a_sz, r, params'
         num_clusters = self.sz_masses.size
-        profiles = self.kappa(a_2hs, a_szs, *one_halo_args).reshape(num_clusters, a_szs.size, self.thetas.size, -1)
+        profiles = self.convergence(a_2hs, a_szs, *one_halo_args).reshape(num_clusters, a_szs.size, self.thetas.size, -1)
         weights = self.normed_lensing_weights(a_szs).reshape(num_clusters, a_szs.size)
         return (weights[:, :, None, None] * profiles).sum(axis=0)

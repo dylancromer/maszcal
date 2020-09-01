@@ -35,7 +35,7 @@ class Shear:
     units: u.Quantity
     esd_func: object
 
-    def delta_sigma_total(self, rs, zs, mus, *rho_params):
+    def excess_surface_density(self, rs, zs, mus, *rho_params):
         return self.esd_func(
             rs,
             lambda r: self.rho_func(r, zs, mus, *rho_params),
@@ -58,7 +58,7 @@ class Convergence:
             z_source=np.array([self.CMB_REDSHIFT]),
         )
 
-    def kappa(self, rs, zs, mus, *rho_params):
+    def convergence(self, rs, zs, mus, *rho_params):
         return self.sd_func(
             rs,
             lambda r: self.rho_func(r, zs, mus, *rho_params),

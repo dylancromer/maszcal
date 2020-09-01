@@ -23,7 +23,7 @@ def describe_GnfwCm_model():
                 mass_definition='mean',
                 delta=200,
                 comoving_radii=True,
-                nfw_class=maszcal.density.NfwCmModel,
+                nfw_class=maszcal.density.CmNfwModel,
                 con_class=maszcal.concentration.ConModel,
             )
 
@@ -44,10 +44,10 @@ def describe_GnfwCm_model():
             plt.xlabel(r'$R$')
             plt.ylabel(r'$\rho(R)$')
 
-            plt.savefig('figs/test/rho_bary_baryCm.svg')
+            plt.savefig('figs/test/integrated_model_rho_bary_baryCm.svg')
             plt.gcf().clear()
 
-    def describe_total_delta_sigma():
+    def describe_excess_surface_density():
 
         @pytest.fixture
         def density_model():
@@ -56,7 +56,7 @@ def describe_GnfwCm_model():
                 mass_definition='mean',
                 delta=200,
                 comoving_radii=True,
-                nfw_class=maszcal.density.NfwCmModel,
+                nfw_class=maszcal.density.CmNfwModel,
                 con_class=maszcal.concentration.ConModel,
             )
 
@@ -74,7 +74,7 @@ def describe_GnfwCm_model():
             betas = np.linspace(2.8, 3.2, 3)
             gammas = 0.5*np.ones(1)
 
-            esds = shear_model._shear.delta_sigma_total(radii, zs, mus, alphas, betas, gammas)[:, 0, 0, :]
+            esds = shear_model._shear.excess_surface_density(radii, zs, mus, alphas, betas, gammas)[:, 0, 0, :]
 
             plt.plot(radii, radii[:, None]*esds)
             plt.xscale('log')
@@ -82,10 +82,10 @@ def describe_GnfwCm_model():
             plt.xlabel(r'$R$')
             plt.ylabel(r'$R \Delta\Sigma(R)$')
 
-            plt.savefig('figs/test/delta_sigma_total_baryCm.svg')
+            plt.savefig('figs/test/integrated_model_excess_surface_density_baryCm.svg')
             plt.gcf().clear()
 
-    def describe_stacked_delta_sigma():
+    def describe_stacked_excess_surface_density():
 
         @pytest.fixture
         def density_model():
@@ -94,7 +94,7 @@ def describe_GnfwCm_model():
                 mass_definition='mean',
                 delta=200,
                 comoving_radii=True,
-                nfw_class=maszcal.density.NfwCmModel,
+                nfw_class=maszcal.density.CmNfwModel,
                 con_class=maszcal.concentration.ConModel,
             )
 
@@ -111,7 +111,7 @@ def describe_GnfwCm_model():
             gammas = 0.5*np.ones(1)
             a_szs = 0.3*np.ones(1)
 
-            esds = shear_model.stacked_delta_sigma(radii, a_szs, alphas, betas, gammas)
+            esds = shear_model.stacked_excess_surface_density(radii, a_szs, alphas, betas, gammas)
 
             plt.plot(radii, radii[:, None]*esds)
             plt.xscale('log')
@@ -119,7 +119,7 @@ def describe_GnfwCm_model():
             plt.xlabel(r'$R$')
             plt.ylabel(r'$R \Delta\Sigma(R)$')
 
-            plt.savefig('figs/test/stacked_gnfw_delta_sigma_baryCm.svg')
+            plt.savefig('figs/test/integrated_model_stacked_gnfw_excess_surface_density_baryCm.svg')
             plt.gcf().clear()
 
 
@@ -155,10 +155,10 @@ def describe_Gnfw_model():
             plt.xlabel(r'$R$')
             plt.ylabel(r'$\rho(R)$')
 
-            plt.savefig('figs/test/rho_bary.svg')
+            plt.savefig('figs/test/integrated_model_rho_bary.svg')
             plt.gcf().clear()
 
-    def describe_total_delta_sigma():
+    def describe_excess_surface_density():
 
         @pytest.fixture
         def density_model():
@@ -224,7 +224,7 @@ def describe_Gnfw_model():
             betas = np.linspace(2.8, 3.2, 3)
             gammas = 0.5*np.ones(1)
 
-            esds = shear_model._shear.delta_sigma_total(radii, zs, mus, cons, alphas, betas, gammas)[:, 0, 0, :]
+            esds = shear_model._shear.excess_surface_density(radii, zs, mus, cons, alphas, betas, gammas)[:, 0, 0, :]
 
             plt.plot(radii, radii[:, None]*esds)
             plt.xscale('log')
@@ -232,10 +232,10 @@ def describe_Gnfw_model():
             plt.xlabel(r'$R$')
             plt.ylabel(r'$R \Delta\Sigma(R)$')
 
-            plt.savefig('figs/test/delta_sigma_total.svg')
+            plt.savefig('figs/test/integrated_model_excess_surface_density.svg')
             plt.gcf().clear()
 
-    def describe_stacked_delta_sigma():
+    def describe_stacked_excess_surface_density():
 
         @pytest.fixture
         def density_model():
@@ -261,7 +261,7 @@ def describe_Gnfw_model():
             gammas = 0.2*np.ones(1)
             a_szs = 0.3*np.ones(1)
 
-            esds = shear_model.stacked_delta_sigma(radii, a_szs, cons, alphas, betas, gammas)
+            esds = shear_model.stacked_excess_surface_density(radii, a_szs, cons, alphas, betas, gammas)
 
             plt.plot(radii, radii[:, None]*esds)
             plt.xscale('log')
@@ -269,5 +269,5 @@ def describe_Gnfw_model():
             plt.xlabel(r'$R$')
             plt.ylabel(r'$R \Delta\Sigma(R)$')
 
-            plt.savefig('figs/test/stacked_gnfw_delta_sigma.svg')
+            plt.savefig('figs/test/integrated_model_stacked_gnfw_excess_surface_density.svg')
             plt.gcf().clear()

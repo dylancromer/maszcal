@@ -31,8 +31,8 @@ class SingleMassConvergenceModel:
         )
         self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
 
-    def _radius_space_kappa(self, rs, zs, mus, *rho_params):
-        return self._convergence.kappa(rs, zs, mus, *rho_params)
+    def _radius_space_convergence(self, rs, zs, mus, *rho_params):
+        return self._convergence.convergence(rs, zs, mus, *rho_params)
 
     def _comoving_distance(self, z):
         return self.astropy_cosmology.comoving_distance(z).to(u.Mpc).value
@@ -46,13 +46,13 @@ class SingleMassConvergenceModel:
         else:
             return self._angular_diameter_distance(z)
 
-    def kappa(self, thetas, zs, mus, *rho_params):
+    def convergence(self, thetas, zs, mus, *rho_params):
         radii_of_z = [thetas * self.angle_scale_distance(z) for z in zs]
-        kappas = np.array([
-            self._radius_space_kappa(rs, zs[i:i+1], mus, *rho_params)
+        convergences = np.array([
+            self._radius_space_convergence(rs, zs[i:i+1], mus, *rho_params)
             for i, rs in enumerate(radii_of_z)
         ]).squeeze()
-        return kappas.reshape(thetas.shape + zs.shape + (-1,))
+        return convergences.reshape(thetas.shape + zs.shape + (-1,))
 
 
 @dataclass
@@ -70,8 +70,8 @@ class SingleMassShearModel:
             esd_func=self.esd_func,
         )
 
-    def delta_sigma(self, rs, mus, *rho_params):
-        return self._shear.delta_sigma_total(rs, self.redshifts, mus, *rho_params)
+    def excess_surface_density(self, rs, mus, *rho_params):
+        return self._shear.excess_surface_density(rs, self.redshifts, mus, *rho_params)
 
 
 class SingleMassNfwShearModel:
@@ -110,11 +110,11 @@ class SingleMassNfwShearModel:
     def mass(self, mu):
         return np.exp(mu)
 
-    def delta_sigma(self, rs, mus, concentrations):
+    def excess_surface_density(self, rs, mus, concentrations):
         masses = self.mass(mus)
 
         try:
-            return self.nfw_model.delta_sigma(rs, self.redshifts, masses, concentrations)
+            return self.nfw_model.excess_surface_density(rs, self.redshifts, masses, concentrations)
         except AttributeError:
             self._init_nfw()
-            return self.nfw_model.delta_sigma(rs, self.redshifts, masses, concentrations)
+            return self.nfw_model.excess_surface_density(rs, self.redshifts, masses, concentrations)

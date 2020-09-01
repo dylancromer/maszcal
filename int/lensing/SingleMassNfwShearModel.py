@@ -27,7 +27,7 @@ def describe_single_mass_bin():
         concentration = np.array([2.08])
         params = np.array([[mu, concentration]])
 
-        ds = single_mass_model.delta_sigma(rs, mu, concentration)
+        ds = single_mass_model.excess_surface_density(rs, mu, concentration)
 
         plt.plot(rs, ds.flatten())
         plt.xlabel(r'$R \; (\mathrm{Mpc}/h)$')

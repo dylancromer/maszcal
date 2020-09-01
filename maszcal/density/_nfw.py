@@ -129,7 +129,7 @@ class NfwModel:
         denominator = xs * (1+xs)**2
         return numerator/denominator
 
-    def delta_sigma(self, rs, zs, masses, cons):
+    def excess_surface_density(self, rs, zs, masses, cons):
         '''
         SHAPE mass, z, r, cons
         '''
@@ -184,7 +184,7 @@ class SingleMassNfwModel(NfwModel):
         denominator = xs * (1+xs)**2
         return numerator/denominator
 
-    def delta_sigma(self, rs, zs, masses, cons):
+    def excess_surface_density(self, rs, zs, masses, cons):
         '''
         SHAPE z, r, params
         '''
@@ -199,7 +199,7 @@ class SingleMassNfwModel(NfwModel):
         return prefactor[:, None, :] * postfactor
 
 
-class NfwCmModel(NfwModel):
+class CmNfwModel(NfwModel):
     '''
     Overwrites some methods to make it work for a concentration-mass relation
     '''
@@ -221,7 +221,7 @@ class NfwCmModel(NfwModel):
         denominator = xs * (1+xs)**2
         return numerator/denominator
 
-    def delta_sigma(self, rs, zs, masses, cons):
+    def excess_surface_density(self, rs, zs, masses, cons):
         '''
         SHAPE mass, z, r, c
         '''
@@ -265,7 +265,7 @@ class MatchingNfwModel(NfwModel):
         denominator = xs * (1+xs)**2
         return numerator/denominator
 
-    def delta_sigma(self, rs, zs, masses, cons):
+    def excess_surface_density(self, rs, zs, masses, cons):
         '''
         SHAPE cluster, r
         '''
@@ -306,7 +306,7 @@ class MatchingCmNfwModel(NfwModel):
         denominator = xs * (1+xs)**2
         return numerator/denominator
 
-    def delta_sigma(self, rs, zs, masses, cons):
+    def excess_surface_density(self, rs, zs, masses, cons):
         '''
         SHAPE cluster, r
         '''

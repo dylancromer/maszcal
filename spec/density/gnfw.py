@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import astropy.units as u
 import maszcal.density
 import maszcal.cosmology
 import maszcal.concentration
@@ -7,17 +8,13 @@ import maszcal.concentration
 
 def describe_MatchingGnfw():
     @pytest.fixture
-    def nfw_class():
-        return maszcal.density.MatchingNfwModel
-
-    @pytest.fixture
-    def gnfw_model(nfw_class):
+    def gnfw_model():
         return maszcal.density.MatchingGnfw(
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
             comoving_radii=True,
-            nfw_class=nfw_class,
+            units=u.Msun/u.pc**2,
         )
 
     def it_calculates_the_cdm_and_baryonic_densities(gnfw_model):
@@ -61,6 +58,28 @@ def describe_MatchingGnfw():
         f_b = gnfw_model.baryon_frac
         assert np.allclose(ratio, f_b)
 
+    def it_can_calculate_esd(gnfw_model):
+        rs = np.logspace(-1, 1, 5)
+        mus = np.linspace(32, 33, 4)
+        zs = np.linspace(0, 1, 4)
+        cons = np.linspace(2, 3, 3)
+        alphas = np.linspace(0.5, 1, 3)
+        betas = np.linspace(3, 4, 3)
+        gammas = np.linspace(0.1, 0.3, 3)
+        esd = gnfw_model.excess_surface_density(rs, zs, mus, cons, alphas, betas, gammas)
+        assert esd.shape == (5, 4, 3)
+
+    def it_can_calculate_convergence(gnfw_model):
+        rs = np.logspace(-1, 1, 5)
+        mus = np.linspace(32, 33, 4)
+        zs = np.linspace(0, 1, 4)
+        cons = np.linspace(2, 3, 3)
+        alphas = np.linspace(0.5, 1, 3)
+        betas = np.linspace(3, 4, 3)
+        gammas = np.linspace(0.1, 0.3, 3)
+        conv = gnfw_model.convergence(rs, zs, mus, cons, alphas, betas, gammas)
+        assert conv.shape == (5, 4, 3)
+
 
 class FakeMatchingConModel:
     def __init__(self, mass_def, cosmology=None):
@@ -75,18 +94,14 @@ class FakeMatchingConModel:
 
 def describe_MatchingCmGnfw():
     @pytest.fixture
-    def nfw_class():
-        return maszcal.density.MatchingCmNfwModel
-
-    @pytest.fixture
-    def gnfw_model(nfw_class):
+    def gnfw_model():
         return maszcal.density.MatchingCmGnfw(
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
             comoving_radii=True,
-            nfw_class=nfw_class,
             con_class=FakeMatchingConModel,
+            units=u.Msun/u.pc**2,
         )
 
     def it_calculates_the_cdm_and_baryonic_densities(gnfw_model):
@@ -128,21 +143,37 @@ def describe_MatchingCmGnfw():
         f_b = gnfw_model.baryon_frac
         assert np.allclose(ratio, f_b)
 
+    def it_can_calculate_esd(gnfw_model):
+        rs = np.logspace(-1, 1, 5)
+        mus = np.linspace(32, 33, 4)
+        zs = np.linspace(0, 1, 4)
+        alphas = np.linspace(0.5, 1, 3)
+        betas = np.linspace(3, 4, 3)
+        gammas = np.linspace(0.1, 0.3, 3)
+        esd = gnfw_model.excess_surface_density(rs, zs, mus, alphas, betas, gammas)
+        assert esd.shape == (5, 4, 3)
+
+    def it_can_calculate_convergence(gnfw_model):
+        rs = np.logspace(-1, 1, 5)
+        mus = np.linspace(32, 33, 4)
+        zs = np.linspace(0, 1, 4)
+        alphas = np.linspace(0.5, 1, 3)
+        betas = np.linspace(3, 4, 3)
+        gammas = np.linspace(0.1, 0.3, 3)
+        conv = gnfw_model.convergence(rs, zs, mus, alphas, betas, gammas)
+        assert conv.shape == (5, 4, 3)
+
 
 def describe_Gnfw():
 
     @pytest.fixture
-    def nfw_class():
-        return maszcal.density.NfwModel
-
-    @pytest.fixture
-    def gnfw_model(nfw_class):
+    def gnfw_model():
         return maszcal.density.Gnfw(
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
             comoving_radii=True,
-            nfw_class=nfw_class,
+            units=u.Msun/u.pc**2,
         )
 
     def it_calculates_the_cdm_and_baryonic_densities(gnfw_model):
@@ -186,6 +217,28 @@ def describe_Gnfw():
         f_b = gnfw_model.baryon_frac
         assert np.allclose(ratio, f_b)
 
+    def it_can_calculate_esd(gnfw_model):
+        rs = np.logspace(-1, 1, 5)
+        mus = np.linspace(32, 33, 6)
+        zs = np.linspace(0, 1, 4)
+        cons = np.linspace(2, 3, 3)
+        alphas = np.linspace(0.5, 1, 3)
+        betas = np.linspace(3, 4, 3)
+        gammas = np.linspace(0.1, 0.3, 3)
+        esd = gnfw_model.excess_surface_density(rs, zs, mus, cons, alphas, betas, gammas)
+        assert esd.shape == (5, 6, 4, 3)
+
+    def it_can_calculate_convergence(gnfw_model):
+        rs = np.logspace(-1, 1, 5)
+        mus = np.linspace(32, 33, 6)
+        zs = np.linspace(0, 1, 4)
+        cons = np.linspace(2, 3, 3)
+        alphas = np.linspace(0.5, 1, 3)
+        betas = np.linspace(3, 4, 3)
+        gammas = np.linspace(0.1, 0.3, 3)
+        conv = gnfw_model.convergence(rs, zs, mus, cons, alphas, betas, gammas)
+        assert conv.shape == (5, 6, 4, 3)
+
 
 class FakeConModel:
     def __init__(self, mass_def, cosmology=None):
@@ -201,18 +254,14 @@ class FakeConModel:
 def describe_CmGnfw():
 
     @pytest.fixture
-    def nfw_class():
-        return maszcal.density.NfwCmModel
-
-    @pytest.fixture
-    def gnfw_model(nfw_class):
+    def gnfw_model():
         return maszcal.density.CmGnfw(
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
             comoving_radii=True,
-            nfw_class=nfw_class,
             con_class=FakeConModel,
+            units=u.Msun/u.pc**2,
         )
 
     def it_calculates_the_cdm_and_baryonic_densities(gnfw_model):
@@ -254,20 +303,36 @@ def describe_CmGnfw():
         f_b = gnfw_model.baryon_frac
         assert np.allclose(ratio, f_b)
 
+    def it_can_calculate_esd(gnfw_model):
+        rs = np.logspace(-1, 1, 5)
+        mus = np.linspace(32, 33, 6)
+        zs = np.linspace(0, 1, 4)
+        alphas = np.linspace(0.5, 1, 3)
+        betas = np.linspace(3, 4, 3)
+        gammas = np.linspace(0.1, 0.3, 3)
+        esd = gnfw_model.excess_surface_density(rs, zs, mus, alphas, betas, gammas)
+        assert esd.shape == (5, 6, 4, 3)
+
+    def it_can_calculate_convergence(gnfw_model):
+        rs = np.logspace(-1, 1, 5)
+        mus = np.linspace(32, 33, 6)
+        zs = np.linspace(0, 1, 4)
+        alphas = np.linspace(0.5, 1, 3)
+        betas = np.linspace(3, 4, 3)
+        gammas = np.linspace(0.1, 0.3, 3)
+        conv = gnfw_model.convergence(rs, zs, mus, alphas, betas, gammas)
+        assert conv.shape == (5, 6, 4, 3)
+
 
 def describe_SingleMassGnfw():
     @pytest.fixture
-    def nfw_class():
-        return maszcal.density.SingleMassNfwModel
-
-    @pytest.fixture
-    def gnfw_model(nfw_class):
+    def gnfw_model():
         return maszcal.density.SingleMassGnfw(
             cosmo_params=maszcal.cosmology.CosmoParams(),
             mass_definition='mean',
             delta=200,
             comoving_radii=True,
-            nfw_class=nfw_class,
+            units=u.Msun/u.pc**2,
         )
 
     def it_calculates_the_cdm_and_baryonic_densities(gnfw_model):
@@ -310,3 +375,25 @@ def describe_SingleMassGnfw():
 
         f_b = gnfw_model.baryon_frac
         assert np.allclose(ratio, f_b)
+
+    def it_can_calculate_esd(gnfw_model):
+        rs = np.logspace(-1, 1, 5)
+        zs = np.linspace(0, 1, 4)
+        mus = np.linspace(32, 33, 3)
+        cons = np.linspace(2, 3, 3)
+        alphas = np.linspace(0.5, 1, 3)
+        betas = np.linspace(3, 4, 3)
+        gammas = np.linspace(0.1, 0.3, 3)
+        esd = gnfw_model.excess_surface_density(rs, zs, mus, cons, alphas, betas, gammas)
+        assert esd.shape == (5, 4, 3)
+
+    def it_can_calculate_convergence(gnfw_model):
+        rs = np.logspace(-1, 1, 5)
+        zs = np.linspace(0, 1, 4)
+        mus = np.linspace(32, 33, 3)
+        cons = np.linspace(2, 3, 3)
+        alphas = np.linspace(0.5, 1, 3)
+        betas = np.linspace(3, 4, 3)
+        gammas = np.linspace(0.1, 0.3, 3)
+        conv = gnfw_model.convergence(rs, zs, mus, cons, alphas, betas, gammas)
+        assert conv.shape == (5, 4, 3)

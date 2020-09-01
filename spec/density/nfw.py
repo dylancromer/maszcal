@@ -13,13 +13,13 @@ def describe_MatchingNfwModel():
         cosmo = CosmoParams()
         return maszcal.density.MatchingNfwModel(cosmo_params=cosmo)
 
-    def it_calculates_delta_sigma(nfw_model):
+    def it_calculates_excess_surface_density(nfw_model):
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 8)
         masses = np.logspace(14, 14.8, 8)
         cons = np.linspace(2, 3.4, 4)
 
-        ds = nfw_model.delta_sigma(rs, zs, masses, cons)
+        ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds > 0)
         assert ds.shape == (8, 10, 4)
@@ -43,13 +43,13 @@ def describe_MatchingCmNfwModel():
         cosmo = CosmoParams()
         return maszcal.density.MatchingCmNfwModel(cosmo_params=cosmo)
 
-    def it_calculates_delta_sigma(nfw_model):
+    def it_calculates_excess_surface_density(nfw_model):
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 8)
         masses = np.logspace(14, 14.8, 8)
         cons = np.linspace(2, 3.4, 8)
 
-        ds = nfw_model.delta_sigma(rs, zs, masses, cons)
+        ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds > 0)
         assert ds.shape == (8, 10)
@@ -66,21 +66,21 @@ def describe_MatchingCmNfwModel():
         assert rhos.shape == (8, 10)
 
 
-def describe_NfwCmModel():
+def describe_CmNfwModel():
 
     @pytest.fixture
     def nfw_model():
         cosmo = CosmoParams()
-        return maszcal.density.NfwCmModel(cosmo_params=cosmo)
+        return maszcal.density.CmNfwModel(cosmo_params=cosmo)
 
-    def it_calculates_delta_sigma(nfw_model):
+    def it_calculates_excess_surface_density(nfw_model):
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 3)
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 5)
         cons = np.stack((cons, cons, cons)).T
 
-        ds = nfw_model.delta_sigma(rs, zs, masses, cons)
+        ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds > 0)
 
@@ -96,7 +96,7 @@ def describe_NfwCmModel():
             hubble_constant=70,
             h=0.7,
         )
-        return maszcal.density.NfwCmModel(cosmo_params=cosmo)
+        return maszcal.density.CmNfwModel(cosmo_params=cosmo)
 
     def it_can_use_different_cosmologies(nfw_model, nfw_model_alt_cosmo):
         rs = np.logspace(-1, 1, 10)
@@ -105,13 +105,13 @@ def describe_NfwCmModel():
         cons = np.linspace(2, 4, 5)
         cons = np.stack((cons, cons, cons)).T
 
-        ds = nfw_model.delta_sigma(rs, zs, masses, cons)
-        ds_alt_cosmo = nfw_model_alt_cosmo.delta_sigma(rs, zs, masses, cons)
+        ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
+        ds_alt_cosmo = nfw_model_alt_cosmo.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds != ds_alt_cosmo)
 
     def it_can_use_different_units(nfw_model):
-        nfw_model_other_units = maszcal.density.NfwCmModel(units=u.Msun/u.Mpc**2)
+        nfw_model_other_units = maszcal.density.CmNfwModel(units=u.Msun/u.Mpc**2)
 
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 3)
@@ -119,13 +119,13 @@ def describe_NfwCmModel():
         cons = np.linspace(2, 4, 5)
         cons = np.stack((cons, cons, cons)).T
 
-        ds = nfw_model.delta_sigma(rs, zs, masses, cons)
-        ds_other_units = nfw_model_other_units.delta_sigma(rs, zs, masses, cons)
+        ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
+        ds_other_units = nfw_model_other_units.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds_other_units > ds)
 
     def it_can_use_different_mass_definitions(nfw_model):
-        nfw_model_500c = maszcal.density.NfwCmModel(delta=500, mass_definition='crit')
+        nfw_model_500c = maszcal.density.CmNfwModel(delta=500, mass_definition='crit')
 
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 3)
@@ -133,17 +133,17 @@ def describe_NfwCmModel():
         cons = np.linspace(2, 4, 5)
         cons = np.stack((cons, cons, cons)).T
 
-        ds = nfw_model.delta_sigma(rs, zs, masses, cons)
-        ds_500c = nfw_model_500c.delta_sigma(rs, zs, masses, cons)
+        ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
+        ds_500c = nfw_model_500c.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds < ds_500c)
 
     def it_must_use_a_correct_mass_definition():
         with pytest.raises(ValueError):
-            maszcal.density.NfwCmModel(mass_definition='oweijf')
+            maszcal.density.CmNfwModel(mass_definition='oweijf')
 
     def it_can_use_comoving_coordinates(nfw_model):
-        nfw_model_nocomoving = maszcal.density.NfwCmModel(units=u.Msun/u.pc**2, comoving=False)
+        nfw_model_nocomoving = maszcal.density.CmNfwModel(units=u.Msun/u.pc**2, comoving=False)
 
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(1, 2, 3)
@@ -151,8 +151,8 @@ def describe_NfwCmModel():
         cons = np.linspace(2, 4, 5)
         cons = np.stack((cons, cons, cons)).T
 
-        ds_comoving = nfw_model.delta_sigma(rs, zs, masses, cons)
-        ds_nocomoving = nfw_model_nocomoving.delta_sigma(rs, zs, masses, cons)
+        ds_comoving = nfw_model.excess_surface_density(rs, zs, masses, cons)
+        ds_nocomoving = nfw_model_nocomoving.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds_comoving < ds_nocomoving)
 
@@ -162,7 +162,7 @@ def describe_NfwCmModel():
         m = 2e14*np.ones(1)
         c = 3*np.ones(1)
 
-        ds = nfw_model.delta_sigma(rs, z, m, c)
+        ds = nfw_model.excess_surface_density(rs, z, m, c)
 
         assert not np.any(np.isnan(ds))
 
@@ -185,13 +185,13 @@ def describe_NfwModel():
         cosmo = CosmoParams()
         return maszcal.density.NfwModel(cosmo_params=cosmo)
 
-    def it_calculates_delta_sigma(nfw_model):
+    def it_calculates_excess_surface_density(nfw_model):
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 3)
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
 
-        ds = nfw_model.delta_sigma(rs, zs, masses, cons)
+        ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds > 0)
         assert ds.shape == (5, 3, 10, 6)
@@ -216,8 +216,8 @@ def describe_NfwModel():
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
 
-        ds = nfw_model.delta_sigma(rs, zs, masses, cons)
-        ds_alt_cosmo = nfw_model_alt_cosmo.delta_sigma(rs, zs, masses, cons)
+        ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
+        ds_alt_cosmo = nfw_model_alt_cosmo.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds != ds_alt_cosmo)
 
@@ -229,8 +229,8 @@ def describe_NfwModel():
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
 
-        ds = nfw_model.delta_sigma(rs, zs, masses, cons)
-        ds_other_units = nfw_model_other_units.delta_sigma(rs, zs, masses, cons)
+        ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
+        ds_other_units = nfw_model_other_units.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds_other_units > ds)
 
@@ -242,8 +242,8 @@ def describe_NfwModel():
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
 
-        ds = nfw_model.delta_sigma(rs, zs, masses, cons)
-        ds_500c = nfw_model_500c.delta_sigma(rs, zs, masses, cons)
+        ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
+        ds_500c = nfw_model_500c.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds < ds_500c)
 
@@ -259,8 +259,8 @@ def describe_NfwModel():
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
 
-        ds_comoving = nfw_model.delta_sigma(rs, zs, masses, cons)
-        ds_nocomoving = nfw_model_nocomoving.delta_sigma(rs, zs, masses, cons)
+        ds_comoving = nfw_model.excess_surface_density(rs, zs, masses, cons)
+        ds_nocomoving = nfw_model_nocomoving.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds_comoving < ds_nocomoving)
 
@@ -270,7 +270,7 @@ def describe_NfwModel():
         m = 2e14*np.ones(1)
         c = 3*np.ones(1)
 
-        ds = nfw_model.delta_sigma(rs, z, m, c)
+        ds = nfw_model.excess_surface_density(rs, z, m, c)
 
         assert not np.any(np.isnan(ds))
 
@@ -293,13 +293,13 @@ def describe_SingleMassNfwModel():
         cosmo = CosmoParams()
         return maszcal.density.SingleMassNfwModel(cosmo_params=cosmo)
 
-    def it_calculates_delta_sigma(nfw_model):
+    def it_calculates_excess_surface_density(nfw_model):
         rs = np.logspace(-1, 1, 10)
         zs = np.linspace(0, 1, 3)
         masses = np.logspace(14, 15, 6)
         cons = np.linspace(2, 4, 6)
 
-        ds = nfw_model.delta_sigma(rs, zs, masses, cons)
+        ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds > 0)
         assert ds.shape == zs.shape + rs.shape + cons.shape

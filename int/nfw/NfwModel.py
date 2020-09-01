@@ -20,7 +20,7 @@ def describe_nfw_model():
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
 
-        ds = nfw_model.delta_sigma(rs, zs, masses, cons)
+        ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
 
         def rho_func(r):
             return np.moveaxis(nfw_model.rho(r, zs, masses, cons), (2, 3), (0, 1))

@@ -1,3 +1,4 @@
+
 import numpy as np
 import pytest
 import astropy.units as u
@@ -15,13 +16,9 @@ def fake_rho_total(rs, zs, mus, *params):
     return np.ones(rs.shape + zs.shape + (params[0].size,))
 
 
-def fake_scattered_rho_total(rs, zs, mus, *params):
-    return np.ones(rs.shape + mus.shape + zs.shape + (params[0].size,))
-
-
 def describe_SingleMass2HaloShearModel():
 
-    def describe_excess_surface_density():
+    def describe_delta_sigma():
 
         @pytest.fixture
         def model():
@@ -39,7 +36,7 @@ def describe_SingleMass2HaloShearModel():
                 esd_func=fake_projector_esd,
             )
 
-        def it_calculates_stacked_excess_surface_density_profiles(model):
+        def it_calculates_stacked_delta_sigma_profiles(model):
             zs = np.linspace(0, 1, 5)
             mus = np.log(2e14)*np.ones(2)
             cons = 2*np.ones(2)
@@ -48,7 +45,7 @@ def describe_SingleMass2HaloShearModel():
             gammas = np.ones(2)
             a_2hs = np.arange(2)
 
-            esds = model.excess_surface_density(a_2hs, zs, mus, cons, alphas, betas, gammas)
+            esds = model.delta_sigma(a_2hs, zs, mus, cons, alphas, betas, gammas)
 
             assert np.all(esds >= 0)
             assert esds.shape == (8, 5, 2)
@@ -57,7 +54,7 @@ def describe_SingleMass2HaloShearModel():
 
 def describe_Matching2HaloShearModel():
 
-    def describe_stacked_excess_surface_density():
+    def describe_stacked_delta_sigma():
 
         @pytest.fixture
         def model():
@@ -84,7 +81,7 @@ def describe_Matching2HaloShearModel():
                 esd_func=fake_projector_esd,
             )
 
-        def it_calculates_stacked_excess_surface_density_profiles(model):
+        def it_calculates_stacked_delta_sigma_profiles(model):
             cons = 2*np.ones(2)
             alphas = np.ones(2)
             betas = np.ones(2)
@@ -92,16 +89,16 @@ def describe_Matching2HaloShearModel():
             a_2hs = np.arange(2)
             a_szs = np.array([-1, 0, 1])
 
-            esds = model.stacked_excess_surface_density(a_2hs, a_szs, cons, alphas, betas, gammas)
+            esds = model.stacked_delta_sigma(a_2hs, a_szs, cons, alphas, betas, gammas)
 
             assert np.all(esds >= 0)
             assert esds.shape == (3, 8, 2)
             assert np.all(esds[:, :, 1] > 1000)
 
 
-def describe_Matching2HaloConvergenceModel():
+def describe_Matching2HaloBaryonConvergenceModel():
 
-    def describe_stacked_excess_surface_density():
+    def describe_stacked_delta_sigma():
 
         @pytest.fixture
         def model():
@@ -129,7 +126,7 @@ def describe_Matching2HaloConvergenceModel():
                 sd_func=fake_projector_esd,
             )
 
-        def it_calculates_stacked_excess_surface_density_profiles(model):
+        def it_calculates_stacked_delta_sigma_profiles(model):
             cons = 2*np.ones(2)
             alphas = np.ones(2)
             betas = np.ones(2)
@@ -137,8 +134,8 @@ def describe_Matching2HaloConvergenceModel():
             a_2hs = np.arange(2)
             a_szs = np.array([-1, 0, 1])
 
-            convergences = model.stacked_convergence(a_2hs, a_szs, cons, alphas, betas, gammas)
+            kappas = model.stacked_kappa(a_2hs, a_szs, cons, alphas, betas, gammas)
 
-            assert np.all(convergences >= 0)
-            assert convergences.shape == (3, 8, 2)
-            assert np.all(convergences[:, :, 1] > 1000)
+            assert np.all(kappas >= 0)
+            assert kappas.shape == (3, 8, 2)
+            assert np.all(kappas[:, :, 1] > 1000)

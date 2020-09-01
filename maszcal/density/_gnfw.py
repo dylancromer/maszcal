@@ -1,11 +1,39 @@
 from dataclasses import dataclass
 import numpy as np
+import astropy.units as u
+import projector
 import maszcal.cosmology
+import maszcal.lensing
 import maszcal.mathutils
+import maszcal.density._nfw as _nfw
+
+
+class BaryonDensity:
+    def _init_shear_wrapper(self):
+        self._shear_wrapper = maszcal.lensing.Shear(
+            rho_func=self.rho_tot,
+            units=self.units,
+            esd_func=self.esd_func,
+        )
+
+    def _init_convergence_wrapper(self):
+        self._convergence_wrapper = maszcal.lensing.Convergence(
+            rho_func=self.rho_tot,
+            cosmo_params=self.cosmo_params,
+            comoving=self.comoving_radii,
+            units=self.units,
+            sd_func=self.sd_func,
+        )
+
+    def excess_surface_density(self, rs, zs, mus, *rho_params):
+        return self._shear_wrapper.excess_surface_density(rs, zs, mus, *rho_params)
+
+    def convergence(self, rs, zs, mus, *rho_params):
+        return self._convergence_wrapper.convergence(rs, zs, mus, *rho_params)
 
 
 @dataclass
-class Gnfw:
+class _Gnfw(BaryonDensity):
     CORE_RADIUS = 0.5
     MIN_INTEGRATION_RADIUS = 1e-4
     MAX_INTEGRATION_RADIUS = 3.3
@@ -15,7 +43,6 @@ class Gnfw:
     mass_definition: str
     delta: float
     comoving_radii: bool
-    nfw_class: object
 
     def _init_nfw(self):
         self.nfw_model = self.nfw_class(
@@ -28,6 +55,8 @@ class Gnfw:
     def __post_init__(self):
         self.baryon_frac = self.cosmo_params.omega_bary/self.cosmo_params.omega_matter
         self._init_nfw()
+        self._init_shear_wrapper()
+        self._init_convergence_wrapper()
 
     def mass_from_mu(self, mu):
         return np.exp(mu)
@@ -107,7 +136,15 @@ class Gnfw:
         return self.rho_bary(rs, zs, mus, cons, alphas, betas, gammas) + rho_cdm
 
 
-class SingleMassGnfw(Gnfw):
+@dataclass
+class Gnfw(_Gnfw):
+    nfw_class: object = _nfw.NfwModel
+    units: u.Quantity = u.Msun/u.pc**2
+    sd_func: object = projector.sd
+    esd_func: object = projector.esd
+
+
+class _SingleMassGnfw(_Gnfw):
     def _r_delta(self, zs, mus):
         '''
         SHAPE z, params
@@ -155,7 +192,15 @@ class SingleMassGnfw(Gnfw):
 
 
 @dataclass
-class CmGnfw(Gnfw):
+class SingleMassGnfw(_SingleMassGnfw):
+    nfw_class: object = _nfw.SingleMassNfwModel
+    units: u.Quantity = u.Msun/u.pc**2
+    sd_func: object = projector.sd
+    esd_func: object = projector.esd
+
+
+@dataclass
+class _CmGnfw(_Gnfw):
     CORE_RADIUS = 0.5
     MIN_INTEGRATION_RADIUS = 1e-4
     MAX_INTEGRATION_RADIUS = 3.3
@@ -165,8 +210,6 @@ class CmGnfw(Gnfw):
     mass_definition: str
     delta: float
     comoving_radii: bool
-    con_class: object
-    nfw_class: object
 
     def _init_con_model(self):
         mass_def = str(self.delta) + self.mass_definition[0]
@@ -231,7 +274,16 @@ class CmGnfw(Gnfw):
 
 
 @dataclass
-class MatchingGnfw(Gnfw):
+class CmGnfw(_CmGnfw):
+    con_class: object = maszcal.concentration.ConModel
+    nfw_class: object = _nfw.CmNfwModel
+    units: u.Quantity = u.Msun/u.pc**2
+    sd_func: object = projector.sd
+    esd_func: object = projector.esd
+
+
+@dataclass
+class _MatchingGnfw(_Gnfw):
     def gnfw_shape(self, rs, zs, mus, alphas, betas, gammas):
         '''
         SHAPE cluster, rs.shape, params
@@ -275,7 +327,15 @@ class MatchingGnfw(Gnfw):
         return self.rho_bary(rs, zs, mus, cons, alphas, betas, gammas) + rho_cdm
 
 
-class MatchingCmGnfw(CmGnfw):
+@dataclass
+class MatchingGnfw(_MatchingGnfw):
+    nfw_class: object = _nfw.MatchingNfwModel
+    units: u.Quantity = u.Msun/u.pc**2
+    sd_func: object = projector.sd
+    esd_func: object = projector.esd
+
+
+class _MatchingCmGnfw(_CmGnfw):
     def _init_con_model(self):
         mass_def = str(self.delta) + self.mass_definition[0]
         self._con_model = self.con_class(mass_def, cosmology=self.cosmo_params)
@@ -332,3 +392,12 @@ class MatchingCmGnfw(CmGnfw):
             -1,
         )
         return self.rho_bary(rs, zs, mus, alphas, betas, gammas) + rho_cdm
+
+
+@dataclass
+class MatchingCmGnfw(_MatchingCmGnfw):
+    con_class: object = maszcal.concentration.MatchingConModel
+    nfw_class: object = _nfw.MatchingCmNfwModel
+    units: u.Quantity = u.Msun/u.pc**2
+    sd_func: object = projector.sd
+    esd_func: object = projector.esd

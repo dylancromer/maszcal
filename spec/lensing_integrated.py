@@ -27,7 +27,7 @@ class FakeConModel:
         return np.ones((masses.size, redshifts.size))
 
 
-def fake_rho_total(rs, zs, mus, *params):
+def fake_rho(rs, zs, mus, *params):
     return np.ones(rs.shape + mus.shape + zs.shape + (params[0].size,))
 
 
@@ -42,11 +42,11 @@ def describe_IntegratedShearModel():
             return maszcal.lensing.IntegratedShearModel(
                 mus,
                 zs,
-                rho_func=fake_rho_total,
+                rho_func=fake_rho,
                 esd_func=fake_projector_esd,
             )
 
-        def it_can_calculate_a_total_delta_sigma(baryon_model):
+        def it_can_calculate_a_excess_surface_density(baryon_model):
             radii = np.logspace(-1, 1, 10)
             zs = np.linspace(0, 1, 8)
             mus = np.log(1e14)*np.ones(2)
@@ -55,11 +55,11 @@ def describe_IntegratedShearModel():
             betas = 2*np.ones(3)
             gammas = np.ones(3)
 
-            ds = baryon_model._shear.delta_sigma_total(radii, zs, mus, cs, alphas, betas, gammas)
+            ds = baryon_model._shear.excess_surface_density(radii, zs, mus, cs, alphas, betas, gammas)
 
             assert np.all(ds > 0)
 
-        def it_can_calculate_a_stacked_delta_sigma(baryon_model):
+        def it_can_calculate_a_stacked_excess_surface_density(baryon_model):
             radii = np.logspace(-1, 1, 10)
             cs = 3*np.ones(3)
             alphas = np.ones(3)
@@ -73,7 +73,7 @@ def describe_IntegratedShearModel():
             )
             assert np.all(baryon_model.stacker.dnumber_dlogmass() == 1)
 
-            ds = baryon_model.stacked_delta_sigma(radii, cs, alphas, betas, gammas, a_szs)
+            ds = baryon_model.stacked_excess_surface_density(radii, cs, alphas, betas, gammas, a_szs)
 
             assert ds.shape == (10, 3)
 
@@ -86,7 +86,7 @@ def describe_IntegratedShearModel():
             return maszcal.lensing.IntegratedShearModel(
                 mus,
                 zs,
-                rho_func=fake_rho_total,
+                rho_func=fake_rho,
                 units=u.Msun/u.pc**2,
             )
 
@@ -99,7 +99,7 @@ def describe_IntegratedShearModel():
             betas = 2*np.ones(3)
             gammas = np.ones(3)
 
-            ds = baryon_model._shear.delta_sigma_total(radii, zs, mus, cs, alphas, betas, gammas)
+            ds = baryon_model._shear.excess_surface_density(radii, zs, mus, cs, alphas, betas, gammas)
 
             assert np.all(radii[:, None, None, None]*ds < 1e2)
 
@@ -141,9 +141,9 @@ def describe_CmStacker():
             integ = np.trapz(prob_sz, x=mu_szs, axis=0)
             assert np.allclose(integ, 1)
 
-        def delta_sigma_of_r_divided_by_nsz_always_one(stacker):
+        def excess_surface_density_of_r_divided_by_nsz_always_one(stacker):
             """
-            This test functions by setting delta_sigma_of_mass to be constant,
+            This test functions by setting excess_surface_density_of_mass to be constant,
             resulting in it being identical to the normalization. Thus this test should
             always return 1s, rather than a true precomputed value
             """
@@ -157,15 +157,15 @@ def describe_CmStacker():
             rs = np.logspace(-1, 1, 21)
             a_szs = np.linspace(-1, 1, 1)
 
-            delta_sigmas_of_mass = np.ones((stacker.mu_bins.size, zs.size, rs.size))
+            excess_surface_densities_of_mass = np.ones((stacker.mu_bins.size, zs.size, rs.size))
 
-            delta_sigmas = stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+            excess_surface_densities = stacker.stacked_excess_surface_density(excess_surface_densities_of_mass, rs, a_szs)
 
-            precomp_delta_sigmas = np.ones((rs.size, 1))
+            precomp_excess_surface_densities = np.ones((rs.size, 1))
 
-            np.testing.assert_allclose(delta_sigmas, precomp_delta_sigmas)
+            np.testing.assert_allclose(excess_surface_densities, precomp_excess_surface_densities)
 
-        def it_can_handle_delta_sigmas_of_mass_with_different_params(stacker):
+        def it_can_handle_excess_surface_densities_of_mass_with_different_params(stacker):
             N_PARAMS = 3
             rs = np.logspace(-1, 1, 21)
             a_szs = np.linspace(-1, 1, N_PARAMS)
@@ -175,11 +175,11 @@ def describe_CmStacker():
             )
             assert np.all(stacker.dnumber_dlogmass() == 1)
 
-            delta_sigmas_of_mass = np.ones((stacker.mu_bins.size, stacker.redshift_bins.size, rs.size))
+            excess_surface_densities_of_mass = np.ones((stacker.mu_bins.size, stacker.redshift_bins.size, rs.size))
 
-            delta_sigmas = stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+            excess_surface_densities = stacker.stacked_excess_surface_density(excess_surface_densities_of_mass, rs, a_szs)
 
-            assert delta_sigmas.shape == (21, N_PARAMS)
+            assert excess_surface_densities.shape == (21, N_PARAMS)
 
         def it_can_compute_wl_avg_masses(stacker):
             zs = np.linspace(0, 2, 8)
@@ -206,10 +206,10 @@ def describe_CmStacker():
 
             rs = np.logspace(-1, 1, 10)
             a_szs = np.linspace(-1, 1, 2)
-            delta_sigmas_of_mass = np.ones((stacker.mu_bins.size, zs.size, rs.size))
+            excess_surface_densities_of_mass = np.ones((stacker.mu_bins.size, zs.size, rs.size))
 
             with pytest.raises(ValueError):
-                stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+                stacker.stacked_excess_surface_density(excess_surface_densities_of_mass, rs, a_szs)
 
 
 def describe_MiyatakeShearModel():
@@ -239,7 +239,7 @@ def describe_MiyatakeShearModel():
             assert avg_wl_mass.shape == (1,)
             assert avg_wl_mass > 0
 
-        def it_computes_stacked_delta_sigmas_with_the_right_shape(stacked_model):
+        def it_computes_stacked_excess_surface_densities_with_the_right_shape(stacked_model):
             stacked_model.stacker.dnumber_dlogmass = lambda : np.ones(
                 (stacked_model.mu_bins.size, stacked_model.redshift_bins.size)
             )
@@ -249,7 +249,7 @@ def describe_MiyatakeShearModel():
 
             rs = np.logspace(-1, 1, 4)
 
-            delta_sigs_stacked = stacked_model.stacked_delta_sigma(rs, a_szs)
+            delta_sigs_stacked = stacked_model.stacked_excess_surface_density(rs, a_szs)
 
             assert delta_sigs_stacked.shape == (4, 1)
 
@@ -291,9 +291,9 @@ def describe_MiyatakeStacker():
             integ = np.trapz(prob_sz, x=mu_szs, axis=0)
             assert np.allclose(integ, 1)
 
-        def delta_sigma_of_r_divided_by_nsz_always_one(stacker):
+        def excess_surface_density_of_r_divided_by_nsz_always_one(stacker):
             """
-            This test functions by setting delta_sigma_of_mass to be constant,
+            This test functions by setting excess_surface_density_of_mass to be constant,
             resulting in it being identical to the normalization. Thus this test should
             always return 1s, rather than a true precomputed value
             """
@@ -307,15 +307,15 @@ def describe_MiyatakeStacker():
             rs = np.logspace(-1, 1, 21)
             a_szs = np.linspace(-1, 1, 1)
 
-            delta_sigmas_of_mass = np.ones((stacker.mu_bins.size, zs.size, rs.size))
+            excess_surface_densities_of_mass = np.ones((stacker.mu_bins.size, zs.size, rs.size))
 
-            delta_sigmas = stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+            excess_surface_densities = stacker.stacked_excess_surface_density(excess_surface_densities_of_mass, rs, a_szs)
 
-            precomp_delta_sigmas = np.ones((rs.size, 1))
+            precomp_excess_surface_densities = np.ones((rs.size, 1))
 
-            np.testing.assert_allclose(delta_sigmas, precomp_delta_sigmas)
+            np.testing.assert_allclose(excess_surface_densities, precomp_excess_surface_densities)
 
-        def it_can_handle_delta_sigmas_of_mass_with_different_params(stacker):
+        def it_can_handle_excess_surface_densities_of_mass_with_different_params(stacker):
             N_PARAMS = 3
             rs = np.logspace(-1, 1, 21)
             a_szs = np.linspace(-1, 1, N_PARAMS)
@@ -325,11 +325,11 @@ def describe_MiyatakeStacker():
             )
             assert np.all(stacker.dnumber_dlogmass() == 1)
 
-            delta_sigmas_of_mass = np.ones((stacker.mu_bins.size, stacker.redshift_bins.size, rs.size))
+            excess_surface_densities_of_mass = np.ones((stacker.mu_bins.size, stacker.redshift_bins.size, rs.size))
 
-            delta_sigmas = stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+            excess_surface_densities = stacker.stacked_excess_surface_density(excess_surface_densities_of_mass, rs, a_szs)
 
-            assert delta_sigmas.shape == (21, N_PARAMS)
+            assert excess_surface_densities.shape == (21, N_PARAMS)
 
         def it_complains_about_nans(stacker):
             zs = np.linspace(0, 2, 8)
@@ -345,13 +345,13 @@ def describe_MiyatakeStacker():
 
             rs = np.logspace(-1, 1, 10)
             a_szs = np.linspace(-1, 1, 2)
-            delta_sigmas_of_mass = np.ones((stacker.mu_bins.size, zs.size, rs.size))
+            excess_surface_densities_of_mass = np.ones((stacker.mu_bins.size, zs.size, rs.size))
 
             with pytest.raises(ValueError):
-                stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+                stacker.stacked_excess_surface_density(excess_surface_densities_of_mass, rs, a_szs)
 
 
-def describe_NfwCmShearModel():
+def describe_CmNfwShearModel():
 
     def describe_math_functions():
 
@@ -360,14 +360,14 @@ def describe_NfwCmShearModel():
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
             zs = np.linspace(0, 2, 8)
 
-            model = maszcal.lensing.NfwCmShearModel(mus, zs)
+            model = maszcal.lensing.CmNfwShearModel(mus, zs)
 
             return model
 
-        def it_computes_stacked_delta_sigma():
+        def it_computes_stacked_excess_surface_density():
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
             zs = np.linspace(0, 2, 8)
-            stacked_model = maszcal.lensing.NfwCmShearModel(mus, zs, con_class=FakeConModel)
+            stacked_model = maszcal.lensing.CmNfwShearModel(mus, zs, con_class=FakeConModel)
             stacked_model._init_stacker()
 
             stacked_model.stacker.dnumber_dlogmass = lambda : np.ones(
@@ -378,14 +378,14 @@ def describe_NfwCmShearModel():
             rs = np.logspace(-1, 1, 4)
             a_szs = np.linspace(-1, 1, 3)
 
-            avg_wl_mass = stacked_model.stacked_delta_sigma(rs, a_szs)
+            avg_wl_mass = stacked_model.stacked_excess_surface_density(rs, a_szs)
 
             assert avg_wl_mass.shape == (rs.size, a_szs.size)
 
         def it_computes_weak_lensing_avg_mass():
             mus = np.linspace(np.log(1e12), np.log(1e16), 20)
             zs = np.linspace(0, 2, 8)
-            stacked_model = maszcal.lensing.NfwCmShearModel(mus, zs, con_class=FakeConModel)
+            stacked_model = maszcal.lensing.CmNfwShearModel(mus, zs, con_class=FakeConModel)
             stacked_model._init_stacker()
 
             stacked_model.stacker.dnumber_dlogmass = lambda : np.ones(
@@ -476,9 +476,9 @@ def describe_Stacker():
             integ = np.trapz(prob_sz, x=mu_szs, axis=0)
             assert np.allclose(integ, 1)
 
-        def delta_sigma_of_r_divided_by_nsz_always_one(stacker):
+        def excess_surface_density_of_r_divided_by_nsz_always_one(stacker):
             """
-            This test functions by setting delta_sigma_of_mass to be constant,
+            This test functions by setting excess_surface_density_of_mass to be constant,
             resulting in it being identical to the normalization. Thus this test should
             always return 1s, rather than a true precomputed value
             """
@@ -493,15 +493,15 @@ def describe_Stacker():
             cons = np.linspace(2, 4, 1)
             a_szs = np.linspace(-1, 1, 1)
 
-            delta_sigmas_of_mass = np.ones((stacker.mu_bins.size, zs.size, rs.size, cons.size))
+            excess_surface_densities_of_mass = np.ones((stacker.mu_bins.size, zs.size, rs.size, cons.size))
 
-            delta_sigmas = stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+            excess_surface_densities = stacker.stacked_excess_surface_density(excess_surface_densities_of_mass, rs, a_szs)
 
-            precomp_delta_sigmas = np.ones((rs.size, 1))
+            precomp_excess_surface_densities = np.ones((rs.size, 1))
 
-            np.testing.assert_allclose(delta_sigmas, precomp_delta_sigmas)
+            np.testing.assert_allclose(excess_surface_densities, precomp_excess_surface_densities)
 
-        def it_can_handle_delta_sigmas_of_mass_with_different_params(stacker):
+        def it_can_handle_excess_surface_densities_of_mass_with_different_params(stacker):
             N_PARAMS = 3
             rs = np.logspace(-1, 1, 21)
             a_szs = np.linspace(-1, 1, N_PARAMS)
@@ -511,9 +511,9 @@ def describe_Stacker():
             )
             assert np.all(stacker.dnumber_dlogmass() == 1)
 
-            delta_sigmas_of_mass = np.ones((stacker.mu_bins.size, stacker.redshift_bins.size, rs.size, N_PARAMS))
+            excess_surface_densities_of_mass = np.ones((stacker.mu_bins.size, stacker.redshift_bins.size, rs.size, N_PARAMS))
 
-            delta_sigmas = stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+            excess_surface_densities = stacker.stacked_excess_surface_density(excess_surface_densities_of_mass, rs, a_szs)
 
         def it_complains_about_nans(stacker):
             zs = np.linspace(0, 2, 8)
@@ -525,10 +525,10 @@ def describe_Stacker():
             rs = np.logspace(-1, 1, 10)
             cons = np.linspace(2, 4, 1)
             a_szs = np.linspace(-1, 1, 1)
-            delta_sigmas_of_mass = np.ones((stacker.mu_bins.size, zs.size, rs.size, cons.size))
+            excess_surface_densities_of_mass = np.ones((stacker.mu_bins.size, zs.size, rs.size, cons.size))
 
             with pytest.raises(ValueError):
-                stacker.stacked_delta_sigma(delta_sigmas_of_mass, rs, a_szs)
+                stacker.stacked_excess_surface_density(excess_surface_densities_of_mass, rs, a_szs)
 
             with pytest.raises(ValueError):
                 stacker.weak_lensing_avg_mass(a_szs)

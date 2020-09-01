@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import astropy.units as u
 import matplotlib
 matplotlib.rcParams['text.usetex'] = True
 import matplotlib.pyplot as plt
@@ -8,6 +9,7 @@ rcParams.update({'figure.autolayout': True})
 import seaborn as sns
 sns.set(style='whitegrid', font_scale=1.5, rc={"lines.linewidth": 2,'lines.markersize': 8.0,})
 import meso
+import projector
 import maszcal.stats
 import maszcal.concentration
 import maszcal.density
@@ -40,9 +42,9 @@ def describe_MatchingConvergenceModel():
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
+                lensing_func=comov_density_model.convergence,
                 cosmo_params=cosmo_params,
                 comoving=True,
-                rho_func=comov_density_model.rho_tot,
             )
 
         @pytest.fixture
@@ -66,9 +68,9 @@ def describe_MatchingConvergenceModel():
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
+                lensing_func=phys_density_model.convergence,
                 cosmo_params=cosmo_params,
                 comoving=False,
-                rho_func=phys_density_model.rho_tot,
             )
 
 
@@ -82,12 +84,12 @@ def describe_MatchingConvergenceModel():
             gammas = 0.5*np.ones(1)
             a_szs = np.array([0, 0.1, -0.1, 0.01])
 
-            sds_comov = comov_convergence_model.stacked_kappa(thetas, a_szs, cons, alphas, betas, gammas)
-            sds_phys = phys_convergence_model.stacked_kappa(thetas, a_szs, cons, alphas, betas, gammas)
+            sds_comov = comov_convergence_model.stacked_convergence(thetas, a_szs, cons, alphas, betas, gammas)
+            sds_phys = phys_convergence_model.stacked_convergence(thetas, a_szs, cons, alphas, betas, gammas)
 
             assert np.allclose(sds_comov, sds_phys, rtol=1e-1)
 
-    def describe_stacked_kappa():
+    def describe_stacked_convergence():
 
         @pytest.fixture
         def density_model():
@@ -111,8 +113,8 @@ def describe_MatchingConvergenceModel():
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
+                lensing_func=density_model.convergence,
                 cosmo_params=cosmo_params,
-                rho_func=density_model.rho_tot,
             )
 
         def the_plots_look_right(convergence_model):
@@ -125,26 +127,26 @@ def describe_MatchingConvergenceModel():
             gammas = 0.5*np.ones(1)
             a_szs = np.array([0, 0.1, -0.1, 0.01])
 
-            sds = convergence_model.stacked_kappa(thetas, a_szs, cons, alphas, betas, gammas)
+            sds = convergence_model.stacked_convergence(thetas, a_szs, cons, alphas, betas, gammas)
 
             plt.plot(thetas*to_arcmin, thetas[:, None]*sds[..., 0])
             plt.xscale('log')
             plt.xlabel(r'$\theta$')
             plt.ylabel(r'$\theta \; \kappa(\theta)$')
-            plt.savefig('figs/test/matching_stacked_gnfw_theta_times_kappa.svg')
+            plt.savefig('figs/test/matching_stacked_gnfw_theta_times_convergence.svg')
             plt.gcf().clear()
 
             plt.plot(thetas*to_arcmin, sds[..., 0])
             plt.xscale('log')
             plt.xlabel(r'$\theta$')
             plt.ylabel(r'$\kappa(\theta)$')
-            plt.savefig('figs/test/matching_stacked_gnfw_kappa.svg')
+            plt.savefig('figs/test/matching_stacked_gnfw_convergence.svg')
             plt.gcf().clear()
 
 
 def describe_ScatteredMatchingConvergenceModel():
 
-    def describe_stacked_kappa():
+    def describe_stacked_convergence():
 
         @pytest.fixture
         def density_model():
@@ -167,7 +169,7 @@ def describe_ScatteredMatchingConvergenceModel():
             )
 
         @pytest.fixture
-        def convergence_model(density_model, hmf_interp):
+        def convergence_model(hmf_interp, density_model):
             NUM_CLUSTERS = 1
             rng = np.random.default_rng(seed=13)
             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
@@ -179,7 +181,7 @@ def describe_ScatteredMatchingConvergenceModel():
                 redshifts=zs,
                 lensing_weights=weights,
                 cosmo_params=cosmo_params,
-                rho_func=density_model.rho_tot,
+                lensing_func=density_model.convergence,
                 logmass_prob_dist_func=hmf_interp,
             )
 
@@ -196,7 +198,7 @@ def describe_ScatteredMatchingConvergenceModel():
                 redshifts=zs,
                 lensing_weights=weights,
                 cosmo_params=cosmo_params,
-                rho_func=density_model.rho_tot,
+                lensing_func=density_model.convergence,
                 logmass_prob_dist_func=hmf_interp,
                 vectorized=False,
             )
@@ -211,8 +213,8 @@ def describe_ScatteredMatchingConvergenceModel():
             gammas = 0.5*np.ones(1)
             a_szs = np.array([0, 0.1, -0.1, 0.01])
 
-            sds = convergence_model.stacked_kappa(thetas, a_szs, cons, alphas, betas, gammas)
-            sds_loop = convergence_model_loop.stacked_kappa(thetas, a_szs, cons, alphas, betas, gammas)
+            sds = convergence_model.stacked_convergence(thetas, a_szs, cons, alphas, betas, gammas)
+            sds_loop = convergence_model_loop.stacked_convergence(thetas, a_szs, cons, alphas, betas, gammas)
             assert np.all(sds == sds_loop)
 
         def the_plots_look_right(convergence_model):
@@ -225,26 +227,26 @@ def describe_ScatteredMatchingConvergenceModel():
             gammas = 0.5*np.ones(1)
             a_szs = np.array([0, 0.1, -0.1, 0.01])
 
-            sds = convergence_model.stacked_kappa(thetas, a_szs, cons, alphas, betas, gammas)
+            sds = convergence_model.stacked_convergence(thetas, a_szs, cons, alphas, betas, gammas)
 
             plt.plot(thetas*to_arcmin, thetas[:, None]*sds[..., 0])
             plt.xscale('log')
             plt.xlabel(r'$\theta$')
             plt.ylabel(r'$\theta \; \kappa(\theta)$')
-            plt.savefig('figs/test/scattered_matching_stacked_gnfw_theta_times_kappa.svg')
+            plt.savefig('figs/test/scattered_matching_stacked_gnfw_theta_times_convergence.svg')
             plt.gcf().clear()
 
             plt.plot(thetas*to_arcmin, sds[..., 0])
             plt.xscale('log')
             plt.xlabel(r'$\theta$')
             plt.ylabel(r'$\kappa(\theta)$')
-            plt.savefig('figs/test/scattered_matching_stacked_gnfw_kappa.svg')
+            plt.savefig('figs/test/scattered_matching_stacked_gnfw_convergence.svg')
             plt.gcf().clear()
 
 
 def describe_MatchingShearModel():
 
-    def describe_stacked_delta_sigma():
+    def describe_stacked_excess_surface_density():
 
         @pytest.fixture
         def density_model():
@@ -268,7 +270,7 @@ def describe_MatchingShearModel():
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
-                rho_func=density_model.rho_tot,
+                lensing_func=density_model.rho_tot,
             )
 
         def the_plots_look_right(shear_model):
@@ -279,7 +281,7 @@ def describe_MatchingShearModel():
             gammas = 0.2*np.ones(1)
             a_szs = np.linspace(0, 0.5, 4)
 
-            esds = shear_model.stacked_delta_sigma(radii, a_szs, cons, alphas, betas, gammas)
+            esds = shear_model.stacked_excess_surface_density(radii, a_szs, cons, alphas, betas, gammas)
 
             plt.plot(radii, radii[:, None]*esds[:, :, 0])
             plt.xscale('log')
@@ -287,13 +289,13 @@ def describe_MatchingShearModel():
             plt.xlabel(r'$R$')
             plt.ylabel(r'$R \Delta\Sigma(R)$')
 
-            plt.savefig('figs/test/matching_stacked_gnfw_delta_sigma.svg')
+            plt.savefig('figs/test/matching_stacked_gnfw_excess_surface_density.svg')
             plt.gcf().clear()
 
 
 def describe_ScatteredMatchingShearModel():
 
-    def describe_stacked_delta_sigma():
+    def describe_stacked_excess_surface_density():
 
         @pytest.fixture
         def density_model():
@@ -326,7 +328,7 @@ def describe_ScatteredMatchingShearModel():
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
-                rho_func=density_model.rho_tot,
+                lensing_func=density_model.excess_surface_density,
                 logmass_prob_dist_func=hmf_interp,
             )
 
@@ -341,7 +343,7 @@ def describe_ScatteredMatchingShearModel():
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
-                rho_func=density_model.rho_tot,
+                lensing_func=density_model.excess_surface_density,
                 logmass_prob_dist_func=hmf_interp,
                 vectorized=False,
             )
@@ -354,8 +356,8 @@ def describe_ScatteredMatchingShearModel():
             gammas = 0.2*np.ones(1)
             a_szs = np.linspace(0, 0.5, 4)
 
-            esds = shear_model.stacked_delta_sigma(radii, a_szs, cons, alphas, betas, gammas)
-            esds_loop = shear_model_loop.stacked_delta_sigma(radii, a_szs, cons, alphas, betas, gammas)
+            esds = shear_model.stacked_excess_surface_density(radii, a_szs, cons, alphas, betas, gammas)
+            esds_loop = shear_model_loop.stacked_excess_surface_density(radii, a_szs, cons, alphas, betas, gammas)
             assert np.all(esds == esds_loop)
 
         def the_plots_look_right(shear_model):
@@ -366,7 +368,7 @@ def describe_ScatteredMatchingShearModel():
             gammas = 0.2*np.ones(1)
             a_szs = np.linspace(0, 0.5, 4)
 
-            esds = shear_model.stacked_delta_sigma(radii, a_szs, cons, alphas, betas, gammas)
+            esds = shear_model.stacked_excess_surface_density(radii, a_szs, cons, alphas, betas, gammas)
 
             plt.plot(radii, radii[:, None]*esds[:, :, 0])
             plt.xscale('log')
@@ -374,13 +376,13 @@ def describe_ScatteredMatchingShearModel():
             plt.xlabel(r'$R$')
             plt.ylabel(r'$R \Delta\Sigma(R)$')
 
-            plt.savefig('figs/test/scattered_matching_stacked_gnfw_delta_sigma.svg')
+            plt.savefig('figs/test/scattered_matching_stacked_gnfw_excess_surface_density.svg')
             plt.gcf().clear()
 
 
 def describe_MatchingCmShearModel():
 
-    def describe_stacked_delta_sigma():
+    def describe_stacked_excess_surface_density():
 
         @pytest.fixture
         def density_model():
@@ -405,7 +407,7 @@ def describe_MatchingCmShearModel():
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
-                rho_func=density_model.rho_tot,
+                lensing_func=density_model.excess_surface_density,
             )
 
         def the_plots_look_right(shear_model):
@@ -415,7 +417,7 @@ def describe_MatchingCmShearModel():
             gammas = 0.5*np.ones(1)
             a_szs = 0.3*np.ones(1)
 
-            esds = shear_model.stacked_delta_sigma(radii, a_szs, alphas, betas, gammas)
+            esds = shear_model.stacked_excess_surface_density(radii, a_szs, alphas, betas, gammas)
 
             plt.plot(radii, radii[:, None]*esds[:, 0, :])
             plt.xscale('log')
@@ -423,13 +425,13 @@ def describe_MatchingCmShearModel():
             plt.xlabel(r'$R$')
             plt.ylabel(r'$R \Delta\Sigma(R)$')
 
-            plt.savefig('figs/test/matching_cm_stacked_gnfw_delta_sigma.svg')
+            plt.savefig('figs/test/matching_cm_stacked_gnfw_excess_surface_density.svg')
             plt.gcf().clear()
 
 
 def describe_miscentered_MatchingShearModel():
 
-    def describe_stacked_kappa():
+    def describe_stacked_convergence():
 
         @pytest.fixture
         def density_model():
@@ -458,7 +460,15 @@ def describe_miscentered_MatchingShearModel():
             return _misc_rho_func
 
         @pytest.fixture
-        def shear_model(miscentered_rho_func):
+        def miscentered_esd(miscentered_rho_func):
+            return maszcal.lensing.Shear(
+                rho_func=miscentered_rho_func,
+                units=u.Msun/u.pc**2,
+                esd_func=projector.esd,
+            ).excess_surface_density
+
+        @pytest.fixture
+        def shear_model(miscentered_esd):
             NUM_CLUSTERS = 1
             rng = np.random.default_rng(seed=13)
             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
@@ -469,7 +479,7 @@ def describe_miscentered_MatchingShearModel():
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
-                rho_func=miscentered_rho_func,
+                lensing_func=miscentered_esd,
             )
 
         def the_plots_look_right(shear_model):
@@ -482,7 +492,7 @@ def describe_miscentered_MatchingShearModel():
             centering_probs = np.linspace(0, 1, 3)
             a_szs = 0*np.ones(1)
 
-            esds = shear_model.stacked_delta_sigma(radii, a_szs, cons, alphas, betas, gammas, miscenter_scales, centering_probs)
+            esds = shear_model.stacked_excess_surface_density(radii, a_szs, cons, alphas, betas, gammas, miscenter_scales, centering_probs)
 
             plt.plot(radii, radii[:, None]*esds[:, 0, :])
             plt.xscale('log')
@@ -490,13 +500,13 @@ def describe_miscentered_MatchingShearModel():
             plt.xlabel(r'$R$')
             plt.ylabel(r'$R \Delta\Sigma(R)$')
 
-            plt.savefig('figs/test/miscentered_matching_stacked_gnfw_delta_sigma.svg')
+            plt.savefig('figs/test/miscentered_matching_stacked_gnfw_excess_surface_density.svg')
             plt.gcf().clear()
 
 
 def describe_miscentered_MatchingConvergenceModel():
 
-    def describe_stacked_kappa():
+    def describe_stacked_convergence():
 
         @pytest.fixture
         def density_model():
@@ -525,7 +535,17 @@ def describe_miscentered_MatchingConvergenceModel():
             return _misc_rho_func
 
         @pytest.fixture
-        def convergence_model(miscentered_rho_func):
+        def miscentered_conv(miscentered_rho_func):
+            return maszcal.lensing.Convergence(
+                rho_func=miscentered_rho_func,
+                cosmo_params=maszcal.cosmology.CosmoParams(),
+                units=u.Msun/u.pc**2,
+                comoving=True,
+                sd_func=projector.sd,
+            ).convergence
+
+        @pytest.fixture
+        def convergence_model(miscentered_conv):
             NUM_CLUSTERS = 1
             rng = np.random.default_rng(seed=13)
             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
@@ -536,8 +556,8 @@ def describe_miscentered_MatchingConvergenceModel():
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
+                lensing_func=miscentered_conv,
                 cosmo_params=cosmo_params,
-                rho_func=miscentered_rho_func,
             )
 
         def the_plots_look_right(convergence_model):
@@ -552,26 +572,26 @@ def describe_miscentered_MatchingConvergenceModel():
             centering_probs = np.linspace(0, 1, 3)
             a_szs = 0*np.ones(1)
 
-            sds = convergence_model.stacked_kappa(thetas, a_szs, cons, alphas, betas, gammas, miscenter_scales, centering_probs)
+            sds = convergence_model.stacked_convergence(thetas, a_szs, cons, alphas, betas, gammas, miscenter_scales, centering_probs)
 
             plt.plot(thetas*to_arcmin, thetas[:, None]*sds[:, 0, :])
             plt.xscale('log')
             plt.xlabel(r'$\theta$')
             plt.ylabel(r'$\theta \; \kappa(\theta)$')
-            plt.savefig('figs/test/miscentered_matching_stacked_gnfw_theta_times_kappa.svg')
+            plt.savefig('figs/test/miscentered_matching_stacked_gnfw_theta_times_convergence.svg')
             plt.gcf().clear()
 
             plt.plot(thetas*to_arcmin, sds[:, 0, :])
             plt.xscale('log')
             plt.xlabel(r'$\theta$')
             plt.ylabel(r'$\kappa(\theta)$')
-            plt.savefig('figs/test/miscentered_matching_stacked_gnfw_kappa.svg')
+            plt.savefig('figs/test/miscentered_matching_stacked_gnfw_convergence.svg')
             plt.gcf().clear()
 
 
 def describe_miscentered_ScatteredMatchingShearModel():
 
-    def describe_stacked_kappa():
+    def describe_stacked_convergence():
 
         @pytest.fixture
         def density_model():
@@ -600,6 +620,14 @@ def describe_miscentered_ScatteredMatchingShearModel():
             return _misc_rho_func
 
         @pytest.fixture
+        def miscentered_esd(miscentered_rho_func):
+            return maszcal.lensing.Shear(
+                rho_func=miscentered_rho_func,
+                units=u.Msun/u.pc**2,
+                esd_func=projector.esd,
+            ).excess_surface_density
+
+        @pytest.fixture
         def hmf_interp():
             return maszcal.tinker.HmfInterpolator(
                 mu_samples=np.log(np.geomspace(1e12, 1e16, 600)),
@@ -610,7 +638,7 @@ def describe_miscentered_ScatteredMatchingShearModel():
             )
 
         @pytest.fixture
-        def shear_model(miscentered_rho_func, hmf_interp):
+        def shear_model(miscentered_esd, hmf_interp):
             NUM_CLUSTERS = 1
             rng = np.random.default_rng(seed=13)
             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
@@ -621,7 +649,7 @@ def describe_miscentered_ScatteredMatchingShearModel():
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
-                rho_func=miscentered_rho_func,
+                lensing_func=miscentered_esd,
                 logmass_prob_dist_func=hmf_interp,
                 num_mu_bins=64,
                 vectorized=False,
@@ -637,7 +665,7 @@ def describe_miscentered_ScatteredMatchingShearModel():
             centering_probs = np.linspace(0, 1, 3)
             a_szs = 0*np.ones(1)
 
-            esds = shear_model.stacked_delta_sigma(radii, a_szs, cons, alphas, betas, gammas, miscenter_scales, centering_probs)
+            esds = shear_model.stacked_excess_surface_density(radii, a_szs, cons, alphas, betas, gammas, miscenter_scales, centering_probs)
 
             plt.plot(radii, radii[:, None]*esds[:, 0, :])
             plt.xscale('log')
@@ -645,13 +673,13 @@ def describe_miscentered_ScatteredMatchingShearModel():
             plt.xlabel(r'$R$')
             plt.ylabel(r'$R \Delta\Sigma(R)$')
 
-            plt.savefig('figs/test/scattered_miscentered_matching_stacked_gnfw_delta_sigma.svg')
+            plt.savefig('figs/test/scattered_miscentered_matching_stacked_gnfw_excess_surface_density.svg')
             plt.gcf().clear()
 
 
 def describe_miscentered_ScatteredMatchingConvergenceModel():
 
-    def describe_stacked_kappa():
+    def describe_stacked_convergence():
 
         @pytest.fixture
         def density_model():
@@ -680,6 +708,16 @@ def describe_miscentered_ScatteredMatchingConvergenceModel():
             return _misc_rho_func
 
         @pytest.fixture
+        def miscentered_conv(miscentered_rho_func):
+            return maszcal.lensing.Convergence(
+                rho_func=miscentered_rho_func,
+                cosmo_params=maszcal.cosmology.CosmoParams(),
+                units=u.Msun/u.pc**2,
+                comoving=True,
+                sd_func=projector.sd,
+            ).convergence
+
+        @pytest.fixture
         def hmf_interp():
             return maszcal.tinker.HmfInterpolator(
                 mu_samples=np.log(np.geomspace(1e12, 1e16, 600)),
@@ -690,7 +728,7 @@ def describe_miscentered_ScatteredMatchingConvergenceModel():
             )
 
         @pytest.fixture
-        def convergence_model(miscentered_rho_func, hmf_interp):
+        def convergence_model(miscentered_conv, hmf_interp):
             NUM_CLUSTERS = 1
             rng = np.random.default_rng(seed=13)
             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
@@ -701,8 +739,8 @@ def describe_miscentered_ScatteredMatchingConvergenceModel():
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
+                lensing_func=miscentered_conv,
                 cosmo_params=cosmo_params,
-                rho_func=miscentered_rho_func,
                 logmass_prob_dist_func=hmf_interp,
                 num_mu_bins=64,
                 vectorized=False,
@@ -720,18 +758,18 @@ def describe_miscentered_ScatteredMatchingConvergenceModel():
             centering_probs = np.linspace(0, 1, 3)
             a_szs = 0*np.ones(1)
 
-            sds = convergence_model.stacked_kappa(thetas, a_szs, cons, alphas, betas, gammas, miscenter_scales, centering_probs)
+            sds = convergence_model.stacked_convergence(thetas, a_szs, cons, alphas, betas, gammas, miscenter_scales, centering_probs)
 
             plt.plot(thetas*to_arcmin, thetas[:, None]*sds[:, 0, :])
             plt.xscale('log')
             plt.xlabel(r'$\theta$')
             plt.ylabel(r'$\theta \; \kappa(\theta)$')
-            plt.savefig('figs/test/scattered_miscentered_matching_stacked_gnfw_theta_times_kappa.svg')
+            plt.savefig('figs/test/scattered_miscentered_matching_stacked_gnfw_theta_times_convergence.svg')
             plt.gcf().clear()
 
             plt.plot(thetas*to_arcmin, sds[:, 0, :])
             plt.xscale('log')
             plt.xlabel(r'$\theta$')
             plt.ylabel(r'$\kappa(\theta)$')
-            plt.savefig('figs/test/scattered_miscentered_matching_stacked_gnfw_kappa.svg')
+            plt.savefig('figs/test/scattered_miscentered_matching_stacked_gnfw_convergence.svg')
             plt.gcf().clear()

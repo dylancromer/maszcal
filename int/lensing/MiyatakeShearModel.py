@@ -20,26 +20,26 @@ def describe_miyatake_shear_model():
         return MiyatakeShearModel(mus, zs, units=u.Msun/(u.pc**2), delta=500, mass_definition='crit')
 
 
-    def test_delta_sigma_of_m(stacked_model):
+    def test_excess_surface_density_of_m(stacked_model):
         rs = np.logspace(-1, 2, 40)
         mus = np.array([np.log(1e15)])
 
-        delta_sigmas = stacked_model.delta_sigma(rs, mus)
+        excess_surface_densities = stacked_model.excess_surface_density(rs, mus)
 
-        delta_sigmas = delta_sigmas[0,:,:]
+        excess_surface_densities = excess_surface_densities[0,:,:]
 
 
-        plt.plot(rs, rs[:, None]*delta_sigmas.T)
+        plt.plot(rs, rs[:, None]*excess_surface_densities.T)
         plt.title(rf'$ M = {round(np.exp(mus[0])/1e14, 2)} \; 10^{{14}} M_{{\odot}}$')
         plt.xlabel(r'$ r $')
         plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
         plt.xscale('log')
 
-        plt.savefig('figs/test/delta_sigma_r_m_with_miyatake.svg')
+        plt.savefig('figs/test/excess_surface_density_r_m_with_miyatake.svg')
         plt.gcf().clear()
 
 
-    def test_delta_sigma_of_r(stacked_model):
+    def test_excess_surface_density_of_r(stacked_model):
         mubins = np.linspace(np.log(1e14), np.log(1e16), 29)
         zbins = np.linspace(0, 2, 30)
 
@@ -53,40 +53,40 @@ def describe_miyatake_shear_model():
 
         stacked_model.params = params
 
-        delta_sigmas = stacked_model.stacked_delta_sigma(rs, a_szs)
+        excess_surface_densities = stacked_model.stacked_excess_surface_density(rs, a_szs)
 
-        plt.plot(rs, rs[:, None] * delta_sigmas)
+        plt.plot(rs, rs[:, None] * excess_surface_densities)
         plt.xlabel(r'$ r $')
         plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
         plt.xscale('log')
 
-        plt.savefig('figs/test/delta_sigma_r_with_miyatake.svg')
+        plt.savefig('figs/test/excess_surface_density_r_with_miyatake.svg')
         plt.gcf().clear()
 
 
-    def test_delta_sigma_of_m_nocomoving(stacked_model):
+    def test_excess_surface_density_of_m_nocomoving(stacked_model):
         stacked_model.comoving_radii = False
 
         rs = np.logspace(-1, 2, 40)
         mus = np.array([np.log(1e15)])
 
-        delta_sigmas = stacked_model.delta_sigma(rs, mus)
+        excess_surface_densities = stacked_model.excess_surface_density(rs, mus)
 
 
-        delta_sigmas = delta_sigmas[0,:,:]
+        excess_surface_densities = excess_surface_densities[0,:,:]
 
 
-        plt.plot(rs, rs[:, None]*delta_sigmas.T)
+        plt.plot(rs, rs[:, None]*excess_surface_densities.T)
         plt.title(rf'$ M = {round(np.exp(mus[0])/1e14, 2)} \; 10^{{14}} M_{{\odot}}$')
         plt.xlabel(r'$ r $')
         plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
         plt.xscale('log')
 
-        plt.savefig('figs/test/delta_sigma_r_m_comoving_false_with_miyatake.svg')
+        plt.savefig('figs/test/excess_surface_density_r_m_comoving_false_with_miyatake.svg')
         plt.gcf().clear()
 
 
-    def test_delta_sigma_of_r_nocomoving(stacked_model):
+    def test_excess_surface_density_of_r_nocomoving(stacked_model):
         mubins = np.linspace(np.log(1e14), np.log(1e16), 29)
         zbins = np.linspace(0, 2, 30)
 
@@ -97,12 +97,12 @@ def describe_miyatake_shear_model():
 
         a_szs = np.zeros(1)
 
-        delta_sigmas = stacked_model.stacked_delta_sigma(rs, a_szs)
+        excess_surface_densities = stacked_model.stacked_excess_surface_density(rs, a_szs)
 
-        plt.plot(rs, rs[:, None] * delta_sigmas)
+        plt.plot(rs, rs[:, None] * excess_surface_densities)
         plt.xlabel(r'$ r $')
         plt.ylabel(r'$ r \Delta \Sigma (10^6 \, M_{\odot} / \mathrm{{pc}}) $')
         plt.xscale('log')
 
-        plt.savefig('figs/test/delta_sigma_r_comoving_false_with_miyatake.svg')
+        plt.savefig('figs/test/excess_surface_density_r_comoving_false_with_miyatake.svg')
         plt.gcf().clear()
