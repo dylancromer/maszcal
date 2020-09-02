@@ -6,139 +6,33 @@ import maszcal.cosmology
 import maszcal.corrections
 
 
-def fake_projector_esd(rs, rho_func):
-    rhos = rho_func(rs)
-    return np.ones(rhos.shape)
-
-
-def fake_rho_total(rs, zs, mus, *params):
+def fake_1_halo_func(rs, zs, mus, *params):
     return np.ones(rs.shape + zs.shape + (params[0].size,))
 
 
-def fake_scattered_rho_total(rs, zs, mus, *params):
-    return np.ones(rs.shape + mus.shape + zs.shape + (params[0].size,))
-
-
-def describe_SingleMass2HaloShearModel():
-
-    def describe_excess_surface_density():
-
-        @pytest.fixture
-        def model():
-            rs = np.logspace(-1, 1, 8)
-            def fake_2_halo_func(zs, mus): return 1001*np.ones(mus.shape + rs.shape)
-
-            return maszcal.corrections.SingleMass2HaloShearModel(
-                radii=rs,
-                one_halo_rho_func=fake_rho_total,
-                one_halo_shear_class=maszcal.lensing.Shear,
-                two_halo_term_function=fake_2_halo_func,
-                mass_definition='mean',
-                delta=200,
-                units=u.Msun/u.pc**2,
-                esd_func=fake_projector_esd,
-            )
-
-        def it_calculates_stacked_excess_surface_density_profiles(model):
-            zs = np.linspace(0, 1, 5)
-            mus = np.log(2e14)*np.ones(2)
-            cons = 2*np.ones(2)
-            alphas = np.ones(2)
-            betas = np.ones(2)
-            gammas = np.ones(2)
-            a_2hs = np.arange(2)
-
-            esds = model.excess_surface_density(a_2hs, zs, mus, cons, alphas, betas, gammas)
-
-            assert np.all(esds >= 0)
-            assert esds.shape == (8, 5, 2)
-            assert np.all(esds[:, :, 1] > 1000)
-
-
-def describe_Matching2HaloShearModel():
+def describe_Matching2HaloCorrection():
 
     def describe_stacked_excess_surface_density():
 
         @pytest.fixture
         def model():
-            NUM_CLUSTERS = 10
-            sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
-            zs = np.random.rand(NUM_CLUSTERS)
-            weights = np.random.rand(NUM_CLUSTERS)
-
             rs = np.logspace(-1, 1, 8)
             def fake_2_halo_func(zs, mus): return 1001*np.ones(mus.shape + rs.shape)
 
-            cosmo_params = maszcal.cosmology.CosmoParams()
-            return maszcal.corrections.Matching2HaloShearModel(
+            return maszcal.corrections.Matching2HaloCorrection(
                 radii=rs,
-                sz_masses=sz_masses,
-                redshifts=zs,
-                lensing_weights=weights,
-                one_halo_rho_func=fake_rho_total,
-                one_halo_shear_class=maszcal.lensing.Shear,
-                two_halo_term_function=fake_2_halo_func,
-                mass_definition='mean',
-                delta=200,
-                units=u.Msun/u.pc**2,
-                esd_func=fake_projector_esd,
+                one_halo_func=fake_1_halo_func,
+                two_halo_func=fake_2_halo_func,
             )
 
-        def it_calculates_stacked_excess_surface_density_profiles(model):
-            cons = 2*np.ones(2)
-            alphas = np.ones(2)
-            betas = np.ones(2)
-            gammas = np.ones(2)
+        def it_combines_one_and_two_halo_profiles(model):
+            mus = np.linspace(31, 33, 5)
+            zs = np.linspace(0.1, 0.5, 5)
+            one_halo_params = np.stack([np.arange(3), np.arange(3)])
             a_2hs = np.arange(2)
-            a_szs = np.array([-1, 0, 1])
 
-            esds = model.stacked_excess_surface_density(a_2hs, a_szs, cons, alphas, betas, gammas)
+            esds = model.excess_surface_density(a_2hs, zs, mus, *one_halo_params)
 
             assert np.all(esds >= 0)
-            assert esds.shape == (3, 8, 2)
-            assert np.all(esds[:, :, 1] > 1000)
-
-
-def describe_Matching2HaloConvergenceModel():
-
-    def describe_stacked_excess_surface_density():
-
-        @pytest.fixture
-        def model():
-            NUM_CLUSTERS = 10
-            sz_masses = 2e13*np.random.randn(NUM_CLUSTERS) + 2e14
-            zs = np.random.rand(NUM_CLUSTERS)
-            weights = np.random.rand(NUM_CLUSTERS)
-
-            rs = np.logspace(-1, 1, 8)
-            def fake_2_halo_func(zs, mus): return 1001*np.ones(mus.shape + rs.shape)
-
-            cosmo_params = maszcal.cosmology.CosmoParams()
-            return maszcal.corrections.Matching2HaloConvergenceModel(
-                thetas=rs,
-                sz_masses=sz_masses,
-                redshifts=zs,
-                lensing_weights=weights,
-                one_halo_rho_func=fake_rho_total,
-                one_halo_convergence_class=maszcal.lensing.Convergence,
-                two_halo_term_function=fake_2_halo_func,
-                cosmo_params=cosmo_params,
-                mass_definition='mean',
-                delta=200,
-                units=u.Msun/u.pc**2,
-                sd_func=fake_projector_esd,
-            )
-
-        def it_calculates_stacked_excess_surface_density_profiles(model):
-            cons = 2*np.ones(2)
-            alphas = np.ones(2)
-            betas = np.ones(2)
-            gammas = np.ones(2)
-            a_2hs = np.arange(2)
-            a_szs = np.array([-1, 0, 1])
-
-            convergences = model.stacked_convergence(a_2hs, a_szs, cons, alphas, betas, gammas)
-
-            assert np.all(convergences >= 0)
-            assert convergences.shape == (3, 8, 2)
-            assert np.all(convergences[:, :, 1] > 1000)
+            assert esds.shape == (8, 5, 3, 2)
+            assert np.all(esds[..., 1] > 1000)
