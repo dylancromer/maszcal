@@ -5,7 +5,7 @@ import projector
 import maszcal.cosmology
 import maszcal.lensing
 import maszcal.mathutils
-import maszcal.density._nfw as _nfw
+from . import _nfw
 
 
 class BaryonDensity:
