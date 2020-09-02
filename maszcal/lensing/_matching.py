@@ -5,7 +5,7 @@ import projector
 import maszcal.concentration
 import maszcal.matter
 import maszcal.cosmo_utils
-import maszcal.lensing._core as _core
+from . import _core
 
 
 @dataclass
