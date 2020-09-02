@@ -80,7 +80,7 @@ def describe_TwoHaloConvergenceModel():
             assert np.all(scale_physical != scale_comoving)
 
 
-    def describe_kappa():
+    def describe_convergence():
 
         @pytest.fixture
         def two_halo_model(mocker):
@@ -93,13 +93,13 @@ def describe_TwoHaloConvergenceModel():
 
             return model
 
-        def it_calculates_two_halo_kappas(two_halo_model):
+        def it_calculates_two_halo_convergences(two_halo_model):
             zs = np.linspace(0.1, 1, 4)
             mus = np.linspace(32, 33, 4)
             from_arcmin = 2 * np.pi / 360 / 60
             thetas = np.logspace(-4, np.log10(15*from_arcmin), 2)
 
-            sds = two_halo_model.kappa(thetas, zs, mus)
+            sds = two_halo_model.convergence(thetas, zs, mus)
 
             assert not np.any(np.isnan(sds))
             assert sds.shape == zs.shape + thetas.shape
@@ -118,15 +118,15 @@ def describe_TwoHaloShearModel():
 
         return model
 
-    def it_calculates_two_halo_esds(two_halo_model):
+    def it_calculates_two_halo_excess_surface_densities(two_halo_model):
         zs = np.linspace(0, 1, 4)
         mus = np.linspace(32, 33, 4)
         rs = np.logspace(-1, 1, 2)
 
-        esds = two_halo_model.esd(rs, zs, mus)
+        excess_surface_densities = two_halo_model.excess_surface_density(rs, zs, mus)
 
-        assert not np.any(np.isnan(esds))
-        assert esds.shape == zs.shape + rs.shape
+        assert not np.any(np.isnan(excess_surface_densities))
+        assert excess_surface_densities.shape == zs.shape + rs.shape
 
 
 def describe_TwoHaloModel():

@@ -102,16 +102,16 @@ class TwoHaloModel:
 
 
 class TwoHaloShearModel(TwoHaloModel):
-    def _esd_radial_shape(self, rs, zs):
+    def _excess_surface_density_radial_shape(self, rs, zs):
         return projector.esd(rs, lambda radii: self._density_shape_interpolator(radii, zs), **self.projector_kwargs)
 
-    def _esd(self, rs, zs, mus):
+    def _excess_surface_density(self, rs, zs, mus):
         bias = self._bias(zs, mus)[:, None]
-        esd_radial_shape = self._esd_radial_shape(rs, zs).T
-        return bias * esd_radial_shape
+        excess_surface_density_radial_shape = self._excess_surface_density_radial_shape(rs, zs).T
+        return bias * excess_surface_density_radial_shape
 
-    def esd(self, rs, zs, mus):
-        return self.matter_density(zs)[:, None] * self._esd(rs, zs, mus) * (u.Msun/u.Mpc**2).to(self.units)
+    def excess_surface_density(self, rs, zs, mus):
+        return self.matter_density(zs)[:, None] * self._excess_surface_density(rs, zs, mus) * (u.Msun/u.Mpc**2).to(self.units)
 
 
 class TwoHaloConvergenceModel(TwoHaloModel):
@@ -127,13 +127,13 @@ class TwoHaloConvergenceModel(TwoHaloModel):
     def _sd_radial_shape(self, rs, zs):
         return projector.sd_alt(rs, lambda radii: self._density_shape_interpolator(radii, zs), **self.projector_kwargs)
 
-    def __radius_space_kappa(self, rs, zs, mus):
+    def _radius_space_convergence(self, rs, zs, mus):
         bias = self._bias(zs, mus)[:, None]
         sd_radial_shape = self._sd_radial_shape(rs, zs).T
         return bias * sd_radial_shape / self.sigma_crit(z_lens=zs)[:, None]
 
-    def _radius_space_kappa(self, rs, zs, mus):
-        return self.matter_density(zs)[:, None] * self.__radius_space_kappa(rs, zs, mus) * (u.Msun/u.Mpc**2).to(self.units)
+    def radius_space_convergence(self, rs, zs, mus):
+        return self.matter_density(zs)[:, None] * self._radius_space_convergence(rs, zs, mus) * (u.Msun/u.Mpc**2).to(self.units)
 
     def _comoving_distance(self, z):
         return self.astropy_cosmology.comoving_distance(z).to(u.Mpc).value
@@ -147,9 +147,9 @@ class TwoHaloConvergenceModel(TwoHaloModel):
         else:
             return self._angular_diameter_distance(z)
 
-    def kappa(self, thetas, zs, mus):
+    def convergence(self, thetas, zs, mus):
         radii_of_z = [thetas * self.angle_scale_distance(z) for z in zs]
         return np.array([
-            self._radius_space_kappa(rs, zs[i:i+1], mus[i:i+1])
+            self.radius_space_convergence(rs, zs[i:i+1], mus[i:i+1])
             for i, rs in enumerate(radii_of_z)
         ]).squeeze()
