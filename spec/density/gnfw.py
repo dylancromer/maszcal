@@ -72,7 +72,7 @@ def describe_MatchingGnfw():
     def it_can_calculate_convergence(gnfw_model):
         rs = np.logspace(-1, 1, 5)
         mus = np.linspace(32, 33, 4)
-        zs = np.linspace(0, 1, 4)
+        zs = np.linspace(0.1, 1, 4)
         cons = np.linspace(2, 3, 3)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
@@ -156,7 +156,7 @@ def describe_MatchingCmGnfw():
     def it_can_calculate_convergence(gnfw_model):
         rs = np.logspace(-1, 1, 5)
         mus = np.linspace(32, 33, 4)
-        zs = np.linspace(0, 1, 4)
+        zs = np.linspace(0.1, 1, 4)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
         gammas = np.linspace(0.1, 0.3, 3)
@@ -231,7 +231,7 @@ def describe_Gnfw():
     def it_can_calculate_convergence(gnfw_model):
         rs = np.logspace(-1, 1, 5)
         mus = np.linspace(32, 33, 6)
-        zs = np.linspace(0, 1, 4)
+        zs = np.linspace(0.1, 1, 4)
         cons = np.linspace(2, 3, 3)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
@@ -316,7 +316,7 @@ def describe_CmGnfw():
     def it_can_calculate_convergence(gnfw_model):
         rs = np.logspace(-1, 1, 5)
         mus = np.linspace(32, 33, 6)
-        zs = np.linspace(0, 1, 4)
+        zs = np.linspace(0.1, 1, 4)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
         gammas = np.linspace(0.1, 0.3, 3)
@@ -389,7 +389,7 @@ def describe_SingleMassGnfw():
 
     def it_can_calculate_convergence(gnfw_model):
         rs = np.logspace(-1, 1, 5)
-        zs = np.linspace(0, 1, 4)
+        zs = np.linspace(0.1, 1, 4)
         mus = np.linspace(32, 33, 3)
         cons = np.linspace(2, 3, 3)
         alphas = np.linspace(0.5, 1, 3)
