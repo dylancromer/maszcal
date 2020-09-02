@@ -9,7 +9,7 @@ import maszcal.matter
 import maszcal.mathutils
 import maszcal.ioutils
 import maszcal.defaults
-import maszcal.lensing._core as _core
+from . import _core
 
 
 @dataclass
