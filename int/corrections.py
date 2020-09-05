@@ -36,16 +36,26 @@ def describe_2HaloCorrected_MatchingConvergenceModel():
             )
 
         @pytest.fixture
-        def two_halo_func():
-            return maszcal.twohalo.TwoHaloConvergenceModel(
-                cosmo_params=maszcal.cosmology.CosmoParams(),
-            ).radius_space_convergence
+        def two_halo_conv():
+            cosmo = maszcal.cosmology.CosmoParams()
+            model = maszcal.twohalo.TwoHaloConvergenceModel(cosmo_params=cosmo)
+            return model.radius_space_convergence
 
         @pytest.fixture
-        def corrected_lensing_func(density_model, two_halo_func):
+        def conv_emulator(two_halo_conv):
+            return maszcal.twohalo.TwoHaloEmulator(
+                two_halo_func=two_halo_conv,
+                r_grid=np.geomspace(0.0001, 60, 160),
+                z_lims=np.array([0, 1.2]),
+                mu_lims=np.log(np.array([1e13, 1e15])),
+                num_emulator_samples=800,
+            )
+
+        @pytest.fixture
+        def corrected_lensing_func(density_model, conv_emulator):
             return maszcal.corrections.Matching2HaloCorrection(
                 one_halo_func=density_model.convergence,
-                two_halo_func=two_halo_func,
+                two_halo_func=conv_emulator,
             ).corrected_profile
 
         @pytest.fixture
@@ -208,23 +218,33 @@ def describe_2HaloCorrected_MatchingShearModel():
             )
 
         @pytest.fixture
-        def two_halo_func():
-            return maszcal.twohalo.TwoHaloShearModel(
-                cosmo_params=maszcal.cosmology.CosmoParams(),
-            ).excess_surface_density
+        def two_halo_esd():
+            cosmo = maszcal.cosmology.CosmoParams()
+            model = maszcal.twohalo.TwoHaloShearModel(cosmo_params=cosmo)
+            return model.excess_surface_density
 
         @pytest.fixture
-        def corrected_lensing_func(density_model, two_halo_func):
+        def esd_emulator(two_halo_esd):
+            return maszcal.twohalo.TwoHaloEmulator(
+                two_halo_func=two_halo_esd,
+                r_grid=np.geomspace(0.01, 100, 120),
+                z_lims=np.array([0, 1.2]),
+                mu_lims=np.log(np.array([1e13, 1e15])),
+                num_emulator_samples=800,
+            )
+
+        @pytest.fixture
+        def corrected_lensing_func(density_model, esd_emulator):
             return maszcal.corrections.Matching2HaloCorrection(
-                one_halo_func=density_model.convergence,
-                two_halo_func=two_halo_func,
+                one_halo_func=density_model.excess_surface_density,
+                two_halo_func=esd_emulator,
             ).corrected_profile
 
         @pytest.fixture
         def shear_model(corrected_lensing_func):
             NUM_CLUSTERS = 100
             rng = np.random.default_rng(seed=13)
-            sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
+            sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 1e14
             zs = rng.random(size=NUM_CLUSTERS) + 0.01
             weights = rng.random(size=NUM_CLUSTERS)
             cosmo_params = maszcal.cosmology.CosmoParams()
@@ -236,17 +256,17 @@ def describe_2HaloCorrected_MatchingShearModel():
             )
 
         def the_plots_look_right(shear_model):
-            radii = np.logspace(-1, 1, 30)
+            radii = np.geomspace(1e-1, 60, 100)
             cons = 3*np.ones(1)
             alphas = 0.8*np.ones(1)
             betas = 3.4*np.ones(1)
             gammas = 0.2*np.ones(1)
-            a_szs = np.linspace(0, 0.5, 4)
+            a_szs = -0.3*np.ones(1)
             a_2hs = np.linspace(0, 1, 3)
 
             esds = shear_model.stacked_excess_surface_density(radii, a_szs, a_2hs, cons, alphas, betas, gammas)
 
-            plt.plot(radii, radii[:, None]*esds[:, :, 0])
+            plt.plot(radii, radii[:, None]*esds.squeeze())
             plt.xscale('log')
 
             plt.xlabel(r'$R$')
