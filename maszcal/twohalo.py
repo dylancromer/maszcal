@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from types import MappingProxyType
 import numpy as np
 import astropy.units as u
+import scipy.interpolate
+import supercubos
 import projector
 import maszcal.interpolate
 import maszcal.interp_utils
@@ -10,6 +12,7 @@ import maszcal.matter
 import maszcal.mathutils
 import maszcal.cosmo_utils
 import maszcal.tinker
+import maszcal.emulate
 
 
 @dataclass
@@ -153,3 +156,59 @@ class TwoHaloConvergenceModel(TwoHaloModel):
             self.radius_space_convergence(rs, zs[i:i+1], mus[i:i+1])
             for i, rs in enumerate(radii_of_z)
         ]).squeeze()
+
+
+@dataclass
+class TwoHaloEmulator:
+    INTERPOLATOR_CLASS = maszcal.interpolate.RbfInterpolator
+    NUM_PRINCIPAL_COMPONENTS = 6
+
+    two_halo_func: object
+    r_grid: np.ndarray
+    z_lims: np.ndarray
+    mu_lims: np.ndarray
+    num_emulator_samples: int = 600
+
+    def _get_z_mu_samples(self):
+        param_mins = np.stack((self.z_lims, self.mu_lims))[:, 0]
+        param_maxes = np.stack((self.z_lims, self.mu_lims))[:, 1]
+        return supercubos.LatinSampler().get_lh_sample(
+            param_mins=param_mins,
+            param_maxes=param_maxes,
+            num_samples=self.num_emulator_samples,
+        )
+
+    def _get_two_halo_term_samples(self, z_mu_samples):
+        zs, mus = z_mu_samples.T
+        sort_index = zs.argsort()
+        inverse_index = sort_index.argsort()
+        zs = zs[sort_index]
+        mus = mus[sort_index]
+        sampled_two_halo_term = self.two_halo_func(self.r_grid, zs, mus)
+        return sampled_two_halo_term[inverse_index, :]
+
+    def _get_emulator(self, z_mu_samples, sampled_two_halo_term):
+        emulator_ =  maszcal.emulate.PcaEmulator.create_from_data(
+            z_mu_samples,
+            sampled_two_halo_term.T,
+            interpolator_class=self.INTERPOLATOR_CLASS,
+            num_components=self.NUM_PRINCIPAL_COMPONENTS
+        )
+        def wrapped_emulator(zs, mus): return emulator_(np.stack((zs, mus)).T).T
+        return wrapped_emulator
+
+    def __post_init__(self):
+        z_mu_samples = self._get_z_mu_samples()
+        sampled_two_halo_term = self._get_two_halo_term_samples(z_mu_samples)
+        self._emulator = self._get_emulator(z_mu_samples, sampled_two_halo_term)
+
+    def _get_radial_interpolation(self, rs, zs, mus):
+        return scipy.interpolate.interp1d(
+            self.r_grid,
+            self._emulator(zs, mus),
+            kind='cubic',
+            axis=-1,
+        )(rs)
+
+    def __call__(self, rs, zs, mus):
+        return self._get_radial_interpolation(rs, zs, mus)
