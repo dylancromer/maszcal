@@ -198,3 +198,43 @@ def describe_TwoHaloEmulator():
             plt.savefig('figs/test/emulated_two_halo_kappa.svg')
 
             plt.gcf().clear()
+
+    def describe_non_matching_version():
+
+        @pytest.fixture
+        def two_halo_esd():
+            cosmo = maszcal.cosmology.CosmoParams()
+            model = maszcal.twohalo.TwoHaloShearModel(cosmo_params=cosmo)
+            return model.excess_surface_density
+
+        @pytest.fixture
+        def esd_emulator(two_halo_esd):
+            return maszcal.twohalo.TwoHaloEmulator(
+                two_halo_func=two_halo_esd,
+                r_grid=np.geomspace(0.01, 100, 120),
+                z_lims=np.array([0, 1.1]),
+                mu_lims=np.log(np.array([1e13, 1e15])),
+                num_emulator_samples=800,
+                separate_mu_and_z_axes=True,
+            )
+
+        def it_can_calculate_esds(esd_emulator):
+            rs = np.geomspace(0.1, 30, 60)
+
+            rng = np.random.default_rng(seed=13)
+            mus = np.linspace(np.log(1e14), np.log(1e15), 4)
+            zs = 0.5*np.ones(5)
+
+            esds = esd_emulator(rs, zs, mus)
+            assert not np.any(np.isnan(esds))
+            assert esds.shape == mus.shape + zs.shape + rs.shape
+
+            plt.plot(rs, esds[:, 0, :].T)
+            plt.plot(rs, esds[0, :, :].T, linestyle=':')
+            # This plot should show the dotted, redshift-varying lines to be all identical and located on the smallest mu line
+            plt.xscale('log')
+            plt.xlabel(r'$R \; (\mathrm{Mpc}$)')
+            plt.ylabel(r'$\Delta \Sigma \; (M_\odot/\mathrm{pc}^2)$')
+            plt.savefig('figs/test/non_matching_emulated_two_halo_esd.svg')
+
+            plt.gcf().clear()

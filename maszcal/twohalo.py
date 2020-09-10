@@ -168,6 +168,7 @@ class TwoHaloEmulator:
     z_lims: np.ndarray
     mu_lims: np.ndarray
     num_emulator_samples: int = 600
+    separate_mu_and_z_axes: bool = False
 
     def _get_z_mu_samples(self):
         param_mins = np.stack((self.z_lims, self.mu_lims))[:, 0]
@@ -187,6 +188,19 @@ class TwoHaloEmulator:
         sampled_two_halo_term = self.two_halo_func(self.r_grid, zs, mus)
         return sampled_two_halo_term[inverse_index, :]
 
+    def _wrap_emulator(self, unwrapped_emulator):
+        if not self.separate_mu_and_z_axes:
+            def wrapped_emulator(zs, mus): return unwrapped_emulator(np.stack((zs, mus)).T).T
+        else:
+            def wrapped_emulator(zs, mus):
+                coords = maszcal.interp_utils.cartesian_prod(zs, mus)
+                return np.moveaxis(
+                    unwrapped_emulator(coords).reshape(-1, zs.size, mus.size),
+                    (0, 1),
+                    (2, 1),
+                )
+        return wrapped_emulator
+
     def _get_emulator(self, z_mu_samples, sampled_two_halo_term):
         emulator_ =  maszcal.emulate.PcaEmulator.create_from_data(
             z_mu_samples,
@@ -194,8 +208,7 @@ class TwoHaloEmulator:
             interpolator_class=self.INTERPOLATOR_CLASS,
             num_components=self.NUM_PRINCIPAL_COMPONENTS
         )
-        def wrapped_emulator(zs, mus): return emulator_(np.stack((zs, mus)).T).T
-        return wrapped_emulator
+        return self._wrap_emulator(emulator_)
 
     def __post_init__(self):
         z_mu_samples = self._get_z_mu_samples()

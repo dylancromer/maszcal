@@ -103,104 +103,98 @@ def describe_2HaloCorrected_MatchingConvergenceModel():
             plt.gcf().clear()
 
 
-# def describe_2HaloCorrected_ScatteredMatchingConvergenceModel():
+def describe_2HaloCorrected_ScatteredMatchingConvergenceModel():
 
-#     def describe_stacked_convergence():
+    def describe_stacked_convergence():
 
-#         @pytest.fixture
-#         def density_model():
-#             return maszcal.density.Gnfw(
-#                 cosmo_params=maszcal.cosmology.CosmoParams(),
-#                 mass_definition='mean',
-#                 delta=200,
-#                 comoving_radii=True,
-#                 nfw_class=maszcal.density.NfwModel,
-#             )
+        @pytest.fixture
+        def density_model():
+            return maszcal.density.Gnfw(
+                cosmo_params=maszcal.cosmology.CosmoParams(),
+                mass_definition='mean',
+                delta=200,
+                comoving_radii=True,
+                nfw_class=maszcal.density.NfwModel,
+            )
 
-#         @pytest.fixture
-#         def hmf_interp():
-#             return maszcal.tinker.HmfInterpolator(
-#                 mu_samples=np.log(np.geomspace(1e12, 1e16, 600)),
-#                 redshift_samples=np.linspace(0.01, 4, 120),
-#                 delta=200,
-#                 mass_definition='mean',
-#                 cosmo_params=maszcal.cosmology.CosmoParams(),
-#             )
+        @pytest.fixture
+        def two_halo_conv():
+            cosmo = maszcal.cosmology.CosmoParams()
+            model = maszcal.twohalo.TwoHaloConvergenceModel(cosmo_params=cosmo)
+            return model.radius_space_convergence
 
-#         @pytest.fixture
-#         def convergence_model(hmf_interp, density_model):
-#             NUM_CLUSTERS = 1
-#             rng = np.random.default_rng(seed=13)
-#             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
-#             zs = rng.random(size=NUM_CLUSTERS) + 0.01
-#             weights = rng.random(size=NUM_CLUSTERS)
-#             cosmo_params = maszcal.cosmology.CosmoParams()
-#             return maszcal.lensing.ScatteredMatchingConvergenceModel(
-#                 sz_masses=sz_masses,
-#                 redshifts=zs,
-#                 lensing_weights=weights,
-#                 cosmo_params=cosmo_params,
-#                 lensing_func=density_model.convergence,
-#                 logmass_prob_dist_func=hmf_interp,
-#             )
+        @pytest.fixture
+        def conv_emulator(two_halo_conv):
+            return maszcal.twohalo.TwoHaloEmulator(
+                two_halo_func=two_halo_conv,
+                r_grid=np.geomspace(0.0001, 60, 160),
+                z_lims=np.array([0, 1.2]),
+                mu_lims=np.log(np.array([1e13, 1e15])),
+                num_emulator_samples=800,
+                separate_mu_and_z_axes=True,
+            )
 
-#         @pytest.fixture
-#         def convergence_model_loop(density_model, hmf_interp):
-#             NUM_CLUSTERS = 1
-#             rng = np.random.default_rng(seed=13)
-#             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
-#             zs = rng.random(size=NUM_CLUSTERS) + 0.01
-#             weights = rng.random(size=NUM_CLUSTERS)
-#             cosmo_params = maszcal.cosmology.CosmoParams()
-#             return maszcal.lensing.ScatteredMatchingConvergenceModel(
-#                 sz_masses=sz_masses,
-#                 redshifts=zs,
-#                 lensing_weights=weights,
-#                 cosmo_params=cosmo_params,
-#                 lensing_func=density_model.convergence,
-#                 logmass_prob_dist_func=hmf_interp,
-#                 vectorized=False,
-#             )
+        @pytest.fixture
+        def corrected_lensing_func(density_model, conv_emulator):
+            return maszcal.corrections.TwoHaloCorrection(
+                one_halo_func=density_model.convergence,
+                two_halo_func=conv_emulator,
+            ).corrected_profile
 
-#         def vectorized_and_loop_give_same_answer(convergence_model, convergence_model_loop):
-#             from_arcmin = 2 * np.pi / 360 / 60
-#             to_arcmin = 1/from_arcmin
-#             thetas = np.geomspace(0.05*from_arcmin, 60*from_arcmin, 60)
-#             cons = 3*np.ones(1)
-#             alphas = 0.5*np.ones(1)
-#             betas = np.linspace(2.8, 3.2, 3)
-#             gammas = 0.5*np.ones(1)
-#             a_szs = np.array([0, 0.1, -0.1, 0.01])
+        @pytest.fixture
+        def hmf_interp():
+            return maszcal.tinker.HmfInterpolator(
+                mu_samples=np.log(np.geomspace(1e12, 1e16, 600)),
+                redshift_samples=np.linspace(0.01, 4, 120),
+                delta=200,
+                mass_definition='mean',
+                cosmo_params=maszcal.cosmology.CosmoParams(),
+            )
 
-#             sds = convergence_model.stacked_convergence(thetas, a_szs, cons, alphas, betas, gammas)
-#             sds_loop = convergence_model_loop.stacked_convergence(thetas, a_szs, cons, alphas, betas, gammas)
-#             assert np.all(sds == sds_loop)
+        @pytest.fixture
+        def convergence_model(corrected_lensing_func, hmf_interp):
+            NUM_CLUSTERS = 100
+            rng = np.random.default_rng(seed=13)
+            sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
+            zs = rng.random(size=NUM_CLUSTERS) + 0.01
+            weights = rng.random(size=NUM_CLUSTERS)
+            cosmo_params = maszcal.cosmology.CosmoParams()
+            return maszcal.lensing.ScatteredMatchingConvergenceModel(
+                sz_masses=sz_masses,
+                redshifts=zs,
+                lensing_weights=weights,
+                cosmo_params=cosmo_params,
+                lensing_func=corrected_lensing_func,
+                logmass_prob_dist_func=hmf_interp,
+            )
 
-#         def the_plots_look_right(convergence_model):
-#             from_arcmin = 2 * np.pi / 360 / 60
-#             to_arcmin = 1/from_arcmin
-#             thetas = np.geomspace(0.05*from_arcmin, 60*from_arcmin, 60)
-#             cons = 3*np.ones(1)
-#             alphas = 0.5*np.ones(1)
-#             betas = np.linspace(2.8, 3.2, 3)
-#             gammas = 0.5*np.ones(1)
-#             a_szs = np.array([0, 0.1, -0.1, 0.01])
+        def the_plots_look_right(convergence_model):
+            from_arcmin = 2 * np.pi / 360 / 60
+            to_arcmin = 1/from_arcmin
+            thetas = np.geomspace(0.05*from_arcmin, 60*from_arcmin, 60)
+            cons = 3*np.ones(1)
+            alphas = 0.5*np.ones(1)
+            betas = 3.6*np.ones(1)
+            gammas = 0.5*np.ones(1)
+            a_szs = -0.3*np.ones(1)
+            a_2hs = np.linspace(0, 1, 3)
 
-#             sds = convergence_model.stacked_convergence(thetas, a_szs, cons, alphas, betas, gammas)
+            sds = convergence_model.stacked_convergence(thetas, a_szs, a_2hs, cons, alphas, betas, gammas).squeeze()
 
-#             plt.plot(thetas*to_arcmin, thetas[:, None]*sds[..., 0])
-#             plt.xscale('log')
-#             plt.xlabel(r'$\theta$')
-#             plt.ylabel(r'$\theta \; \kappa(\theta)$')
-#             plt.savefig('figs/test/2halo_corrected_scattered_matching_stacked_gnfw_theta_times_convergence.svg')
-#             plt.gcf().clear()
+            plt.plot(thetas*to_arcmin, thetas[:, None]*sds)
+            plt.xscale('log')
+            plt.xlabel(r'$\theta$')
+            plt.ylabel(r'$\theta \; \kappa(\theta)$')
+            plt.savefig('figs/test/2halo_corrected_scattered_matching_stacked_gnfw_theta_times_convergence.svg')
+            plt.gcf().clear()
 
-#             plt.plot(thetas*to_arcmin, sds[..., 0])
-#             plt.xscale('log')
-#             plt.xlabel(r'$\theta$')
-#             plt.ylabel(r'$\kappa(\theta)$')
-#             plt.savefig('figs/test/2halo_corrected_scattered_matching_stacked_gnfw_convergence.svg')
-#             plt.gcf().clear()
+            plt.plot(thetas*to_arcmin, sds)
+            plt.xscale('log')
+            plt.yscale('log')
+            plt.xlabel(r'$\theta$')
+            plt.ylabel(r'$\kappa(\theta)$')
+            plt.savefig('figs/test/2halo_corrected_scattered_matching_stacked_gnfw_convergence.svg')
+            plt.gcf().clear()
 
 
 def describe_2HaloCorrected_MatchingShearModel():
@@ -244,7 +238,7 @@ def describe_2HaloCorrected_MatchingShearModel():
         def shear_model(corrected_lensing_func):
             NUM_CLUSTERS = 100
             rng = np.random.default_rng(seed=13)
-            sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 1e14
+            sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
             zs = rng.random(size=NUM_CLUSTERS) + 0.01
             weights = rng.random(size=NUM_CLUSTERS)
             cosmo_params = maszcal.cosmology.CosmoParams()
@@ -276,88 +270,85 @@ def describe_2HaloCorrected_MatchingShearModel():
             plt.gcf().clear()
 
 
-# def describe_2HaloCorrected_ScatteredMatchingShearModel():
+def describe_2HaloCorrected_ScatteredMatchingShearModel():
 
-#     def describe_stacked_excess_surface_density():
+    def describe_stacked_excess_surface_density():
 
-#         @pytest.fixture
-#         def density_model():
-#             return maszcal.density.Gnfw(
-#                 cosmo_params=maszcal.cosmology.CosmoParams(),
-#                 mass_definition='mean',
-#                 delta=200,
-#                 comoving_radii=True,
-#                 nfw_class=maszcal.density.NfwModel,
-#             )
+        @pytest.fixture
+        def density_model():
+            return maszcal.density.Gnfw(
+                cosmo_params=maszcal.cosmology.CosmoParams(),
+                mass_definition='mean',
+                delta=200,
+                comoving_radii=True,
+                nfw_class=maszcal.density.NfwModel,
+            )
 
-#         @pytest.fixture
-#         def hmf_interp():
-#             return maszcal.tinker.HmfInterpolator(
-#                 mu_samples=np.log(np.geomspace(1e12, 1e16, 600)),
-#                 redshift_samples=np.linspace(0.01, 4, 120),
-#                 delta=200,
-#                 mass_definition='mean',
-#                 cosmo_params=maszcal.cosmology.CosmoParams(),
-#             )
+        @pytest.fixture
+        def two_halo_esd():
+            cosmo = maszcal.cosmology.CosmoParams()
+            model = maszcal.twohalo.TwoHaloShearModel(cosmo_params=cosmo)
+            return model.excess_surface_density
 
-#         @pytest.fixture
-#         def shear_model(density_model, hmf_interp):
-#             NUM_CLUSTERS = 100
-#             rng = np.random.default_rng(seed=13)
-#             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
-#             zs = rng.random(size=NUM_CLUSTERS) + 0.01
-#             weights = rng.random(size=NUM_CLUSTERS)
-#             return maszcal.lensing.ScatteredMatchingShearModel(
-#                 sz_masses=sz_masses,
-#                 redshifts=zs,
-#                 lensing_weights=weights,
-#                 lensing_func=density_model.excess_surface_density,
-#                 logmass_prob_dist_func=hmf_interp,
-#             )
+        @pytest.fixture
+        def esd_emulator(two_halo_esd):
+            return maszcal.twohalo.TwoHaloEmulator(
+                two_halo_func=two_halo_esd,
+                r_grid=np.geomspace(0.01, 100, 120),
+                z_lims=np.array([0, 1.2]),
+                mu_lims=np.log(np.array([1e13, 1e15])),
+                num_emulator_samples=800,
+                separate_mu_and_z_axes=True,
+            )
 
-#         @pytest.fixture
-#         def shear_model_loop(density_model, hmf_interp):
-#             NUM_CLUSTERS = 100
-#             rng = np.random.default_rng(seed=13)
-#             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
-#             zs = rng.random(size=NUM_CLUSTERS) + 0.01
-#             weights = rng.random(size=NUM_CLUSTERS)
-#             return maszcal.lensing.ScatteredMatchingShearModel(
-#                 sz_masses=sz_masses,
-#                 redshifts=zs,
-#                 lensing_weights=weights,
-#                 lensing_func=density_model.excess_surface_density,
-#                 logmass_prob_dist_func=hmf_interp,
-#                 vectorized=False,
-#             )
+        @pytest.fixture
+        def corrected_lensing_func(density_model, esd_emulator):
+            return maszcal.corrections.TwoHaloCorrection(
+                one_halo_func=density_model.excess_surface_density,
+                two_halo_func=esd_emulator,
+            ).corrected_profile
 
-#         def vectorized_and_loop_give_same_answer(shear_model, shear_model_loop):
-#             radii = np.logspace(-1, 1, 30)
-#             cons = 3*np.ones(1)
-#             alphas = 0.8*np.ones(1)
-#             betas = 3.4*np.ones(1)
-#             gammas = 0.2*np.ones(1)
-#             a_szs = np.linspace(0, 0.5, 4)
+        @pytest.fixture
+        def hmf_interp():
+            return maszcal.tinker.HmfInterpolator(
+                mu_samples=np.log(np.geomspace(1e12, 1e16, 600)),
+                redshift_samples=np.linspace(0.01, 4, 120),
+                delta=200,
+                mass_definition='mean',
+                cosmo_params=maszcal.cosmology.CosmoParams(),
+            )
 
-#             esds = shear_model.stacked_excess_surface_density(radii, a_szs, cons, alphas, betas, gammas)
-#             esds_loop = shear_model_loop.stacked_excess_surface_density(radii, a_szs, cons, alphas, betas, gammas)
-#             assert np.all(esds == esds_loop)
+        @pytest.fixture
+        def shear_model(corrected_lensing_func, hmf_interp):
+            NUM_CLUSTERS = 100
+            rng = np.random.default_rng(seed=13)
+            sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
+            zs = rng.random(size=NUM_CLUSTERS) + 0.01
+            weights = rng.random(size=NUM_CLUSTERS)
+            return maszcal.lensing.ScatteredMatchingShearModel(
+                sz_masses=sz_masses,
+                redshifts=zs,
+                lensing_weights=weights,
+                lensing_func=corrected_lensing_func,
+                logmass_prob_dist_func=hmf_interp,
+            )
 
-#         def the_plots_look_right(shear_model):
-#             radii = np.logspace(-1, 1, 30)
-#             cons = 3*np.ones(1)
-#             alphas = 0.8*np.ones(1)
-#             betas = 3.4*np.ones(1)
-#             gammas = 0.2*np.ones(1)
-#             a_szs = np.linspace(0, 0.5, 4)
+        def the_plots_look_right(shear_model):
+            radii = np.geomspace(1e-1, 60, 100)
+            cons = 3*np.ones(1)
+            alphas = 0.8*np.ones(1)
+            betas = 3.4*np.ones(1)
+            gammas = 0.2*np.ones(1)
+            a_szs = -0.3*np.ones(1)
+            a_2hs = np.linspace(0, 1, 3)
 
-#             esds = shear_model.stacked_excess_surface_density(radii, a_szs, cons, alphas, betas, gammas)
+            esds = shear_model.stacked_excess_surface_density(radii, a_szs, a_2hs, cons, alphas, betas, gammas).squeeze()
 
-#             plt.plot(radii, radii[:, None]*esds[:, :, 0])
-#             plt.xscale('log')
+            plt.plot(radii, radii[:, None]*esds)
+            plt.xscale('log')
 
-#             plt.xlabel(r'$R$')
-#             plt.ylabel(r'$R \Delta\Sigma(R)$')
+            plt.xlabel(r'$R$')
+            plt.ylabel(r'$R \Delta\Sigma(R)$')
 
-#             plt.savefig('figs/test/2halo_corrected_scattered_matching_stacked_gnfw_excess_surface_density.svg')
-#             plt.gcf().clear()
+            plt.savefig('figs/test/2halo_corrected_scattered_matching_stacked_gnfw_excess_surface_density.svg')
+            plt.gcf().clear()
