@@ -250,7 +250,7 @@ def describe_2HaloCorrected_MatchingShearModel():
             )
 
         def the_plots_look_right(shear_model):
-            radii = np.geomspace(1e-1, 60, 100)
+            radii = np.geomspace(1e-1, 60, 99)
             cons = 3*np.ones(1)
             alphas = 0.8*np.ones(1)
             betas = 3.4*np.ones(1)

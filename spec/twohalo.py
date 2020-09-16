@@ -179,7 +179,7 @@ def describe_TwoHaloEmulator():
 
         @pytest.fixture
         def esd_emulator(two_halo_esd):
-            return maszcal.twohalo.TwoHaloEmulator(
+            return maszcal.twohalo.TwoHaloEmulator.from_function(
                 two_halo_func=two_halo_esd,
                 r_grid=np.geomspace(0.1, 10, 13),
                 z_lims=np.array([0, 2]),
@@ -212,7 +212,7 @@ def describe_TwoHaloEmulator():
 
         @pytest.fixture
         def conv_emulator(two_halo_conv):
-            return maszcal.twohalo.TwoHaloEmulator(
+            return maszcal.twohalo.TwoHaloEmulator.from_function(
                 two_halo_func=two_halo_conv,
                 r_grid=np.geomspace(0.1, 10, 13),
                 z_lims=np.array([0, 2]),
@@ -245,7 +245,7 @@ def describe_TwoHaloEmulator():
 
         @pytest.fixture
         def esd_emulator(two_halo_esd):
-            return maszcal.twohalo.TwoHaloEmulator(
+            return maszcal.twohalo.TwoHaloEmulator.from_function(
                 two_halo_func=two_halo_esd,
                 r_grid=np.geomspace(0.1, 10, 13),
                 z_lims=np.array([0, 2]),

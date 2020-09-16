@@ -163,29 +163,40 @@ class TwoHaloEmulator:
     INTERPOLATOR_CLASS = maszcal.interpolate.RbfInterpolator
     NUM_PRINCIPAL_COMPONENTS = 6
 
-    two_halo_func: object
+    two_halo_samples: np.ndarray
     r_grid: np.ndarray
-    z_lims: np.ndarray
-    mu_lims: np.ndarray
-    num_emulator_samples: int = 600
-    separate_mu_and_z_axes: bool = False
+    z_mu_samples: np.ndarray
+    separate_mu_and_z_axes: bool
 
-    def _get_z_mu_samples(self):
-        param_mins = np.stack((self.z_lims, self.mu_lims))[:, 0]
-        param_maxes = np.stack((self.z_lims, self.mu_lims))[:, 1]
+    @classmethod
+    def from_function(cls, two_halo_func, r_grid, z_lims, mu_lims, num_emulator_samples=600, separate_mu_and_z_axes=False):
+        z_mu_samples = cls._get_z_mu_samples(z_lims, mu_lims, num_emulator_samples)
+        sampled_two_halo_term = cls._get_two_halo_term_samples(r_grid, z_mu_samples, two_halo_func)
+        return cls(
+            two_halo_samples=sampled_two_halo_term,
+            r_grid=r_grid,
+            z_mu_samples=z_mu_samples,
+            separate_mu_and_z_axes=separate_mu_and_z_axes,
+        )
+
+    @staticmethod
+    def _get_z_mu_samples(z_lims, mu_lims, num_emulator_samples):
+        param_mins = np.stack((z_lims, mu_lims))[:, 0]
+        param_maxes = np.stack((z_lims, mu_lims))[:, 1]
         return supercubos.LatinSampler().get_lh_sample(
             param_mins=param_mins,
             param_maxes=param_maxes,
-            num_samples=self.num_emulator_samples,
+            num_samples=num_emulator_samples,
         )
 
-    def _get_two_halo_term_samples(self, z_mu_samples):
+    @staticmethod
+    def _get_two_halo_term_samples(r_grid, z_mu_samples, two_halo_func):
         zs, mus = z_mu_samples.T
         sort_index = zs.argsort()
         inverse_index = sort_index.argsort()
         zs = zs[sort_index]
         mus = mus[sort_index]
-        sampled_two_halo_term = self.two_halo_func(self.r_grid, zs, mus)
+        sampled_two_halo_term = two_halo_func(r_grid, zs, mus)
         return sampled_two_halo_term[inverse_index, :]
 
     def _wrap_emulator(self, unwrapped_emulator):
@@ -211,9 +222,7 @@ class TwoHaloEmulator:
         return self._wrap_emulator(emulator_)
 
     def __post_init__(self):
-        z_mu_samples = self._get_z_mu_samples()
-        sampled_two_halo_term = self._get_two_halo_term_samples(z_mu_samples)
-        self._emulator = self._get_emulator(z_mu_samples, sampled_two_halo_term)
+        self._emulator = self._get_emulator(self.z_mu_samples, self.two_halo_samples)
 
     def _get_radial_interpolation(self, rs, zs, mus):
         return scipy.interpolate.interp1d(
