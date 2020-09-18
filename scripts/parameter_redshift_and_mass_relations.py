@@ -77,7 +77,7 @@ def calculate_nfw_fits(i, z, sim_data, fisher_matrix):
         con = params
         mass = np.array([true_mass])
         mu = np.log(mass)
-        return  nfw_model.delta_sigma(radii, mu, con)
+        return  nfw_model.excess_surface_density(radii, mu, con)
 
     def _pool_func(data, true_mass):
         return _get_best_fit(data, true_mass, sim_data.radii, esd_model_func, fisher_matrix, NFW_PARAM_MINS, NFW_PARAM_MAXES)
@@ -100,7 +100,7 @@ def calculate_baryon_fits(i, z, sim_data, fisher_matrix):
         gamma = np.array([0.2])
         mass = np.array([true_mass])
         mu = np.log(mass)
-        return baryon_model.delta_sigma(radii, mu, con, alpha, beta, gamma)
+        return baryon_model.excess_surface_density(radii, mu, con, alpha, beta, gamma)
 
     def _pool_func(data, true_mass):
         return _get_best_fit(data, true_mass, sim_data.radii, esd_model_func, fisher_matrix, BARYON_PARAM_MINS, BARYON_PARAM_MAXES)
@@ -126,7 +126,7 @@ def calculate_baryon_cm_fits(i, z, sim_data, fisher_matrix):
         con_model = maszcal.concentration.ConModel('500c', cosmology=sim_data.cosmology)
         con = con_model.c(mass, np.array([z]), '500c').flatten()
 
-        return baryon_model.delta_sigma(radii, mu, con, alpha, beta, gamma)
+        return baryon_model.excess_surface_density(radii, mu, con, alpha, beta, gamma)
 
     def _pool_func(data, true_mass):
         return _get_best_fit(data, true_mass, sim_data.radii, esd_model_func, fisher_matrix, BARYON_CM_PARAM_MINS, BARYON_CM_PARAM_MAXES)
