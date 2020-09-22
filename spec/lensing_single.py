@@ -134,7 +134,7 @@ def describe_SingleMassNfwShearModel():
             delta_sigs = single_mass_model.excess_surface_density(rs, mu, con)
 
             assert np.all(delta_sigs > 0)
-            assert delta_sigs.shape == (1, 1, 5, 1)
+            assert delta_sigs.shape == (1, 5, 1)
 
         def it_can_use_different_units():
             redshift = 0.4*np.ones(1)

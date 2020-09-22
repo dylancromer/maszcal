@@ -99,7 +99,7 @@ class SingleMassNfwShearModel:
         self.astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
 
     def _init_nfw(self):
-        self.nfw_model = maszcal.density.NfwModel(
+        self.nfw_model = maszcal.density.SingleMassNfwModel(
             cosmo_params=self.cosmo_params,
             units=self.units,
             delta=self.delta,
