@@ -270,7 +270,7 @@ def describe_MatchingShearModel():
                 sz_masses=sz_masses,
                 redshifts=zs,
                 lensing_weights=weights,
-                lensing_func=density_model.rho_tot,
+                lensing_func=density_model.excess_surface_density,
             )
 
         def the_plots_look_right(shear_model):
@@ -290,6 +290,59 @@ def describe_MatchingShearModel():
             plt.ylabel(r'$R \Delta\Sigma(R)$')
 
             plt.savefig('figs/test/matching_stacked_gnfw_excess_surface_density.svg')
+            plt.gcf().clear()
+
+    def describe_stacked_excess_surface_density_nfw_only():
+
+        @pytest.fixture
+        def density_model():
+            return maszcal.density.MatchingNfwModel(
+                cosmo_params=maszcal.cosmology.CosmoParams(),
+                mass_definition='mean',
+                delta=200,
+                comoving=True,
+            )
+
+        @pytest.fixture
+        def nfw_lensing_func(density_model):
+            def wrapper(rs, zs, mus, cons):
+                masses = np.exp(mus)
+                return np.moveaxis(
+                    density_model.excess_surface_density(rs, zs, masses, cons),
+                    0,
+                    1,
+                )
+            return wrapper
+
+        @pytest.fixture
+        def shear_model(nfw_lensing_func):
+            NUM_CLUSTERS = 100
+            rng = np.random.default_rng(seed=13)
+            sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
+            zs = rng.random(size=NUM_CLUSTERS) + 0.01
+            weights = rng.random(size=NUM_CLUSTERS)
+            cosmo_params = maszcal.cosmology.CosmoParams()
+            return maszcal.lensing.MatchingShearModel(
+                sz_masses=sz_masses,
+                redshifts=zs,
+                lensing_weights=weights,
+                lensing_func=nfw_lensing_func,
+            )
+
+        def the_plots_look_right(shear_model):
+            radii = np.logspace(-1, 1, 30)
+            cons = 3*np.ones(1)
+            a_szs = np.linspace(0, 0.5, 4)
+
+            esds = shear_model.stacked_excess_surface_density(radii, a_szs, cons)
+
+            plt.plot(radii, radii[:, None]*esds[:, :, 0])
+            plt.xscale('log')
+
+            plt.xlabel(r'$R$')
+            plt.ylabel(r'$R \Delta\Sigma(R)$')
+
+            plt.savefig('figs/test/matching_stacked_gnfw_excess_surface_density_nfw_only.svg')
             plt.gcf().clear()
 
 
