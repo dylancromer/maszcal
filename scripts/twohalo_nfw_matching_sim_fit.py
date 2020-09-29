@@ -16,25 +16,21 @@ import maszcal.likelihoods
 import maszcal.twohalo
 
 
-PARAM_MINS = np.array([-2, 0, 1, 0.1, 0.1])  # a_sz, a_2h, con, alpha, beta
-PARAM_MAXES = np.array([2, 5, 6, 2.1, 8.1])
-GAMMA = 0.2
-USE_PRIOR = False
-MEAN_PRIOR_ALPHA = 0.88
-PRIOR_ALPHA_STD = 0.3
+PARAM_MINS = np.array([-2, 0, 1])  # a_sz, a_2h, con
+PARAM_MAXES = np.array([2, 5, 6])
 LOWER_RADIUS_CUT = 0.1
 UPPER_RADIUS_CUT = 13
 COV_MAGNITUDE = 1.3
 SIM_DATA = maszcal.data.sims.NBatta2010('data/NBatta2010/').cut_radii(LOWER_RADIUS_CUT, UPPER_RADIUS_CUT)
-NUM_EMULATOR_SAMPLES = 2000
+NUM_EMULATOR_SAMPLES = 1200
 NUM_ERRORCHECK_SAMPLES = 800
-NUM_PRINCIPAL_COMPONENTS = 10
-NUM_PROCESSES = 12
+NUM_PROCESSES = 6
+NUM_PRINCIPAL_COMPONENTS = 8
 NWALKERS = 600
 NSTEPS = 6000
 WALKER_DISPERSION = 4e-3
 DIR = 'data/NBatta2010/matching-model-fits/'
-SETUP_SLUG = 'matching-twohalo-baryons'
+SETUP_SLUG = 'matching-twohalo-nfw-only'
 
 
 class bcolors:
@@ -55,13 +51,23 @@ def get_covariance_and_fisher():
 
 
 def get_density_model():
-    return maszcal.density.MatchingGnfw(
+    return maszcal.density.MatchingNfwModel(
         cosmo_params=SIM_DATA.cosmology,
         mass_definition='crit',
         delta=500,
-        comoving_radii=True,
-        nfw_class=maszcal.density.MatchingNfwModel,
+        comoving=True,
     )
+
+
+def get_wrapped_lensing_func(density_model):
+    def wrapper(rs, zs, mus, cons):
+        masses = np.exp(mus)
+        return np.moveaxis(
+            density_model.excess_surface_density(rs, zs, masses, cons),
+            0,
+            1,
+        )
+    return wrapper
 
 
 def get_two_halo_esd():
@@ -83,9 +89,9 @@ def get_esd_emulator(two_halo_esd):
     )
 
 
-def get_corrected_lensing_func(density_model, esd_emulator):
+def get_corrected_lensing_func(wrapped_lensing_func, esd_emulator):
     return maszcal.corrections.Matching2HaloCorrection(
-        one_halo_func=density_model.excess_surface_density,
+        one_halo_func=wrapped_lensing_func,
         two_halo_func=esd_emulator,
     ).corrected_profile
 
@@ -132,10 +138,6 @@ def generate_header():
     configs = [
         f'PARAM_MINS = {PARAM_MINS}'
         f'PARAM_MAXES = {PARAM_MAXES}'
-        f'GAMMA = {GAMMA}'
-        f'USE_PRIOR = {USE_PRIOR}'
-        f'MEAN_PRIOR_ALPHA = {MEAN_PRIOR_ALPHA}'
-        f'PRIOR_ALPHA_STD  = {PRIOR_ALPHA_STD}'
         f'LOWER_RADIUS_CUT = {LOWER_RADIUS_CUT}'
         f'UPPER_RADIUS_CUT = {UPPER_RADIUS_CUT}'
         f'COV_MAGNITUDE = {COV_MAGNITUDE}'
@@ -170,19 +172,17 @@ if __name__ == '__main__':
     lh = supercubos.LatinSampler().get_sym_sample(PARAM_MINS, PARAM_MAXES, NUM_EMULATOR_SAMPLES)
 
     density_model = get_density_model()
+    wrapped_nfw_func = get_wrapped_lensing_func(density_model)
     two_halo_esd = get_two_halo_esd()
     esd_emulator = get_esd_emulator(two_halo_esd)
-    corrected_lensing_func = get_corrected_lensing_func(density_model, esd_emulator)
+    corrected_lensing_func = get_corrected_lensing_func(wrapped_nfw_func, esd_emulator)
     shear_model = get_shear_model(corrected_lensing_func)
 
     def wrapped_esd_func(params):
         a_sz = params[0:1]
         a_2h = params[1:2]
         con = params[2:3]
-        alpha = params[3:4]
-        beta = params[4:5]
-        gamma = np.array([GAMMA])
-        return shear_model.stacked_excess_surface_density(SIM_DATA.radii, a_sz, a_2h, con, alpha, beta, gamma).squeeze()
+        return shear_model.stacked_excess_surface_density(SIM_DATA.radii, a_sz, a_2h, con).squeeze()
 
     esds = _pool_map(wrapped_esd_func, lh)
 
@@ -210,16 +210,9 @@ if __name__ == '__main__':
         model = emulator(params[None, :]).flatten()
         return prefactor + maszcal.likelihoods.log_gaussian_shape(model, data, fisher)
 
-    def log_prior(params):
-        alpha = params[3]
-        return np.log(1.0/(np.sqrt(2*np.pi)*PRIOR_ALPHA_STD)) - 0.5*(alpha-MEAN_PRIOR_ALPHA)**2/PRIOR_ALPHA_STD**2
-
     def log_prob(params, data):
         if np.all(PARAM_MINS < params) and np.all(params < PARAM_MAXES):
-            if not USE_PRIOR:
-                return log_like(params, data)
-            else:
-                return log_like(params, data) + log_prior(params)
+            return log_like(params, data)
         else:
             return - np.inf
 
