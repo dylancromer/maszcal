@@ -26,7 +26,7 @@ LOWER_RADIUS_CUT = 0.1
 UPPER_RADIUS_CUT = 13
 COV_MAGNITUDE = 1.3
 SIM_DATA = maszcal.data.sims.NBatta2010('data/NBatta2010/').cut_radii(LOWER_RADIUS_CUT, UPPER_RADIUS_CUT)
-NUM_EMULATOR_SAMPLES = 2000
+NUM_EMULATOR_SAMPLES = 2400
 NUM_ERRORCHECK_SAMPLES = 800
 NUM_PRINCIPAL_COMPONENTS = 10
 NUM_PROCESSES = 12
@@ -159,7 +159,7 @@ if __name__ == '__main__':
         coords=lh,
         data=data,
         interpolator_class=maszcal.interpolate.GaussianProcessInterpolator,
-        interpolator_kwargs={'kernel': Matern()}
+        interpolator_kwargs={'kernel': Matern()},
         num_components=NUM_PRINCIPAL_COMPONENTS,
     )
 

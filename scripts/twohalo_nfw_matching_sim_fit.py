@@ -191,7 +191,7 @@ if __name__ == '__main__':
         coords=lh,
         data=data,
         interpolator_class=maszcal.interpolate.GaussianProcessInterpolator,
-        interpolator_kwargs={'kernel': Matern()}
+        interpolator_kwargs={'kernel': Matern()},
         num_components=NUM_PRINCIPAL_COMPONENTS,
     )
 

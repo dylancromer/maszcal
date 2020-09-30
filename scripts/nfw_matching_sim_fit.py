@@ -161,6 +161,7 @@ if __name__ == '__main__':
         coords=lh,
         data=data,
         interpolator_class=maszcal.interpolate.RbfInterpolator,
+        num_components=NUM_PRINCIPAL_COMPONENTS,
     )
 
     print('Saving emulator error samples...')

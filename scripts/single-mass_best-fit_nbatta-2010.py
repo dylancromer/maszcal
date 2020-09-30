@@ -21,6 +21,7 @@ np.seterr(all='ignore')
 
 
 NUM_PROCESSES = 12
+DIR = 'data/NBatta2010/single-mass-bin-fits/'
 
 NFW_PARAM_MINS = np.array([np.log(1e12), 1])
 NFW_PARAM_MAXES = np.array([np.log(8e15), 6])
@@ -80,6 +81,7 @@ def _pool_map(func, array):
     ).T
     pool.close()
     pool.join()
+    pool.clear()
     pool.terminate()
     pool.restart()
     return mapped_array
@@ -244,13 +246,8 @@ def _generate_header():
 def save(array, name):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
     filename = name + '_' + timestamp
-
-    DIR = 'data/NBatta2010/single-mass-bin-fits/'
-
     header = _generate_header()
-
     nothing = np.array([])
-
     np.savetxt(DIR + filename + '.header.txt', nothing, header=header)
     np.save(DIR + filename + '.npy', array)
 
@@ -264,6 +261,11 @@ def log_prob(params, radii, esd_model_func, esd_data, fisher_matrix):
         return _log_like(params, radii, esd_model_func, esd_data, fisher_matrix)
     else:
         return - np.inf
+
+
+def generate_chain_filename(i, j):
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    return DIR + SETUP_SLUG + f'-mcmc-chains_zbin-{i}_mbin-{j}_' + timestamp + '.h5'
 
 
 if __name__ == '__main__':
@@ -308,7 +310,6 @@ if __name__ == '__main__':
     params_shape = (PARAM_MINS.size, num_clusters, sim_data.redshifts.size)
     best_fits = np.zeros(params_shape)
     ndim = PARAM_MINS.size
-    chains = np.zeros((NSTEPS, NWALKERS, ndim, sim_data.redshifts.size, sim_data.masses.shape[1]))
     for i, z in enumerate(sim_data.redshifts):
         wrapped_lensing_func = get_wrapped_lensing_func(z)
 
@@ -324,16 +325,20 @@ if __name__ == '__main__':
         for j, fit in enumerate(best_fits[:, :, i].T):
             initial_position = fit + WALKER_DISPERSION*np.random.randn(NWALKERS, ndim)
             log_prob_args = (sim_data.radii, esd_model_func, sim_data.wl_signals[:, i, j], act_fisher)
+
+            chain_filename = generate_chain_filename(i, j)
+            backend = emcee.backends.HDFBackend(chain_filename)
+            backend.reset(NWALKERS, ndim)
             with pp.ProcessPool(NUM_PROCESSES) as pool:
-                sampler = emcee.EnsembleSampler(NWALKERS, ndim, log_prob, args=log_prob_args, pool=pool)
+                sampler = emcee.EnsembleSampler(NWALKERS, ndim, log_prob, args=log_prob_args, backend=backend, pool=pool)
                 sampler.run_mcmc(initial_position, NSTEPS, progress=True)
                 pool.close()
                 pool.join()
                 pool.clear()
-                chains[:, :, :, i, j] = sampler.get_chain()
+                pool.terminate()
+                pool.restart()
 
     save(best_fits, args.model_slug+'_best-fit')
-    save(chains, args.model_slug+'_chains')
 
     delta_t = round(time.time() - start_time)
     print(f'Finished in {delta_t} seconds.')
