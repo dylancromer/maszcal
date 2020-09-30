@@ -22,6 +22,7 @@ np.seterr(all='ignore')
 
 NUM_PROCESSES = 12
 DIR = 'data/NBatta2010/single-mass-bin-fits/'
+TIMESTAMP = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
 
 NFW_PARAM_MINS = np.array([np.log(1e12), 1])
 NFW_PARAM_MAXES = np.array([np.log(8e15), 6])
@@ -244,8 +245,7 @@ def _generate_header():
 
 
 def save(array, name):
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
-    filename = name + '_' + timestamp
+    filename = name + '_' + TIMESTAMP
     header = _generate_header()
     nothing = np.array([])
     np.savetxt(DIR + filename + '.header.txt', nothing, header=header)
@@ -263,9 +263,8 @@ def log_prob(params, radii, esd_model_func, esd_data, fisher_matrix):
         return - np.inf
 
 
-def generate_chain_filename(i, j):
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
-    return DIR + SETUP_SLUG + f'-mcmc-chains_zbin-{i}_mbin-{j}_' + timestamp + '.h5'
+def generate_chain_filename(i, j, slug):
+    return DIR + slug + f'-mcmc-chains_zbin-{i}_mbin-{j}_' + '.h5'
 
 
 if __name__ == '__main__':
@@ -326,7 +325,7 @@ if __name__ == '__main__':
             initial_position = fit + WALKER_DISPERSION*np.random.randn(NWALKERS, ndim)
             log_prob_args = (sim_data.radii, esd_model_func, sim_data.wl_signals[:, i, j], act_fisher)
 
-            chain_filename = generate_chain_filename(i, j)
+            chain_filename = generate_chain_filename(i, j, args.model_slug)
             backend = emcee.backends.HDFBackend(chain_filename)
             backend.reset(NWALKERS, ndim)
             with pp.ProcessPool(NUM_PROCESSES) as pool:
