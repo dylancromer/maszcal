@@ -33,7 +33,7 @@ BARYON_PARAM_MAXES = np.array([np.log(8e15), 6, 2, 7])
 BARYON_CM_PARAM_MINS = np.array([np.log(1e12), 0.1, 2])
 BARYON_CM_PARAM_MAXES = np.array([np.log(8e15), 2, 7])
 
-LOWER_RADIUS_CUT = 0.18
+LOWER_RADIUS_CUT = 0.125
 UPPER_RADIUS_CUT = 5
 
 COVARIANCE_REDUCTION_FACTOR = 1/400
@@ -75,10 +75,10 @@ def _get_best_fit(esd_data, radii, esd_model_func, fisher_matrix, param_mins, pa
     return maszcal.fitutils.global_minimize(func_to_minimize, param_mins, param_maxes, 'global-differential-evolution')
 
 
-def _pool_map(func, array):
+def _pool_map(func, array, *args):
     pool = pp.ProcessPool(NUM_PROCESSES)
     mapped_array = np.array(
-        pool.map(func, array),
+        pool.map(func, array, *args),
     ).T
     pool.close()
     pool.join()
@@ -319,23 +319,20 @@ if __name__ == '__main__':
 
         best_fits[:, :, i] = calculate_best_fits(i, z, sim_data, act_fisher, emulator)
 
+        print(f'Beginning MCMC for the i={i} redshift bin...')
+
         def esd_model_func(radii, params): return emulator(params[None, :])
 
-        for j, fit in enumerate(best_fits[:, :, i].T):
+        def do_mcmc_fit(fit, i, j):
             initial_position = fit + WALKER_DISPERSION*np.random.randn(NWALKERS, ndim)
             log_prob_args = (sim_data.radii, esd_model_func, sim_data.wl_signals[:, i, j], act_fisher)
-
             chain_filename = generate_chain_filename(i, j, args.model_slug)
             backend = emcee.backends.HDFBackend(chain_filename)
             backend.reset(NWALKERS, ndim)
-            with pp.ProcessPool(NUM_PROCESSES) as pool:
-                sampler = emcee.EnsembleSampler(NWALKERS, ndim, log_prob, args=log_prob_args, backend=backend, pool=pool)
-                sampler.run_mcmc(initial_position, NSTEPS, progress=True)
-                pool.close()
-                pool.join()
-                pool.clear()
-                pool.terminate()
-                pool.restart()
+            sampler = emcee.EnsembleSampler(NWALKERS, ndim, log_prob, args=log_prob_args, backend=backend)
+            sampler.run_mcmc(initial_position, NSTEPS)
+
+        _pool_map(do_mcmc_fit, best_fits[:, :, i].T, [i for k in range(sim_data.redshifts.size)], np.arange(sim_data.masses.shape[1]))
 
     save(best_fits, args.model_slug+'_best-fit')
 
