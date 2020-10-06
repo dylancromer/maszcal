@@ -19,7 +19,7 @@ import maszcal.twohalo
 PARAM_MINS = np.array([-2, 0, 1])  # a_sz, a_2h, con
 PARAM_MAXES = np.array([2, 5, 6])
 LOWER_RADIUS_CUT = 0.1
-UPPER_RADIUS_CUT = 13
+UPPER_RADIUS_CUT = 5
 COV_MAGNITUDE = 1.3
 SIM_DATA = maszcal.data.sims.NBatta2010('data/NBatta2010/').cut_radii(LOWER_RADIUS_CUT, UPPER_RADIUS_CUT)
 NUM_EMULATOR_SAMPLES = 1200
