@@ -6,6 +6,7 @@ data/act-hsc
 *venv*
 .DS_Store
 data/NBatta2010
+data/emulator
 figs/
 misc/
 tests/xarray_concentration_integ.py
