@@ -8,17 +8,19 @@ import maszcal.mathutils as mathutils
 
 class NfwModel:
     def __init__(
-            self,
-            cosmo_params=DefaultCosmology(),
-            units=u.Msun/u.pc**2,
-            delta=200,
-            mass_definition='mean',
-            comoving=True,
+        self,
+        cosmo_params=DefaultCosmology(),
+        units=u.Msun/u.pc**2,
+        delta=200,
+        mass_definition='mean',
+        comoving=True,
+        theta_coords=False,
     ):
         self._delta = delta
         self._check_mass_def(mass_definition)
         self.mass_definition = mass_definition
         self.comoving = comoving
+        self.theta_coords = theta_coords
 
         if isinstance(cosmo_params, DefaultCosmology):
             self.cosmo_params = CosmoParams()
@@ -119,29 +121,33 @@ class NfwModel:
 
     def rho(self, rs, zs, masses, cons):
         '''
-        SHAPE mass, z, r, cons
+        SHAPE r, mass, z, cons
         '''
         scale_radii = self.scale_radius(zs, masses, cons)
         numerator = self.delta_c(cons)[None, None, :] * self.reference_density(zs)[None, :, None]
-        numerator = np.reshape(numerator, numerator.shape[:2] + rs.ndim*(1,) + numerator.shape[2:])
-        xs = rs[None, None, ..., None]/np.reshape(scale_radii,
-                                                  scale_radii.shape[:2] + rs.ndim*(1,) + scale_radii.shape[2:])
+        numerator = mathutils.atleast_kd(numerator, rs.ndim+numerator.ndim, append_dims=False)
+        if not self.theta_coords:
+            rs_ = rs[..., None]
+        xs = rs_[..., None, :, None] / (
+            mathutils.atleast_kd(scale_radii, rs.ndim+scale_radii.ndim, append_dims=False)
+        )
+
         denominator = xs * (1+xs)**2
         return numerator/denominator
 
     def excess_surface_density(self, rs, zs, masses, cons):
         '''
-        SHAPE mass, z, r, cons
+        SHAPE r, mass, z, cons
         '''
         scale_radii = self.scale_radius(zs, masses, cons)
         prefactor = scale_radii * self.delta_c(cons)[None, None, :] * self.reference_density(zs)[None, :, None]
         prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
 
-        xs = rs[None, None, :, None]/scale_radii[:, :, None, :]
+        xs = rs[:, None, None, None]/scale_radii[None, ...]
 
         postfactor = self._inequality_func(xs)
 
-        return prefactor[:, :, None, :] * postfactor
+        return prefactor[None, :] * postfactor
 
 
 class ProjectorSafeNfwModel(NfwModel):
@@ -159,7 +165,9 @@ class ProjectorSafeNfwModel(NfwModel):
         scale_radii = mathutils.atleast_kd(scale_radii, rs.ndim+2, append_dims=False)
         numerator = self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
         numerator = mathutils.atleast_kd(numerator, rs.ndim+2, append_dims=False)
-        xs = mathutils.atleast_kd(rs, rs.ndim+2)/scale_radii
+        if not self.theta_coords:
+            rs_ = rs[..., None]
+        xs = rs_/scale_radii
 
         denominator = xs * (1+xs)**2
         return numerator/denominator
@@ -174,29 +182,30 @@ class SingleMassNfwModel(NfwModel):
 
     def rho(self, rs, zs, masses, cons):
         '''
-        SHAPE z, r, params
+        SHAPE r, z, params
         '''
         scale_radii = self.scale_radius(zs, masses, cons)
         numerator = self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
-        numerator = np.reshape(numerator, numerator.shape[:1] + rs.ndim*(1,) + numerator.shape[1:])
-        xs = rs[None, ..., None]/np.reshape(scale_radii,
-                                            scale_radii.shape[:1] + rs.ndim*(1,) + scale_radii.shape[1:])
+        numerator = mathutils.atleast_kd(numerator, rs.ndim+numerator.ndim, append_dims=False)
+        if not self.theta_coords:
+            rs_ = rs[..., None]
+        xs = rs_[..., None]/mathutils.atleast_kd(scale_radii, rs.ndim+scale_radii.ndim, append_dims=False)
         denominator = xs * (1+xs)**2
         return numerator/denominator
 
     def excess_surface_density(self, rs, zs, masses, cons):
         '''
-        SHAPE z, r, params
+        SHAPE r, z,, params
         '''
         scale_radii = self.scale_radius(zs, masses, cons)
         prefactor = scale_radii * self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
         prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
 
-        xs = rs[None, :, None]/scale_radii[:, None, :]
+        xs = rs[:, None, None]/scale_radii[None, ...]
 
         postfactor = self._inequality_func(xs)
 
-        return prefactor[:, None, :] * postfactor
+        return prefactor[None, ...] * postfactor
 
 
 class CmNfwModel(NfwModel):
@@ -211,29 +220,30 @@ class CmNfwModel(NfwModel):
 
     def rho(self, rs, zs, masses, cons):
         '''
-        SHAPE mass, z, r, c
+        SHAPE mass, r, z, c
         '''
         scale_radii = self.scale_radius(zs, masses, cons)
         numerator = self.delta_c(cons) * self.reference_density(zs)[None, :]
-        numerator = np.reshape(numerator, numerator.shape + rs.ndim*(1,))
-        xs = rs[None, None, ...]/np.reshape(scale_radii,
-                                            scale_radii.shape + rs.ndim*(1,))
+        numerator = mathutils.atleast_kd(numerator, numerator.ndim + rs.ndim, append_dims=False)
+        if not self.theta_coords:
+            rs = rs[..., None]
+        xs = rs[..., None]/mathutils.atleast_kd(scale_radii, rs.ndim+scale_radii.ndim, append_dims=False)
         denominator = xs * (1+xs)**2
         return numerator/denominator
 
     def excess_surface_density(self, rs, zs, masses, cons):
         '''
-        SHAPE mass, z, r, c
+        SHAPE mass, r, z, c
         '''
         scale_radii = self.scale_radius(zs, masses, cons)
         prefactor = scale_radii * self.delta_c(cons) * self.reference_density(zs)[None, :]
         prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
 
-        xs = rs[None, None, :]/scale_radii[:, :, None]
+        xs = rs[:, None, None]/scale_radii[None, ...]
 
         postfactor = self._inequality_func(xs)
 
-        return prefactor[:, :, None] * postfactor
+        return prefactor[None, :, :] * postfactor
 
 
 class MatchingNfwModel(NfwModel):
@@ -255,13 +265,16 @@ class MatchingNfwModel(NfwModel):
 
     def rho(self, rs, zs, masses, cons):
         '''
-        SHAPE cluster, r
+        SHAPE r, cluster, c
         '''
         scale_radii = self.scale_radius(zs, masses, cons)
         numerator = self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
-        numerator = np.reshape(numerator, numerator.shape[:1] + rs.ndim*(1,) + numerator.shape[1:])
-        xs = rs[None, ..., None]/np.reshape(scale_radii,
-                                            scale_radii.shape[:1] + rs.ndim*(1,) + scale_radii.shape[1:])
+        numerator = mathutils.atleast_kd(numerator, rs.ndim+numerator.ndim, append_dims=False)
+        if not self.theta_coords:
+            rs_ = rs[..., None]
+        xs = rs_[..., None] / (
+            mathutils.atleast_kd(scale_radii, rs.ndim+scale_radii.ndim, append_dims=False)
+        )
         denominator = xs * (1+xs)**2
         return numerator/denominator
 
@@ -272,9 +285,11 @@ class MatchingNfwModel(NfwModel):
         scale_radii = self.scale_radius(zs, masses, cons)
         prefactor = scale_radii * self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
         prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
-        xs = rs[None, :, None]/scale_radii[:, None, :]
+        if not self.theta_coords:
+            rs = rs[..., None]
+        xs = rs[:, None]/scale_radii[None, ...]
         postfactor = self._inequality_func(xs)
-        return prefactor[:, None, :] * postfactor
+        return prefactor[None, ...] * postfactor
 
 
 class MatchingCmNfwModel(NfwModel):
@@ -296,26 +311,29 @@ class MatchingCmNfwModel(NfwModel):
 
     def rho(self, rs, zs, masses, cons):
         '''
-        SHAPE cluster, r
+        SHAPE r, cluster
         '''
         scale_radii = self.scale_radius(zs, masses, cons)
         numerator = self.delta_c(cons) * self.reference_density(zs)
-        numerator = np.reshape(numerator, numerator.shape + rs.ndim*(1,))
-        xs = rs[None, ...]/np.reshape(scale_radii,
-                                      scale_radii.shape + rs.ndim*(1,))
+        numerator = mathutils.atleast_kd(numerator, rs.ndim+numerator.ndim, append_dims=False)
+        if not self.theta_coords:
+            rs_ = rs[..., None]
+        xs = rs_ / (
+            mathutils.atleast_kd(scale_radii, rs.ndim+scale_radii.ndim, append_dims=False)
+        )
         denominator = xs * (1+xs)**2
         return numerator/denominator
 
     def excess_surface_density(self, rs, zs, masses, cons):
         '''
-        SHAPE cluster, r
+        SHAPE r, cluster
         '''
         scale_radii = self.scale_radius(zs, masses, cons)
         prefactor = scale_radii * self.delta_c(cons) * self.reference_density(zs)
         prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
 
-        xs = rs[None, :]/scale_radii[:, None]
+        xs = rs[:, None]/scale_radii[None, :]
 
         postfactor = self._inequality_func(xs)
 
-        return prefactor[:, None] * postfactor
+        return prefactor[None, :] * postfactor

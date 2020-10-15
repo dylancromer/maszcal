@@ -22,7 +22,7 @@ def describe_MatchingNfwModel():
         ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds > 0)
-        assert ds.shape == (8, 10, 4)
+        assert ds.shape == (10, 8, 4)
 
     def it_can_calculate_a_rho(nfw_model):
         rs = np.logspace(-1, 1, 10)
@@ -33,7 +33,7 @@ def describe_MatchingNfwModel():
         rhos = nfw_model.rho(rs, zs, masses, cons)
 
         assert np.all(rhos > 0)
-        assert rhos.shape == (8, 10, 4)
+        assert rhos.shape == (10, 8, 4)
 
 
 def describe_MatchingCmNfwModel():
@@ -52,7 +52,7 @@ def describe_MatchingCmNfwModel():
         ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds > 0)
-        assert ds.shape == (8, 10)
+        assert ds.shape == (10, 8)
 
     def it_can_calculate_a_rho(nfw_model):
         rs = np.logspace(-1, 1, 10)
@@ -63,7 +63,7 @@ def describe_MatchingCmNfwModel():
         rhos = nfw_model.rho(rs, zs, masses, cons)
 
         assert np.all(rhos > 0)
-        assert rhos.shape == (8, 10)
+        assert rhos.shape == (10, 8)
 
 
 def describe_CmNfwModel():
@@ -194,7 +194,7 @@ def describe_NfwModel():
         ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds > 0)
-        assert ds.shape == (5, 3, 10, 6)
+        assert ds.shape == (10, 5, 3, 6)
 
     @pytest.fixture
     def nfw_model_alt_cosmo():
@@ -283,7 +283,7 @@ def describe_NfwModel():
         rhos = nfw_model.rho(rs, zs, masses, cons)
 
         assert np.all(rhos > 0)
-        assert rhos.shape == masses.shape + zs.shape + rs.shape + cons.shape
+        assert rhos.shape == rs.shape + masses.shape + zs.shape + cons.shape
 
 
 def describe_SingleMassNfwModel():
@@ -302,7 +302,7 @@ def describe_SingleMassNfwModel():
         ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds > 0)
-        assert ds.shape == zs.shape + rs.shape + cons.shape
+        assert ds.shape == rs.shape + zs.shape + cons.shape
 
     def it_can_calculate_a_rho(nfw_model):
         rs = np.logspace(-1, 1, 10)
@@ -313,4 +313,4 @@ def describe_SingleMassNfwModel():
         rhos = nfw_model.rho(rs, zs, masses, cons)
 
         assert np.all(rhos > 0)
-        assert rhos.shape == zs.shape + rs.shape + cons.shape
+        assert rhos.shape == rs.shape + zs.shape + cons.shape
