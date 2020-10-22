@@ -34,11 +34,8 @@ class MatchingConvergenceModel(_core.MatchingModel):
     def convergence(self, thetas, a_szs, *rho_params):
         mus = self.mu_from_sz_mu(np.log(self.sz_masses), a_szs).flatten()
         zs = np.repeat(self.redshifts, a_szs.size)
-        radii_of_z = [thetas * self.angle_scale_distance(z) for z in zs]
-        convergences = np.array([
-            self._radius_space_convergence(rs, zs[i:i+1], mus[i:i+1], *rho_params)
-            for i, rs in enumerate(radii_of_z)
-        ]).squeeze(axis=2)
+        radii_of_z = thetas[:, None] * self.angle_scale_distance(zs)[None, :]
+        convergences = self._radius_space_convergence(radii_of_z, zs, mus, *rho_params)
         return np.moveaxis(
             convergences,
             1,
@@ -85,28 +82,12 @@ class ScatteredMatchingConvergenceModel(_core.ScatteredMatchingModel):
         return unnormalized_mass_weights/normalization
 
     def _convergence_over_mass_range(self, thetas, *rho_params):
-        radii_of_z = [thetas * self.angle_scale_distance(z) for z in self.redshifts]
-        convergences = np.array([
-            self._radius_space_convergence(rs, self.redshifts[i:i+1], self.mus, *rho_params)
-            for i, rs in enumerate(radii_of_z)
-        ]).squeeze(axis=3)
-        return np.moveaxis(
-            convergences,
-            (1, 2),
-            (0, 1),
-        )
+        radii_of_z = thetas[:, None] * self.angle_scale_distance(self.redshifts)[None, :]
+        return self._radius_space_convergence(radii_of_z, self.redshifts, self.mus, *rho_params)
 
     def _convergence_over_mass_range_loop(self, thetas, mu, *rho_params):
-        radii_of_z = [thetas * self.angle_scale_distance(z) for z in self.redshifts]
-        convergences = np.array([
-            self._radius_space_convergence(rs, self.redshifts[i:i+1], mu, *rho_params)
-            for i, rs in enumerate(radii_of_z)
-        ]).squeeze(axis=(2, 3))
-        return np.moveaxis(
-            convergences,
-            1,
-            0,
-        )
+        radii_of_z = thetas[:, None] * self.angle_scale_distance(self.redshifts)[None, :]
+        return self._radius_space_convergence(radii_of_z, self.redshifts, mu, *rho_params).squeeze(axis=1)
 
     def _convergence_vectorized(self, thetas, a_szs, *rho_params):
         mu_szs = np.log(self.sz_masses)

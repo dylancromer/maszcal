@@ -29,6 +29,7 @@ def describe_MatchingConvergenceModel():
                 delta=200,
                 comoving_radii=True,
                 nfw_class=maszcal.density.MatchingNfwModel,
+                radii_are_function_of_z=True,
             )
 
         @pytest.fixture
@@ -55,6 +56,7 @@ def describe_MatchingConvergenceModel():
                 delta=200,
                 comoving_radii=False,
                 nfw_class=maszcal.density.MatchingNfwModel,
+                radii_are_function_of_z=True,
             )
 
         @pytest.fixture
@@ -99,11 +101,12 @@ def describe_MatchingConvergenceModel():
                 delta=200,
                 comoving_radii=True,
                 nfw_class=maszcal.density.MatchingNfwModel,
+                radii_are_function_of_z=True,
             )
 
         @pytest.fixture
         def convergence_model(density_model):
-            NUM_CLUSTERS = 1
+            NUM_CLUSTERS = 5
             rng = np.random.default_rng(seed=13)
             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
             zs = rng.random(size=NUM_CLUSTERS) + 0.01

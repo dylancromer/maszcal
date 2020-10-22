@@ -1,4 +1,5 @@
 from functools import partial
+from types import MappingProxyType
 from dataclasses import dataclass
 import numpy as np
 from astropy import units as u
@@ -39,6 +40,7 @@ class Shear:
         return self.esd_func(
             rs,
             lambda r: self.rho_func(r, zs, mus, *rho_params),
+            radial_axis_to_broadcast=1,
         ) * (u.Msun/u.Mpc**2).to(self.units)
 
 
@@ -58,10 +60,11 @@ class Convergence:
             z_source=np.array([self.CMB_REDSHIFT]),
         )
 
-    def convergence(self, rs, zs, mus, *rho_params):
+    def convergence(self, rs, zs, mus, *rho_params, **kwargs):
         return self.sd_func(
             rs,
             lambda r: self.rho_func(r, zs, mus, *rho_params),
+            radial_axis_to_broadcast=1,
         ) * (u.Msun/u.Mpc**2).to(self.units) / self.sigma_crit(z_lens=zs)[None, :, None]
 
 

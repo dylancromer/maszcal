@@ -7,15 +7,15 @@ import maszcal.cosmology
 
 
 def fake_scattered_lensing_func(rs, zs, mus, *params):
-    return np.ones(rs.shape + mus.shape + zs.shape + (params[0].size,))
+    return np.ones(rs.shape[0:1] + mus.shape + zs.shape + (params[0].size,))
 
 
 def fake_lensing_func(rs, zs, mus, *params):
-    return np.ones(rs.shape + mus.shape + (params[0].size,))
+    return np.ones(rs.shape[0:1] + mus.shape + (params[0].size,))
 
 
 def fake_scattered_rho_total(rs, zs, mus, *params):
-    return np.ones(rs.shape + mus.shape + zs.shape + (params[0].size,))
+    return np.ones(rs.shape[0:1] + mus.shape + zs.shape + (params[0].size,))
 
 
 def fake_logmass_prob(z, mu):
