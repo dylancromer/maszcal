@@ -70,14 +70,15 @@ class _Gnfw(BaryonDensity):
 
     def gnfw_shape(self, rs, zs, mus, alphas, betas, gammas):
         '''
-        SHAPE mu, z, rs.shape, params
+        SHAPE r, mu, z, params
         '''
-        ys = (rs[None, None, ...]/maszcal.mathutils.atleast_kd(self._r_delta(zs, mus), rs.ndim+2)) / self.CORE_RADIUS
+        ys = (rs[..., None, :]
+              / maszcal.mathutils.atleast_kd(self._r_delta(zs, mus), rs.ndim+1, append_dims=False)) / self.CORE_RADIUS
         ys = ys[..., None]
 
-        alphas = alphas.reshape((rs.ndim + 2)*(1,) + (alphas.size,))
-        betas = betas.reshape((rs.ndim + 2)*(1,) + (betas.size,))
-        gammas = gammas.reshape((rs.ndim + 2)*(1,) + (gammas.size,))
+        alphas = maszcal.mathutils.atleast_kd(alphas, rs.ndim+1, append_dims=False)
+        betas = maszcal.mathutils.atleast_kd(betas, rs.ndim+1, append_dims=False)
+        gammas = maszcal.mathutils.atleast_kd(gammas, rs.ndim+1, append_dims=False)
 
         return 1 / (ys**gammas * (1 + ys**(1/alphas))**((betas-gammas) * alphas))
 
@@ -85,33 +86,24 @@ class _Gnfw(BaryonDensity):
         '''
         SHAPE mu, z, params
         '''
-        rs = np.linspace(
+        rsflat = np.linspace(
             self.MIN_INTEGRATION_RADIUS,
             self.MAX_INTEGRATION_RADIUS,
             self.NUM_INTEGRATION_RADII,
         )
+        rs = rsflat[:, None]
 
-        drs = np.gradient(rs)
-        top_integrand = self._rho_nfw(rs, zs, mus, cons) * rs[None, None, :, None]**2
-        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[None, None, :, None]**2
+        drs = np.gradient(rsflat)
+        top_integrand = self._rho_nfw(rs, zs, mus, cons) * rs[..., None, :, None]**2
+        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[..., None, :, None]**2
 
-        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-2)
-                / maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=-2))
-
-    def _move_radius_axes_to_front(self, arr, start, stop):
-        radius_axes = np.arange(arr.ndim)[start:stop]
-        new_radius_axes = np.arange(radius_axes.size)
-        return np.moveaxis(
-            arr,
-            tuple(radius_axes),
-            tuple(new_radius_axes),
-        )
+        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=0)
+                / maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=0))
 
     def _rho_gnfw(self, rs, zs, mus, cons, alphas, betas, gammas):
         norm = self._gnfw_norm(zs, mus, cons, alphas, betas, gammas)
-        norm = norm.reshape(rs.ndim*(1,) + norm.shape)
+        norm = maszcal.mathutils.atleast_kd(norm, rs.ndim+norm.ndim-1, append_dims=False)
         profile_shape = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas)
-        profile_shape = self._move_radius_axes_to_front(profile_shape, 2, -1)
         return norm * profile_shape
 
     def _rho_nfw(self, rs, zs, mus, cons):
@@ -132,7 +124,7 @@ class _Gnfw(BaryonDensity):
         return (1-self.baryon_frac) * self._rho_nfw(rs, zs, mus, cons)
 
     def rho_tot(self, rs, zs, mus, cons, alphas, betas, gammas):
-        rho_cdm = self._move_radius_axes_to_front(self.rho_cdm(rs, zs, mus, cons), 2, -1)
+        rho_cdm = self.rho_cdm(rs, zs, mus, cons)
         return self.rho_bary(rs, zs, mus, cons, alphas, betas, gammas) + rho_cdm
 
 
@@ -156,11 +148,11 @@ class _SingleMassGnfw(_Gnfw):
         '''
         SHAPE rs.shape, z, params
         '''
-        ys = (rs[..., None, None]/maszcal.mathutils.atleast_kd(self._r_delta(zs, mus), rs.ndim+2, append_dims=False)) / self.CORE_RADIUS
+        ys = (rs[..., None]/maszcal.mathutils.atleast_kd(self._r_delta(zs, mus), rs.ndim+1, append_dims=False)) / self.CORE_RADIUS
 
-        alphas = alphas.reshape((rs.ndim + 1)*(1,) + (alphas.size,))
-        betas = betas.reshape((rs.ndim + 1)*(1,) + (betas.size,))
-        gammas = gammas.reshape((rs.ndim + 1)*(1,) + (gammas.size,))
+        alphas = maszcal.mathutils.atleast_kd(alphas, rs.ndim+1, append_dims=False)
+        betas = maszcal.mathutils.atleast_kd(betas, rs.ndim+1, append_dims=False)
+        gammas = maszcal.mathutils.atleast_kd(gammas, rs.ndim+1, append_dims=False)
 
         return 1 / (ys**gammas * (1 + ys**(1/alphas))**((betas-gammas) * alphas))
 
@@ -168,17 +160,18 @@ class _SingleMassGnfw(_Gnfw):
         '''
         SHAPE z, params
         '''
-        rs = np.linspace(
+        rsflat = np.linspace(
             self.MIN_INTEGRATION_RADIUS,
             self.MAX_INTEGRATION_RADIUS,
             self.NUM_INTEGRATION_RADII,
         )
+        rs = rsflat[:, None]
 
-        drs = np.gradient(rs)
-        top_integrand = self._rho_nfw(rs, zs, mus, cons) * rs[None, ..., None]**2
-        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[..., None, None]**2
+        drs = np.gradient(rsflat)
+        top_integrand = self._rho_nfw(rs, zs, mus, cons) * rs[..., None]**2
+        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[..., None]**2
 
-        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-2)
+        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=0)
                 / maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=0))
 
     def _rho_gnfw(self, rs, zs, mus, cons, alphas, betas, gammas):
@@ -187,7 +180,7 @@ class _SingleMassGnfw(_Gnfw):
         return norm * profile_shape
 
     def rho_tot(self, rs, zs, mus, cons, alphas, betas, gammas):
-        rho_cdm = self._move_radius_axes_to_front(self.rho_cdm(rs, zs, mus, cons), 1, -1)
+        rho_cdm = self.rho_cdm(rs, zs, mus, cons)
         return self.rho_bary(rs, zs, mus, cons, alphas, betas, gammas) + rho_cdm
 
 
@@ -227,24 +220,24 @@ class _CmGnfw(_Gnfw):
         '''
         SHAPE mu, z, params
         '''
-        rs = np.linspace(
+        rsflat = np.linspace(
             self.MIN_INTEGRATION_RADIUS,
             self.MAX_INTEGRATION_RADIUS,
             self.NUM_INTEGRATION_RADII,
         )
+        rs = rsflat[:, None]
+        drs = np.gradient(rsflat)
 
-        drs = np.gradient(rs)
-        top_integrand = self._rho_nfw(rs, zs, mus)[..., None] * rs[None, None, :, None]**2
-        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[None, None, :, None]**2
+        top_integrand = self._rho_nfw(rs, zs, mus) * rs[..., None, :]**2
+        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[..., None, :, None]**2
 
-        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-2)
-                / maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=-2))
+        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=0)[..., None]
+                / maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=0))
 
     def _rho_gnfw(self, rs, zs, mus, alphas, betas, gammas):
         norm = self._gnfw_norm(zs, mus, alphas, betas, gammas)
-        norm = norm.reshape(rs.ndim*(1,) + norm.shape)
+        norm = maszcal.mathutils.atleast_kd(norm, rs.ndim+norm.ndim-1, append_dims=False)
         profile_shape = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas)
-        profile_shape = self._move_radius_axes_to_front(profile_shape, 2, -1)
         return norm * profile_shape
 
     def _rho_nfw(self, rs, zs, mus):
@@ -265,11 +258,7 @@ class _CmGnfw(_Gnfw):
         return (1-self.baryon_frac) * self._rho_nfw(rs, zs, mus)
 
     def rho_tot(self, rs, zs, mus, alphas, betas, gammas):
-        rho_cdm = self._move_radius_axes_to_front(
-            maszcal.mathutils.atleast_kd(self.rho_cdm(rs, zs, mus), rs.ndim+3),
-            2,
-            -1,
-        )
+        rho_cdm = self.rho_cdm(rs, zs, mus)[..., None]
         return self.rho_bary(rs, zs, mus, alphas, betas, gammas) + rho_cdm
 
 
@@ -288,12 +277,12 @@ class _MatchingGnfw(_Gnfw):
         '''
         SHAPE cluster, rs.shape, params
         '''
-        ys = (rs[None, ...]/maszcal.mathutils.atleast_kd(self._r_delta(zs, mus), rs.ndim+1)) / self.CORE_RADIUS
+        ys = (rs/maszcal.mathutils.atleast_kd(self._r_delta(zs, mus), rs.ndim, append_dims=False)) / self.CORE_RADIUS
         ys = ys[..., None]
 
-        alphas = alphas.reshape((rs.ndim + 1)*(1,) + (alphas.size,))
-        betas = betas.reshape((rs.ndim + 1)*(1,) + (betas.size,))
-        gammas = gammas.reshape((rs.ndim + 1)*(1,) + (gammas.size,))
+        alphas = maszcal.mathutils.atleast_kd(alphas, rs.ndim+1, append_dims=False)
+        betas = maszcal.mathutils.atleast_kd(betas, rs.ndim+1, append_dims=False)
+        gammas = maszcal.mathutils.atleast_kd(gammas, rs.ndim+1, append_dims=False)
 
         return 1 / (ys**gammas * (1 + ys**(1/alphas))**((betas-gammas) * alphas))
 
@@ -301,29 +290,28 @@ class _MatchingGnfw(_Gnfw):
         '''
         SHAPE cluster, params
         '''
-        rs = np.linspace(
+        rsflat = np.linspace(
             self.MIN_INTEGRATION_RADIUS,
             self.MAX_INTEGRATION_RADIUS,
             self.NUM_INTEGRATION_RADII,
         )
+        rs = rsflat[:, None]
+        drs = np.gradient(rsflat)
 
-        drs = np.gradient(rs)
+        top_integrand = self._rho_nfw(rs, zs, mus, cons) * rs[..., None]**2
+        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[..., None]**2
 
-        top_integrand = self._rho_nfw(rs, zs, mus, cons) * rs[None, :, None]**2
-        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[None, :, None]**2
-
-        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-2)
-                / maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=-2))
+        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=0)
+                / maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=0))
 
     def _rho_gnfw(self, rs, zs, mus, cons, alphas, betas, gammas):
         norm = self._gnfw_norm(zs, mus, cons, alphas, betas, gammas)
-        norm = norm.reshape(rs.ndim*(1,) + norm.shape)
+        norm = maszcal.mathutils.atleast_kd(norm, rs.ndim+norm.ndim-1, append_dims=False)
         profile_shape = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas)
-        profile_shape = self._move_radius_axes_to_front(profile_shape, 1, -1)
         return norm * profile_shape
 
     def rho_tot(self, rs, zs, mus, cons, alphas, betas, gammas):
-        rho_cdm = self._move_radius_axes_to_front(self.rho_cdm(rs, zs, mus, cons), 1, -1)
+        rho_cdm = self.rho_cdm(rs, zs, mus, cons)
         return self.rho_bary(rs, zs, mus, cons, alphas, betas, gammas) + rho_cdm
 
 
@@ -344,12 +332,18 @@ class _MatchingCmGnfw(_CmGnfw):
         '''
         SHAPE cluster, rs.shape, params
         '''
-        ys = (rs[None, ...]/maszcal.mathutils.atleast_kd(self._r_delta(zs, mus), rs.ndim+1)) / self.CORE_RADIUS
+        ys = (
+            rs/maszcal.mathutils.atleast_kd(
+                self._r_delta(zs, mus),
+                rs.ndim,
+                append_dims=False,
+            )
+        ) / self.CORE_RADIUS
         ys = ys[..., None]
 
-        alphas = alphas.reshape((rs.ndim + 1)*(1,) + (alphas.size,))
-        betas = betas.reshape((rs.ndim + 1)*(1,) + (betas.size,))
-        gammas = gammas.reshape((rs.ndim + 1)*(1,) + (gammas.size,))
+        alphas = maszcal.mathutils.atleast_kd(alphas, rs.ndim+1, append_dims=False)
+        betas = maszcal.mathutils.atleast_kd(betas, rs.ndim+1, append_dims=False)
+        gammas = maszcal.mathutils.atleast_kd(gammas, rs.ndim+1, append_dims=False)
 
         return 1 / (ys**gammas * (1 + ys**(1/alphas))**((betas-gammas) * alphas))
 
@@ -357,40 +351,28 @@ class _MatchingCmGnfw(_CmGnfw):
         '''
         SHAPE cluster, params
         '''
-        rs = np.linspace(
+        rsflat = np.linspace(
             self.MIN_INTEGRATION_RADIUS,
             self.MAX_INTEGRATION_RADIUS,
             self.NUM_INTEGRATION_RADII,
         )
+        rs = rsflat[:, None]
+        drs = np.gradient(rsflat)
 
-        drs = np.gradient(rs)
+        top_integrand = self._rho_nfw(rs, zs, mus) * rs**2
+        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[..., None]**2
 
-        top_integrand = self._rho_nfw(rs, zs, mus) * rs[None, :]**2
-        bottom_integrand = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas) * rs[None, :, None]**2
-
-        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=-1)[:, None]
-                / maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=-2))
+        return (maszcal.mathutils.trapz_(top_integrand, dx=drs, axis=0)[:, None]
+                / maszcal.mathutils.trapz_(bottom_integrand, dx=drs, axis=0))
 
     def _rho_gnfw(self, rs, zs, mus, alphas, betas, gammas):
         norm = self._gnfw_norm(zs, mus, alphas, betas, gammas)
-        norm = norm.reshape(rs.ndim*(1,) + norm.shape)
+        norm = maszcal.mathutils.atleast_kd(norm, rs.ndim+norm.ndim-1, append_dims=False)
         profile_shape = self.gnfw_shape(rs, zs, mus, alphas, betas, gammas)
-
-        radius_axes = np.arange(profile_shape.ndim)[1:-1]
-        new_radius_axes = np.arange(radius_axes.size)
-        profile_shape = np.moveaxis(
-            profile_shape,
-            tuple(radius_axes),
-            tuple(new_radius_axes),
-        )
         return norm * profile_shape
 
     def rho_tot(self, rs, zs, mus, alphas, betas, gammas):
-        rho_cdm = self._move_radius_axes_to_front(
-            maszcal.mathutils.atleast_kd(self.rho_cdm(rs, zs, mus), rs.ndim+2),
-            1,
-            -1,
-        )
+        rho_cdm = maszcal.mathutils.atleast_kd(self.rho_cdm(rs, zs, mus), rs.ndim+1)
         return self.rho_bary(rs, zs, mus, alphas, betas, gammas) + rho_cdm
 
 
