@@ -14,7 +14,7 @@ def describe_MatchingNfwModel():
         return maszcal.density.MatchingNfwModel(cosmo_params=cosmo)
 
     def it_calculates_excess_surface_density(nfw_model):
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 8)
         masses = np.logspace(14, 14.8, 8)
         cons = np.linspace(2, 3.4, 4)
@@ -25,7 +25,7 @@ def describe_MatchingNfwModel():
         assert ds.shape == (10, 8, 4)
 
     def it_can_calculate_a_rho(nfw_model):
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 8)
         masses = np.logspace(14, 15, 8)
         cons = np.linspace(2, 4, 4)
@@ -44,7 +44,7 @@ def describe_MatchingCmNfwModel():
         return maszcal.density.MatchingCmNfwModel(cosmo_params=cosmo)
 
     def it_calculates_excess_surface_density(nfw_model):
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 8)
         masses = np.logspace(14, 14.8, 8)
         cons = np.linspace(2, 3.4, 8)
@@ -55,7 +55,7 @@ def describe_MatchingCmNfwModel():
         assert ds.shape == (10, 8)
 
     def it_can_calculate_a_rho(nfw_model):
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 8)
         masses = np.logspace(14, 15, 8)
         cons = np.linspace(2, 4, 8)
@@ -74,7 +74,7 @@ def describe_CmNfwModel():
         return maszcal.density.CmNfwModel(cosmo_params=cosmo)
 
     def it_calculates_excess_surface_density(nfw_model):
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 5)
@@ -82,6 +82,7 @@ def describe_CmNfwModel():
 
         ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
 
+        assert ds.shape == (10, 5, 3)
         assert np.all(ds > 0)
 
     @pytest.fixture
@@ -99,7 +100,7 @@ def describe_CmNfwModel():
         return maszcal.density.CmNfwModel(cosmo_params=cosmo)
 
     def it_can_use_different_cosmologies(nfw_model, nfw_model_alt_cosmo):
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 5)
@@ -113,7 +114,7 @@ def describe_CmNfwModel():
     def it_can_use_different_units(nfw_model):
         nfw_model_other_units = maszcal.density.CmNfwModel(units=u.Msun/u.Mpc**2)
 
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 5)
@@ -127,7 +128,7 @@ def describe_CmNfwModel():
     def it_can_use_different_mass_definitions(nfw_model):
         nfw_model_500c = maszcal.density.CmNfwModel(delta=500, mass_definition='crit')
 
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 5)
@@ -145,7 +146,7 @@ def describe_CmNfwModel():
     def it_can_use_comoving_coordinates(nfw_model):
         nfw_model_nocomoving = maszcal.density.CmNfwModel(units=u.Msun/u.pc**2, comoving=False)
 
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(1, 2, 3)
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 5)
@@ -157,7 +158,7 @@ def describe_CmNfwModel():
         assert np.all(ds_comoving < ds_nocomoving)
 
     def it_works_for_redshift_0(nfw_model):
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         z = np.zeros(1)
         m = 2e14*np.ones(1)
         c = 3*np.ones(1)
@@ -167,7 +168,7 @@ def describe_CmNfwModel():
         assert not np.any(np.isnan(ds))
 
     def it_can_calculate_a_rho(nfw_model):
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 5)
@@ -175,6 +176,7 @@ def describe_CmNfwModel():
 
         rhos = nfw_model.rho(rs, zs, masses, cons)
 
+        assert rhos.shape == (10, 5, 3)
         assert np.all(rhos > 0)
 
 
@@ -186,7 +188,7 @@ def describe_NfwModel():
         return maszcal.density.NfwModel(cosmo_params=cosmo)
 
     def it_calculates_excess_surface_density(nfw_model):
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
@@ -211,7 +213,7 @@ def describe_NfwModel():
         return maszcal.density.NfwModel(cosmo_params=cosmo)
 
     def it_can_use_different_cosmologies(nfw_model, nfw_model_alt_cosmo):
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
@@ -224,7 +226,7 @@ def describe_NfwModel():
     def it_can_use_different_units(nfw_model):
         nfw_model_other_units = maszcal.density.NfwModel(units=u.Msun/u.Mpc**2)
 
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
@@ -237,7 +239,7 @@ def describe_NfwModel():
     def it_can_use_different_mass_definitions(nfw_model):
         nfw_model_500c = maszcal.density.NfwModel(delta=500, mass_definition='crit')
 
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
@@ -254,7 +256,7 @@ def describe_NfwModel():
     def it_can_use_comoving_coordinates(nfw_model):
         nfw_model_nocomoving = maszcal.density.NfwModel(units=u.Msun/u.pc**2, comoving=False)
 
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(1, 2, 3)
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
@@ -265,7 +267,7 @@ def describe_NfwModel():
         assert np.all(ds_comoving < ds_nocomoving)
 
     def it_works_for_redshift_0(nfw_model):
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         z = np.zeros(1)
         m = 2e14*np.ones(1)
         c = 3*np.ones(1)
@@ -275,7 +277,7 @@ def describe_NfwModel():
         assert not np.any(np.isnan(ds))
 
     def it_can_calculate_a_rho(nfw_model):
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
@@ -283,7 +285,7 @@ def describe_NfwModel():
         rhos = nfw_model.rho(rs, zs, masses, cons)
 
         assert np.all(rhos > 0)
-        assert rhos.shape == rs.shape + masses.shape + zs.shape + cons.shape
+        assert rhos.shape == (10, 5, 3, 6)
 
 
 def describe_SingleMassNfwModel():
@@ -294,7 +296,7 @@ def describe_SingleMassNfwModel():
         return maszcal.density.SingleMassNfwModel(cosmo_params=cosmo)
 
     def it_calculates_excess_surface_density(nfw_model):
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
         masses = np.logspace(14, 15, 6)
         cons = np.linspace(2, 4, 6)
@@ -302,10 +304,10 @@ def describe_SingleMassNfwModel():
         ds = nfw_model.excess_surface_density(rs, zs, masses, cons)
 
         assert np.all(ds > 0)
-        assert ds.shape == rs.shape + zs.shape + cons.shape
+        assert ds.shape == (10, 3, 6)
 
     def it_can_calculate_a_rho(nfw_model):
-        rs = np.logspace(-1, 1, 10)
+        rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
         masses = np.logspace(14, 15, 6)
         cons = np.linspace(2, 4, 6)
@@ -313,4 +315,4 @@ def describe_SingleMassNfwModel():
         rhos = nfw_model.rho(rs, zs, masses, cons)
 
         assert np.all(rhos > 0)
-        assert rhos.shape == rs.shape + zs.shape + cons.shape
+        assert rhos.shape == (10, 3, 6)
