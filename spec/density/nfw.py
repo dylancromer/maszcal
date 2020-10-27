@@ -16,6 +16,7 @@ def describe_MatchingNfwModel():
     def it_calculates_excess_surface_density(nfw_model):
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 8)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 14.8, 8)
         cons = np.linspace(2, 3.4, 4)
 
@@ -27,6 +28,7 @@ def describe_MatchingNfwModel():
     def it_can_calculate_a_rho(nfw_model):
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 8)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 15, 8)
         cons = np.linspace(2, 4, 4)
 
@@ -46,6 +48,7 @@ def describe_MatchingCmNfwModel():
     def it_calculates_excess_surface_density(nfw_model):
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 8)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 14.8, 8)
         cons = np.linspace(2, 3.4, 8)
 
@@ -57,6 +60,7 @@ def describe_MatchingCmNfwModel():
     def it_can_calculate_a_rho(nfw_model):
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 8)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 15, 8)
         cons = np.linspace(2, 4, 8)
 
@@ -76,6 +80,7 @@ def describe_CmNfwModel():
     def it_calculates_excess_surface_density(nfw_model):
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 5)
         cons = np.stack((cons, cons, cons)).T
@@ -102,6 +107,7 @@ def describe_CmNfwModel():
     def it_can_use_different_cosmologies(nfw_model, nfw_model_alt_cosmo):
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 5)
         cons = np.stack((cons, cons, cons)).T
@@ -116,6 +122,7 @@ def describe_CmNfwModel():
 
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 5)
         cons = np.stack((cons, cons, cons)).T
@@ -130,6 +137,7 @@ def describe_CmNfwModel():
 
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 5)
         cons = np.stack((cons, cons, cons)).T
@@ -148,6 +156,7 @@ def describe_CmNfwModel():
 
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(1, 2, 3)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 5)
         cons = np.stack((cons, cons, cons)).T
@@ -170,6 +179,7 @@ def describe_CmNfwModel():
     def it_can_calculate_a_rho(nfw_model):
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 5)
         cons = np.stack((cons, cons, cons)).T
@@ -190,6 +200,7 @@ def describe_NfwModel():
     def it_calculates_excess_surface_density(nfw_model):
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
 
@@ -215,6 +226,7 @@ def describe_NfwModel():
     def it_can_use_different_cosmologies(nfw_model, nfw_model_alt_cosmo):
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
 
@@ -228,6 +240,7 @@ def describe_NfwModel():
 
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
 
@@ -241,6 +254,7 @@ def describe_NfwModel():
 
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
 
@@ -258,6 +272,7 @@ def describe_NfwModel():
 
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(1, 2, 3)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
 
@@ -279,6 +294,7 @@ def describe_NfwModel():
     def it_can_calculate_a_rho(nfw_model):
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 15, 5)
         cons = np.linspace(2, 4, 6)
 
@@ -298,6 +314,7 @@ def describe_SingleMassNfwModel():
     def it_calculates_excess_surface_density(nfw_model):
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 15, 6)
         cons = np.linspace(2, 4, 6)
 
@@ -309,6 +326,7 @@ def describe_SingleMassNfwModel():
     def it_can_calculate_a_rho(nfw_model):
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
         masses = np.logspace(14, 15, 6)
         cons = np.linspace(2, 4, 6)
 

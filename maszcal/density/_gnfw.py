@@ -1,3 +1,4 @@
+from types import MappingProxyType
 from dataclasses import dataclass
 import numpy as np
 import astropy.units as u
@@ -14,6 +15,7 @@ class BaryonDensity:
             rho_func=self.rho_tot,
             units=self.units,
             esd_func=self.esd_func,
+            esd_kwargs=self.esd_kwargs,
         )
 
     def _init_convergence_wrapper(self):
@@ -23,6 +25,7 @@ class BaryonDensity:
             comoving=self.comoving_radii,
             units=self.units,
             sd_func=self.sd_func,
+            sd_kwargs=self.sd_kwargs,
         )
 
     def excess_surface_density(self, rs, zs, mus, *rho_params):
@@ -132,8 +135,10 @@ class _Gnfw(BaryonDensity):
 class Gnfw(_Gnfw):
     nfw_class: object = _nfw.NfwModel
     units: u.Quantity = u.Msun/u.pc**2
-    sd_func: object = projector.sd
-    esd_func: object = projector.esd
+    sd_func: object = projector.SurfaceDensity.calculate
+    sd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
+    esd_func: object = projector.ExcessSurfaceDensity.calculate
+    esd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
 
 
 class _SingleMassGnfw(_Gnfw):
@@ -188,8 +193,10 @@ class _SingleMassGnfw(_Gnfw):
 class SingleMassGnfw(_SingleMassGnfw):
     nfw_class: object = _nfw.SingleMassNfwModel
     units: u.Quantity = u.Msun/u.pc**2
-    sd_func: object = projector.sd
-    esd_func: object = projector.esd
+    sd_func: object = projector.SurfaceDensity.calculate
+    sd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
+    esd_func: object = projector.ExcessSurfaceDensity.calculate
+    esd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
 
 
 @dataclass
@@ -267,8 +274,10 @@ class CmGnfw(_CmGnfw):
     con_class: object = maszcal.concentration.ConModel
     nfw_class: object = _nfw.CmNfwModel
     units: u.Quantity = u.Msun/u.pc**2
-    sd_func: object = projector.sd
-    esd_func: object = projector.esd
+    sd_func: object = projector.SurfaceDensity.calculate
+    sd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
+    esd_func: object = projector.ExcessSurfaceDensity.calculate
+    esd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
 
 
 @dataclass
@@ -319,8 +328,10 @@ class _MatchingGnfw(_Gnfw):
 class MatchingGnfw(_MatchingGnfw):
     nfw_class: object = _nfw.MatchingNfwModel
     units: u.Quantity = u.Msun/u.pc**2
-    sd_func: object = projector.sd
-    esd_func: object = projector.esd
+    sd_func: object = projector.SurfaceDensity.calculate
+    sd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
+    esd_func: object = projector.ExcessSurfaceDensity.calculate
+    esd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
 
 
 class _MatchingCmGnfw(_CmGnfw):
@@ -381,5 +392,7 @@ class MatchingCmGnfw(_MatchingCmGnfw):
     con_class: object = maszcal.concentration.MatchingConModel
     nfw_class: object = _nfw.MatchingCmNfwModel
     units: u.Quantity = u.Msun/u.pc**2
-    sd_func: object = projector.sd
-    esd_func: object = projector.esd
+    sd_func: object = projector.SurfaceDensity.calculate
+    sd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
+    esd_func: object = projector.ExcessSurfaceDensity.calculate
+    esd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})

@@ -18,9 +18,9 @@ def describe_MatchingGnfw():
         )
 
     def it_calculates_the_cdm_and_baryonic_densities(gnfw_model):
-        rs = np.logspace(-1, 1, 5)[:, None]
+        zs = np.linspace(0.1, 1, 4)
+        rs = np.logspace(-1, 1, 5)[:, None] * np.ones_like(zs)[None, :]
         mus = np.linspace(32, 33, 4)
-        zs = np.linspace(0, 1, 4)
         cons = np.linspace(2, 3, 3)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
@@ -59,9 +59,9 @@ def describe_MatchingGnfw():
         assert np.allclose(ratio, f_b)
 
     def it_can_calculate_esd(gnfw_model):
-        rs = np.logspace(-1, 1, 5)[:, None]
+        zs = np.linspace(0.1, 1, 4)
+        rs = np.logspace(-1, 1, 5)[:, None] * np.ones_like(zs)[None, :]
         mus = np.linspace(32, 33, 4)
-        zs = np.linspace(0, 1, 4)
         cons = np.linspace(2, 3, 3)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
@@ -70,9 +70,9 @@ def describe_MatchingGnfw():
         assert esd.shape == (5, 4, 3)
 
     def it_can_calculate_convergence(gnfw_model):
-        rs = np.logspace(-1, 1, 5)[:, None]
-        mus = np.linspace(32, 33, 4)
         zs = np.linspace(0.1, 1, 4)
+        rs = np.logspace(-1, 1, 5)[:, None] * np.ones_like(zs)[None, :]
+        mus = np.linspace(32, 33, 4)
         cons = np.linspace(2, 3, 3)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
@@ -105,9 +105,9 @@ def describe_MatchingCmGnfw():
         )
 
     def it_calculates_the_cdm_and_baryonic_densities(gnfw_model):
-        rs = np.logspace(-1, 1, 5)[:, None]
+        zs = np.linspace(0.1, 1, 4)
+        rs = np.logspace(-1, 1, 5)[:, None] * np.ones_like(zs)[None, :]
         mus = np.linspace(32, 33, 4)
-        zs = np.linspace(0, 1, 4)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
         gammas = np.linspace(0.1, 0.3, 3)
@@ -144,9 +144,9 @@ def describe_MatchingCmGnfw():
         assert np.allclose(ratio, f_b)
 
     def it_can_calculate_esd(gnfw_model):
-        rs = np.logspace(-1, 1, 5)[:, None]
+        zs = np.linspace(0.1, 1, 4)
+        rs = np.logspace(-1, 1, 5)[:, None] * np.ones_like(zs)[None, :]
         mus = np.linspace(32, 33, 4)
-        zs = np.linspace(0, 1, 4)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
         gammas = np.linspace(0.1, 0.3, 3)
@@ -154,9 +154,9 @@ def describe_MatchingCmGnfw():
         assert esd.shape == (5, 4, 3)
 
     def it_can_calculate_convergence(gnfw_model):
-        rs = np.logspace(-1, 1, 5)[:, None]
-        mus = np.linspace(32, 33, 4)
         zs = np.linspace(0.1, 1, 4)
+        rs = np.logspace(-1, 1, 5)[:, None] * np.ones_like(zs)[None, :]
+        mus = np.linspace(32, 33, 4)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
         gammas = np.linspace(0.1, 0.3, 3)
@@ -177,9 +177,9 @@ def describe_Gnfw():
         )
 
     def it_calculates_the_cdm_and_baryonic_densities(gnfw_model):
-        rs = np.logspace(-1, 1, 6)[:, None]
+        zs = np.linspace(0.1, 1, 4)
+        rs = np.logspace(-1, 1, 6)[:, None] * np.ones_like(zs)[None, :]
         mus = np.linspace(32, 33, 5)
-        zs = np.linspace(0, 1, 4)
         cons = np.linspace(2, 3, 3)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
@@ -218,26 +218,26 @@ def describe_Gnfw():
         assert np.allclose(ratio, f_b)
 
     def it_can_calculate_esd(gnfw_model):
-        rs = np.logspace(-1, 1, 5)[:, None]
-        mus = np.linspace(32, 33, 6)
-        zs = np.linspace(0, 1, 4)
+        zs = np.linspace(0.1, 1, 4)
+        rs = np.logspace(-1, 1, 5)[:, None] * np.ones_like(zs)[None, :]
+        mus = np.linspace(32, 33, 2)
         cons = np.linspace(2, 3, 3)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
         gammas = np.linspace(0.1, 0.3, 3)
         esd = gnfw_model.excess_surface_density(rs, zs, mus, cons, alphas, betas, gammas)
-        assert esd.shape == (5, 6, 4, 3)
+        assert esd.shape == (5, 2, 4, 3)
 
     def it_can_calculate_convergence(gnfw_model):
-        rs = np.logspace(-1, 1, 5)[:, None]
-        mus = np.linspace(32, 33, 6)
         zs = np.linspace(0.1, 1, 4)
+        rs = np.logspace(-1, 1, 5)[:, None] * np.ones_like(zs)[None, :]
+        mus = np.linspace(32, 33, 2)
         cons = np.linspace(2, 3, 3)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
         gammas = np.linspace(0.1, 0.3, 3)
         conv = gnfw_model.convergence(rs, zs, mus, cons, alphas, betas, gammas)
-        assert conv.shape == (5, 6, 4, 3)
+        assert conv.shape == (5, 2, 4, 3)
 
 
 class FakeConModel:
@@ -265,9 +265,9 @@ def describe_CmGnfw():
         )
 
     def it_calculates_the_cdm_and_baryonic_densities(gnfw_model):
-        rs = np.logspace(-1, 1, 6)[:, None]
+        zs = np.linspace(0.1, 1, 4)
+        rs = np.logspace(-1, 1, 6)[:, None] * np.ones_like(zs)[None, :]
         mus = np.linspace(32, 33, 5)
-        zs = np.linspace(0, 1, 4)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
         gammas = np.linspace(0.1, 0.3, 3)
@@ -304,9 +304,9 @@ def describe_CmGnfw():
         assert np.allclose(ratio, f_b)
 
     def it_can_calculate_esd(gnfw_model):
-        rs = np.logspace(-1, 1, 5)[:, None]
+        zs = np.linspace(0.1, 1, 4)
+        rs = np.logspace(-1, 1, 5)[:, None] * np.ones_like(zs)[None, :]
         mus = np.linspace(32, 33, 6)
-        zs = np.linspace(0, 1, 4)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
         gammas = np.linspace(0.1, 0.3, 3)
@@ -314,9 +314,9 @@ def describe_CmGnfw():
         assert esd.shape == (5, 6, 4, 3)
 
     def it_can_calculate_convergence(gnfw_model):
-        rs = np.logspace(-1, 1, 5)[:, None]
-        mus = np.linspace(32, 33, 6)
         zs = np.linspace(0.1, 1, 4)
+        rs = np.logspace(-1, 1, 5)[:, None] * np.ones_like(zs)[None, :]
+        mus = np.linspace(32, 33, 6)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
         gammas = np.linspace(0.1, 0.3, 3)
@@ -336,9 +336,9 @@ def describe_SingleMassGnfw():
         )
 
     def it_calculates_the_cdm_and_baryonic_densities(gnfw_model):
-        rs = np.logspace(-1, 1, 6)[:, None]
+        zs = np.linspace(0.1, 1, 4)
+        rs = np.logspace(-1, 1, 6)[:, None] * np.ones_like(zs)[None, :]
         mus = np.linspace(32, 33, 3)
-        zs = np.linspace(0, 1, 4)
         cons = np.linspace(2, 3, 3)
         alphas = np.linspace(0.5, 1, 3)
         betas = np.linspace(3, 4, 3)
@@ -377,8 +377,8 @@ def describe_SingleMassGnfw():
         assert np.allclose(ratio, f_b)
 
     def it_can_calculate_esd(gnfw_model):
-        rs = np.logspace(-1, 1, 5)[:, None]
-        zs = np.linspace(0, 1, 4)
+        zs = np.linspace(0.1, 1, 4)
+        rs = np.logspace(-1, 1, 5)[:, None] * np.ones_like(zs)[None, :]
         mus = np.linspace(32, 33, 3)
         cons = np.linspace(2, 3, 3)
         alphas = np.linspace(0.5, 1, 3)
@@ -388,8 +388,8 @@ def describe_SingleMassGnfw():
         assert esd.shape == (5, 4, 3)
 
     def it_can_calculate_convergence(gnfw_model):
-        rs = np.logspace(-1, 1, 5)[:, None]
         zs = np.linspace(0.1, 1, 4)
+        rs = np.logspace(-1, 1, 5)[:, None] * np.ones_like(zs)[None, :]
         mus = np.linspace(32, 33, 3)
         cons = np.linspace(2, 3, 3)
         alphas = np.linspace(0.5, 1, 3)

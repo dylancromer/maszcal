@@ -140,7 +140,7 @@ class NfwModel:
         prefactor = scale_radii * self.delta_c(cons)[None, None, :] * self.reference_density(zs)[None, :, None]
         prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
 
-        xs = rs[..., None, None]/scale_radii[None, ...]
+        xs = rs[..., None, :, None]/mathutils.atleast_kd(scale_radii, rs.ndim+scale_radii.ndim-1, append_dims=False)
 
         postfactor = self._inequality_func(xs)
 
@@ -195,7 +195,7 @@ class SingleMassNfwModel(NfwModel):
         prefactor = scale_radii * self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
         prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
 
-        xs = rs[:, None]/scale_radii[None, ...]
+        xs = rs[..., None]/scale_radii[None, ...]
 
         postfactor = self._inequality_func(xs)
 
@@ -220,7 +220,7 @@ class CmNfwModel(NfwModel):
         numerator = self.delta_c(cons) * self.reference_density(zs)[None, :]
         total_num_dims = rs.ndim + numerator.ndim - 1
         numerator = mathutils.atleast_kd(numerator, total_num_dims, append_dims=False)
-        xs = rs[..., None]/mathutils.atleast_kd(scale_radii, total_num_dims, append_dims=False)
+        xs = rs[..., None, :]/mathutils.atleast_kd(scale_radii, total_num_dims, append_dims=False)
         denominator = xs * (1+xs)**2
         return numerator/denominator
 
@@ -277,7 +277,7 @@ class MatchingNfwModel(NfwModel):
         scale_radii = self.scale_radius(zs, masses, cons)
         prefactor = scale_radii * self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
         prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
-        xs = rs[:, None]/scale_radii[None, ...]
+        xs = rs[..., None]/scale_radii[None, ...]
         postfactor = self._inequality_func(xs)
         return prefactor[None, ...] * postfactor
 
