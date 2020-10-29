@@ -34,7 +34,8 @@ class TwoHaloModel:
     mass_definition: str = 'mean'
     is_nonlinear: bool = False
     matter_power_class: object = maszcal.matter.Power
-    projector_kwargs: object = MappingProxyType({})
+    esd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': None})
+    sd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': None})
 
     def __post_init__(self):
         self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
@@ -85,8 +86,21 @@ class TwoHaloModel:
             correlator = self.__correlation_interpolator(rs)
         return correlator
 
+    def _correlation_interpolator_redshift_dep_radii(self, rs, zs):
+        try:
+            correlator = self.__correlation_interpolator.with_redshift_dependent_radii(rs)
+        except AttributeError:
+            self._init_correlation_interpolator(zs)
+            correlator = self.__correlation_interpolator.with_redshift_dependent_radii(rs)
+        return correlator
+
     def _density_shape_interpolator(self, rs, zs):
         corr = self._correlation_interpolator(rs.flatten(), zs).reshape(zs.shape + rs.shape)
+        corr = np.moveaxis(corr, 0, -1)
+        return corr
+
+    def _density_shape_interpolator_theta_coords(self, rs, zs):
+        corr = self._correlation_interpolator_redshift_dep_radii(rs, zs)
         corr = np.moveaxis(corr, 0, -1)
         return corr
 
@@ -106,7 +120,7 @@ class TwoHaloModel:
 
 class TwoHaloShearModel(TwoHaloModel):
     def _excess_surface_density_radial_shape(self, rs, zs):
-        return projector.esd(rs, lambda radii: self._density_shape_interpolator(radii, zs), **self.projector_kwargs)
+        return projector.ExcessSurfaceDensity.calculate(rs, lambda radii: self._density_shape_interpolator(radii, zs), **self.esd_kwargs)
 
     def _excess_surface_density(self, rs, zs, mus):
         bias = self._bias(zs, mus)[:, None]
@@ -127,8 +141,24 @@ class TwoHaloConvergenceModel(TwoHaloModel):
             z_source=np.array([self.CMB_REDSHIFT]),
         )
 
+    def _sd_radial_shape_for_theta(self, rs, zs):
+        return projector.SurfaceDensity2.calculate(
+            rs,
+            lambda radii: self._density_shape_interpolator_theta_coords(radii, zs),
+            **self.sd_kwargs,
+        )
+
     def _sd_radial_shape(self, rs, zs):
-        return projector.sd_alt(rs, lambda radii: self._density_shape_interpolator(radii, zs), **self.projector_kwargs)
+        return projector.SurfaceDensity2.calculate(
+            rs,
+            lambda radii: self._density_shape_interpolator(radii, zs),
+            **self.sd_kwargs,
+        )
+
+    def _radius_space_convergence_for_theta(self, rs, zs, mus):
+        bias = self._bias(zs, mus)[:, None]
+        sd_radial_shape = self._sd_radial_shape_for_theta(rs, zs).T
+        return bias * sd_radial_shape / self.sigma_crit(z_lens=zs)[:, None]
 
     def _radius_space_convergence(self, rs, zs, mus):
         bias = self._bias(zs, mus)[:, None]
@@ -137,6 +167,9 @@ class TwoHaloConvergenceModel(TwoHaloModel):
 
     def radius_space_convergence(self, rs, zs, mus):
         return self.matter_density(zs)[:, None] * self._radius_space_convergence(rs, zs, mus) * (u.Msun/u.Mpc**2).to(self.units)
+
+    def radius_space_convergence_for_theta(self, rs, zs, mus):
+        return self.matter_density(zs)[:, None] * self._radius_space_convergence_for_theta(rs, zs, mus) * (u.Msun/u.Mpc**2).to(self.units)
 
     def _comoving_distance(self, z):
         return self.astropy_cosmology.comoving_distance(z).to(u.Mpc).value
@@ -151,11 +184,8 @@ class TwoHaloConvergenceModel(TwoHaloModel):
             return self._angular_diameter_distance(z)
 
     def convergence(self, thetas, zs, mus):
-        radii_of_z = [thetas * self.angle_scale_distance(z) for z in zs]
-        return np.array([
-            self.radius_space_convergence(rs, zs[i:i+1], mus[i:i+1])
-            for i, rs in enumerate(radii_of_z)
-        ]).squeeze()
+        radii_of_z = thetas[:, None] * self.angle_scale_distance(zs)[None, :]
+        return self.radius_space_convergence_for_theta(radii_of_z, zs, mus)
 
 
 @dataclass

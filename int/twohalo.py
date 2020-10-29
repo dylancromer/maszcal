@@ -64,7 +64,10 @@ def describe_TwoHaloConvergenceModel():
     @pytest.fixture
     def two_halo_model():
         cosmo = maszcal.cosmology.CosmoParams()
-        model = maszcal.twohalo.TwoHaloConvergenceModel(cosmo_params=cosmo)
+        model = maszcal.twohalo.TwoHaloConvergenceModel(
+            cosmo_params=cosmo,
+            sd_kwargs={'radial_axis_to_broadcast': 1, 'density_axis': -1},
+        )
         return model
 
     def it_calculates_two_halo_convs(two_halo_model):
@@ -127,7 +130,7 @@ def describe_TwoHaloEmulator():
 
         @pytest.fixture
         def esd_emulator(two_halo_esd):
-            return maszcal.twohalo.TwoHaloEmulator(
+            return maszcal.twohalo.TwoHaloEmulator.from_function(
                 two_halo_func=two_halo_esd,
                 r_grid=np.geomspace(0.01, 100, 120),
                 z_lims=np.array([0, 1.1]),
@@ -164,7 +167,7 @@ def describe_TwoHaloEmulator():
 
         @pytest.fixture
         def conv_emulator(two_halo_conv):
-            return maszcal.twohalo.TwoHaloEmulator(
+            return maszcal.twohalo.TwoHaloEmulator.from_function(
                 two_halo_func=two_halo_conv,
                 r_grid=np.geomspace(0.01, 100, 120),
                 z_lims=np.array([0, 1.1]),
@@ -209,7 +212,7 @@ def describe_TwoHaloEmulator():
 
         @pytest.fixture
         def esd_emulator(two_halo_esd):
-            return maszcal.twohalo.TwoHaloEmulator(
+            return maszcal.twohalo.TwoHaloEmulator.from_function(
                 two_halo_func=two_halo_esd,
                 r_grid=np.geomspace(0.01, 100, 120),
                 z_lims=np.array([0, 1.1]),

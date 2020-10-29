@@ -86,7 +86,11 @@ def describe_TwoHaloConvergenceModel():
         def two_halo_model(mocker):
             mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
             cosmo = maszcal.cosmology.CosmoParams()
-            model = maszcal.twohalo.TwoHaloConvergenceModel(cosmo_params=cosmo, matter_power_class=FakePower)
+            model = maszcal.twohalo.TwoHaloConvergenceModel(
+                cosmo_params=cosmo,
+                matter_power_class=FakePower,
+                sd_kwargs={'radial_axis_to_broadcast': 1, 'density_axis': -1},
+            )
 
             model.NUM_INTERP_ZS = 3
             model.NUM_INTERP_RADII = 4
@@ -206,9 +210,9 @@ def describe_TwoHaloEmulator():
             mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
             cosmo = maszcal.cosmology.CosmoParams()
             model = maszcal.twohalo.TwoHaloConvergenceModel(cosmo_params=cosmo, matter_power_class=FakePower)
-            model.NUM_INTERP_ZS = 3
-            model.NUM_INTERP_RADII = 4
-            return model.convergence
+            model.NUM_INTERP_ZS = 5
+            model.NUM_INTERP_RADII = 7
+            return model.radius_space_convergence
 
         @pytest.fixture
         def conv_emulator(two_halo_conv):
