@@ -90,3 +90,16 @@ def describe_Correlations():
         rs = np.logspace(-1, 1, 30)
         xis = xi_interpolator(rs)
         assert xis.shape == (10, 30)
+
+    def it_can_use_radii_that_are_functions_of_z(mocker):
+        mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
+
+        cosmo = maszcal.cosmology.CosmoParams()
+        zs = np.linspace(0, 1, 10)
+        xi_interpolator = maszcal.matter.Correlations.from_cosmology(cosmo, zs, is_nonlinear=True)
+
+        rs = np.array([
+            np.geomspace(1e-1, 1e1+z, 30) for z in zs
+        ]).T
+        xis = xi_interpolator.with_redshift_dependent_radii(rs)
+        assert xis.shape == (10, 30)

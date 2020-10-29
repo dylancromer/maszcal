@@ -64,6 +64,10 @@ class Correlations:
         num_zs = len(self.interpolators)
         return np.array([self.interpolators[i](rs) for i in range(num_zs)])
 
+    def with_redshift_dependent_radii(self, rs):
+        num_zs = len(self.interpolators)
+        return np.array([self.interpolators[i](rs[..., i]) for i in range(num_zs)])
+
     @classmethod
     def from_power_spectrum(cls, ks, zs, power_spectra):
         rs, xis = mcfit.P2xi(ks, lowring=True)(power_spectra, extrap=True)
