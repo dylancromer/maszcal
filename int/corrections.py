@@ -43,13 +43,13 @@ def describe_2HaloCorrected_MatchingConvergenceModel():
 
         @pytest.fixture
         def conv_emulator(two_halo_conv):
-            return maszcal.twohalo.TwoHaloEmulator(
+            return maszcal.twohalo.TwoHaloEmulator.from_function(
                 two_halo_func=two_halo_conv,
                 r_grid=np.geomspace(0.0001, 60, 160),
                 z_lims=np.array([0, 1.2]),
                 mu_lims=np.log(np.array([1e13, 1e15])),
                 num_emulator_samples=800,
-            )
+            ).with_redshift_dependent_radii
 
         @pytest.fixture
         def corrected_lensing_func(density_model, conv_emulator):
@@ -60,7 +60,7 @@ def describe_2HaloCorrected_MatchingConvergenceModel():
 
         @pytest.fixture
         def convergence_model(corrected_lensing_func):
-            NUM_CLUSTERS = 100
+            NUM_CLUSTERS = 102
             rng = np.random.default_rng(seed=13)
             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
             zs = rng.random(size=NUM_CLUSTERS) + 0.01
@@ -125,14 +125,14 @@ def describe_2HaloCorrected_ScatteredMatchingConvergenceModel():
 
         @pytest.fixture
         def conv_emulator(two_halo_conv):
-            return maszcal.twohalo.TwoHaloEmulator(
+            return maszcal.twohalo.TwoHaloEmulator.from_function(
                 two_halo_func=two_halo_conv,
                 r_grid=np.geomspace(0.0001, 60, 160),
                 z_lims=np.array([0, 1.2]),
                 mu_lims=np.log(np.array([1e13, 1e15])),
                 num_emulator_samples=800,
                 separate_mu_and_z_axes=True,
-            )
+            ).with_redshift_dependent_radii
 
         @pytest.fixture
         def corrected_lensing_func(density_model, conv_emulator):
@@ -153,7 +153,7 @@ def describe_2HaloCorrected_ScatteredMatchingConvergenceModel():
 
         @pytest.fixture
         def convergence_model(corrected_lensing_func, hmf_interp):
-            NUM_CLUSTERS = 100
+            NUM_CLUSTERS = 102
             rng = np.random.default_rng(seed=13)
             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
             zs = rng.random(size=NUM_CLUSTERS) + 0.01
@@ -219,7 +219,7 @@ def describe_2HaloCorrected_MatchingShearModel():
 
         @pytest.fixture
         def esd_emulator(two_halo_esd):
-            return maszcal.twohalo.TwoHaloEmulator(
+            return maszcal.twohalo.TwoHaloEmulator.from_function(
                 two_halo_func=two_halo_esd,
                 r_grid=np.geomspace(0.01, 100, 120),
                 z_lims=np.array([0, 1.2]),
@@ -236,7 +236,7 @@ def describe_2HaloCorrected_MatchingShearModel():
 
         @pytest.fixture
         def shear_model(corrected_lensing_func):
-            NUM_CLUSTERS = 100
+            NUM_CLUSTERS = 102
             rng = np.random.default_rng(seed=13)
             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
             zs = rng.random(size=NUM_CLUSTERS) + 0.01
@@ -292,7 +292,7 @@ def describe_2HaloCorrected_ScatteredMatchingShearModel():
 
         @pytest.fixture
         def esd_emulator(two_halo_esd):
-            return maszcal.twohalo.TwoHaloEmulator(
+            return maszcal.twohalo.TwoHaloEmulator.from_function(
                 two_halo_func=two_halo_esd,
                 r_grid=np.geomspace(0.01, 100, 120),
                 z_lims=np.array([0, 1.2]),
@@ -320,7 +320,7 @@ def describe_2HaloCorrected_ScatteredMatchingShearModel():
 
         @pytest.fixture
         def shear_model(corrected_lensing_func, hmf_interp):
-            NUM_CLUSTERS = 100
+            NUM_CLUSTERS = 102
             rng = np.random.default_rng(seed=13)
             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
             zs = rng.random(size=NUM_CLUSTERS) + 0.01

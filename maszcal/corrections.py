@@ -28,9 +28,9 @@ class Matching2HaloCorrection:
         )
 
     def corrected_profile(self, rs, zs, mus, a_2hs, *one_halo_params):
-        one_halo_excess_surface_densities = self._get_one_halo(rs, zs, mus, *one_halo_params)
-        two_halo_excess_surface_densities = self._get_two_halo(rs, zs, mus, a_2hs)
-        return self._combine_1_and_2_halo_terms(one_halo_excess_surface_densities, two_halo_excess_surface_densities)
+        one_halo_lensing_signals = self._get_one_halo(rs, zs, mus, *one_halo_params)
+        two_halo_lensing_signals = self._get_two_halo(rs, zs, mus, a_2hs)
+        return self._combine_1_and_2_halo_terms(one_halo_lensing_signals, two_halo_lensing_signals)
 
 
 @dataclass
@@ -52,6 +52,6 @@ class TwoHaloCorrection:
         )
 
     def corrected_profile(self, rs, zs, mus, a_2hs, *one_halo_params):
-        one_halo_excess_surface_densities = self._get_one_halo(rs, zs, mus, *one_halo_params)
-        two_halo_excess_surface_densities = self._get_two_halo(rs, zs, mus, a_2hs)
-        return self._combine_1_and_2_halo_terms(one_halo_excess_surface_densities, two_halo_excess_surface_densities)
+        one_halo_lensing_signals = self._get_one_halo(rs, zs, mus, *one_halo_params)
+        two_halo_lensing_signals = self._get_two_halo(rs, zs, mus, a_2hs)
+        return self._combine_1_and_2_halo_terms(one_halo_lensing_signals, two_halo_lensing_signals)
