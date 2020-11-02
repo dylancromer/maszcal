@@ -7,10 +7,10 @@ import maszcal.cosmology
 
 
 def fake_rho_total(rs, zs, mus, *params):
-    return np.ones(rs.shape + zs.shape + (params[0].size,))
+    return np.ones(rs.shape[0:1] + zs.shape + (params[0].size,))
 
 
-def fake_projector_esd(rs, rho_func):
+def fake_projector_esd(rs, rho_func, **kwargs):
     rhos = rho_func(rs)
     return np.ones(rhos.shape)
 

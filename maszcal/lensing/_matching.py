@@ -45,7 +45,11 @@ class MatchingConvergenceModel(_core.MatchingModel):
     def stacked_convergence(self, thetas, a_szs, *rho_params):
         'SHAPE a_sz, r, params'
         num_clusters = self.sz_masses.size
-        profiles = self.convergence(thetas, a_szs, *rho_params).reshape(thetas.size, num_clusters, a_szs.size, -1)
+        profiles = np.moveaxis(
+            self.convergence(thetas, a_szs, *rho_params),
+            1,
+            0,
+        ).reshape(thetas.size, num_clusters, a_szs.size, -1)
         weights = self.normed_lensing_weights(a_szs).reshape(num_clusters, a_szs.size)
         return (weights[None, :, :, None] * profiles).sum(axis=1)
 
@@ -134,7 +138,7 @@ class MatchingShearModel(_core.MatchingModel):
     def excess_surface_density_total(self, rs, a_szs, *rho_params):
         mus = self.mu_from_sz_mu(np.log(self.sz_masses), a_szs).flatten()
         zs = np.repeat(self.redshifts, a_szs.size)
-        return self.lensing_func(rs, zs, mus, *rho_params)
+        return self.lensing_func(rs[:, None], zs, mus, *rho_params)
 
     def stacked_excess_surface_density(self, rs, a_szs, *rho_params):
         'SHAPE r, a_sz, params'
@@ -158,7 +162,7 @@ class ScatteredMatchingShearModel(_core.ScatteredMatchingModel):
         return unnormalized_mass_weights/normalization
 
     def _excess_surface_density_total_vectorized(self, rs, a_szs, *rho_params):
-        excess_surface_densities_over_mass_range = self.lensing_func(rs, self.redshifts, self.mus, *rho_params)
+        excess_surface_densities_over_mass_range = self.lensing_func(rs[:, None], self.redshifts, self.mus, *rho_params)
         mu_szs = np.log(self.sz_masses)
         mass_weights = self._get_mass_weights(mu_szs, a_szs)
         return maszcal.mathutils.trapz_(
@@ -172,7 +176,7 @@ class ScatteredMatchingShearModel(_core.ScatteredMatchingModel):
         mass_weights = self._get_mass_weights(mu_szs, a_szs)
         dmus = np.gradient(self.mus)
 
-        def loop_func(mu): return self.lensing_func(rs, self.redshifts, mu, *rho_params).squeeze(axis=1)
+        def loop_func(mu): return self.lensing_func(rs[:, None], self.redshifts, mu, *rho_params).squeeze(axis=1)
         esd_test = loop_func(self.mus[:1])
 
         excess_surface_densities_over_mass_range = np.zeros(esd_test.shape[:2] + a_szs.shape + esd_test.shape[2:])

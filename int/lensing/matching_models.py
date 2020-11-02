@@ -15,6 +15,7 @@ import maszcal.concentration
 import maszcal.density
 import maszcal.lensing
 import maszcal.cosmology
+import maszcal.tinker
 
 
 def describe_MatchingConvergenceModel():
@@ -29,7 +30,6 @@ def describe_MatchingConvergenceModel():
                 delta=200,
                 comoving_radii=True,
                 nfw_class=maszcal.density.MatchingNfwModel,
-                radii_are_function_of_z=True,
             )
 
         @pytest.fixture
@@ -56,7 +56,6 @@ def describe_MatchingConvergenceModel():
                 delta=200,
                 comoving_radii=False,
                 nfw_class=maszcal.density.MatchingNfwModel,
-                radii_are_function_of_z=True,
             )
 
         @pytest.fixture
@@ -101,7 +100,6 @@ def describe_MatchingConvergenceModel():
                 delta=200,
                 comoving_radii=True,
                 nfw_class=maszcal.density.MatchingNfwModel,
-                radii_are_function_of_z=True,
             )
 
         @pytest.fixture
@@ -128,7 +126,7 @@ def describe_MatchingConvergenceModel():
             alphas = 0.5*np.ones(1)
             betas = np.linspace(2.8, 3.2, 3)
             gammas = 0.5*np.ones(1)
-            a_szs = np.array([0, 0.1, -0.1, 0.01])
+            a_szs = np.array([0, 0.1, -0.1, 1])
 
             sds = convergence_model.stacked_convergence(thetas, a_szs, cons, alphas, betas, gammas)
 
@@ -173,7 +171,7 @@ def describe_ScatteredMatchingConvergenceModel():
 
         @pytest.fixture
         def convergence_model(hmf_interp, density_model):
-            NUM_CLUSTERS = 1
+            NUM_CLUSTERS = 5
             rng = np.random.default_rng(seed=13)
             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
             zs = rng.random(size=NUM_CLUSTERS) + 0.01
@@ -190,7 +188,7 @@ def describe_ScatteredMatchingConvergenceModel():
 
         @pytest.fixture
         def convergence_model_loop(density_model, hmf_interp):
-            NUM_CLUSTERS = 1
+            NUM_CLUSTERS = 5
             rng = np.random.default_rng(seed=13)
             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
             zs = rng.random(size=NUM_CLUSTERS) + 0.01
@@ -214,7 +212,7 @@ def describe_ScatteredMatchingConvergenceModel():
             alphas = 0.5*np.ones(1)
             betas = np.linspace(2.8, 3.2, 3)
             gammas = 0.5*np.ones(1)
-            a_szs = np.array([0, 0.1, -0.1, 0.01])
+            a_szs = np.array([0, 0.1, -0.1, 1])
 
             sds = convergence_model.stacked_convergence(thetas, a_szs, cons, alphas, betas, gammas)
             sds_loop = convergence_model_loop.stacked_convergence(thetas, a_szs, cons, alphas, betas, gammas)
@@ -228,7 +226,7 @@ def describe_ScatteredMatchingConvergenceModel():
             alphas = 0.5*np.ones(1)
             betas = np.linspace(2.8, 3.2, 3)
             gammas = 0.5*np.ones(1)
-            a_szs = np.array([0, 0.1, -0.1, 0.01])
+            a_szs = np.array([0, 0.1, -0.1, 1])
 
             sds = convergence_model.stacked_convergence(thetas, a_szs, cons, alphas, betas, gammas)
 
@@ -310,11 +308,7 @@ def describe_MatchingShearModel():
         def nfw_lensing_func(density_model):
             def wrapper(rs, zs, mus, cons):
                 masses = np.exp(mus)
-                return np.moveaxis(
-                    density_model.excess_surface_density(rs, zs, masses, cons),
-                    0,
-                    1,
-                )
+                return density_model.excess_surface_density(rs, zs, masses, cons)
             return wrapper
 
         @pytest.fixture
@@ -520,7 +514,8 @@ def describe_miscentered_MatchingShearModel():
             return maszcal.lensing.Shear(
                 rho_func=miscentered_rho_func,
                 units=u.Msun/u.pc**2,
-                esd_func=projector.esd,
+                esd_func=projector.ExcessSurfaceDensity.calculate,
+                esd_kwargs={'radial_axis_to_broadcast': 1, 'density_axis': -1},
             ).excess_surface_density
 
         @pytest.fixture
@@ -597,7 +592,8 @@ def describe_miscentered_MatchingConvergenceModel():
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 units=u.Msun/u.pc**2,
                 comoving=True,
-                sd_func=projector.sd,
+                sd_func=projector.SurfaceDensity.calculate,
+                sd_kwargs={'radial_axis_to_broadcast': 1, 'density_axis': -1},
             ).convergence
 
         @pytest.fixture
@@ -680,7 +676,8 @@ def describe_miscentered_ScatteredMatchingShearModel():
             return maszcal.lensing.Shear(
                 rho_func=miscentered_rho_func,
                 units=u.Msun/u.pc**2,
-                esd_func=projector.esd,
+                esd_func=projector.ExcessSurfaceDensity.calculate,
+                esd_kwargs={'radial_axis_to_broadcast': 1, 'density_axis': -1},
             ).excess_surface_density
 
         @pytest.fixture
@@ -770,7 +767,8 @@ def describe_miscentered_ScatteredMatchingConvergenceModel():
                 cosmo_params=maszcal.cosmology.CosmoParams(),
                 units=u.Msun/u.pc**2,
                 comoving=True,
-                sd_func=projector.sd,
+                sd_func=projector.SurfaceDensity.calculate,
+                sd_kwargs={'radial_axis_to_broadcast': 1, 'density_axis': -1},
             ).convergence
 
         @pytest.fixture

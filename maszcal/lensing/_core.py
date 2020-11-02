@@ -35,12 +35,13 @@ class Shear:
     rho_func: object
     units: u.Quantity
     esd_func: object
+    esd_kwargs: MappingProxyType
 
     def excess_surface_density(self, rs, zs, mus, *rho_params):
         return self.esd_func(
             rs,
             lambda r: self.rho_func(r, zs, mus, *rho_params),
-            radial_axis_to_broadcast=1,
+            **self.esd_kwargs,
         ) * (u.Msun/u.Mpc**2).to(self.units)
 
 
@@ -53,6 +54,7 @@ class Convergence:
     comoving: bool
     units: u.Quantity
     sd_func: object
+    sd_kwargs: MappingProxyType
 
     def __post_init__(self):
         self.sigma_crit = partial(
@@ -64,7 +66,7 @@ class Convergence:
         return self.sd_func(
             rs,
             lambda r: self.rho_func(r, zs, mus, *rho_params),
-            radial_axis_to_broadcast=1,
+            **self.sd_kwargs,
         ) * (u.Msun/u.Mpc**2).to(self.units) / self.sigma_crit(z_lens=zs)[None, :, None]
 
 

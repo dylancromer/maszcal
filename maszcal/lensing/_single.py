@@ -1,3 +1,4 @@
+from types import MappingProxyType
 from dataclasses import dataclass
 import numpy as np
 from astropy import units as u
@@ -19,7 +20,8 @@ class SingleMassConvergenceModel:
     comoving: bool = True
     convergence_class: object = _core.Convergence
     cosmo_params: maszcal.cosmology.CosmoParams = maszcal.cosmology.CosmoParams()
-    sd_func: object = projector.sd
+    sd_func: object = projector.SurfaceDensity.calculate
+    sd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
 
     def __post_init__(self):
         self._convergence = self.convergence_class(
@@ -28,6 +30,7 @@ class SingleMassConvergenceModel:
             units=self.units,
             comoving=self.comoving,
             sd_func=self.sd_func,
+            sd_kwargs=self.sd_kwargs,
         )
         self.astropy_cosmology = maszcal.cosmo_utils.get_astropy_cosmology(self.cosmo_params)
 
@@ -61,13 +64,15 @@ class SingleMassShearModel:
     rho_func: object
     units: u.Quantity = u.Msun/u.pc**2
     shear_class: object = _core.Shear
-    esd_func: object = projector.esd
+    esd_func: object = projector.ExcessSurfaceDensity.calculate
+    esd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
 
     def __post_init__(self):
         self._shear = self.shear_class(
             rho_func=self.rho_func,
             units=self.units,
             esd_func=self.esd_func,
+            esd_kwargs=self.esd_kwargs,
         )
 
     def excess_surface_density(self, rs, mus, *rho_params):
