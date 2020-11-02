@@ -203,6 +203,39 @@ def describe_TwoHaloEmulator():
             assert not np.any(np.isnan(esds))
             assert esds.shape == zs.shape + rs.shape
 
+        def describe_non_matching_version():
+
+            @pytest.fixture
+            def two_halo_esd(mocker):
+                mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
+                cosmo = maszcal.cosmology.CosmoParams()
+                model = maszcal.twohalo.TwoHaloShearModel(cosmo_params=cosmo, matter_power_class=FakePower)
+                model.NUM_INTERP_ZS = 3
+                model.NUM_INTERP_RADII = 4
+                return model.excess_surface_density
+
+            @pytest.fixture
+            def esd_emulator(two_halo_esd):
+                return maszcal.twohalo.TwoHaloEmulator.from_function(
+                    two_halo_func=two_halo_esd,
+                    r_grid=np.geomspace(0.1, 10, 13),
+                    z_lims=np.array([0, 2]),
+                    mu_lims=np.log(np.array([1e13, 1e15])),
+                    num_emulator_samples=10,
+                    separate_mu_and_z_axes=True,
+                )
+
+            def it_can_calculate_esds(esd_emulator):
+                rs = np.geomspace(1, 3, 30)
+
+                rng = np.random.default_rng(seed=13)
+                mus = np.log(2e13*rng.normal(size=9) + 2e14)
+                zs = rng.random(size=10) + 0.01
+
+                esds = esd_emulator(rs, zs, mus)
+                assert not np.any(np.isnan(esds))
+                assert esds.shape == mus.shape + zs.shape + rs.shape
+
     def describe_context_convergence():
 
         @pytest.fixture
@@ -236,35 +269,55 @@ def describe_TwoHaloEmulator():
             assert not np.any(np.isnan(convs))
             assert convs.shape == zs.shape + rs.shape
 
-    def describe_non_matching_version():
-
-        @pytest.fixture
-        def two_halo_esd(mocker):
-            mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
-            cosmo = maszcal.cosmology.CosmoParams()
-            model = maszcal.twohalo.TwoHaloShearModel(cosmo_params=cosmo, matter_power_class=FakePower)
-            model.NUM_INTERP_ZS = 3
-            model.NUM_INTERP_RADII = 4
-            return model.excess_surface_density
-
-        @pytest.fixture
-        def esd_emulator(two_halo_esd):
-            return maszcal.twohalo.TwoHaloEmulator.from_function(
-                two_halo_func=two_halo_esd,
-                r_grid=np.geomspace(0.1, 10, 13),
-                z_lims=np.array([0, 2]),
-                mu_lims=np.log(np.array([1e13, 1e15])),
-                num_emulator_samples=10,
-                separate_mu_and_z_axes=True,
-            )
-
-        def it_can_calculate_esds(esd_emulator):
-            rs = np.geomspace(1, 3, 30)
-
+        def it_can_calculate_convergence_redshift_dep_radii(conv_emulator):
             rng = np.random.default_rng(seed=13)
-            mus = np.log(2e13*rng.normal(size=9) + 2e14)
-            zs = rng.random(size=10) + 0.01
+            NUM = 10
+            mus = np.log(2e13*rng.normal(size=NUM) + 2e14)
+            zs = rng.random(size=NUM) + 0.01
+            rs = np.geomspace(zs+1, 3, 30)
 
-            esds = esd_emulator(rs, zs, mus)
-            assert not np.any(np.isnan(esds))
-            assert esds.shape == mus.shape + zs.shape + rs.shape
+            convs = conv_emulator.with_redshift_dependent_radii(rs, zs, mus)
+            assert not np.any(np.isnan(convs))
+            assert convs.shape == zs.shape + rs.shape[0:1]
+
+        def describe_non_matching_version():
+
+            @pytest.fixture
+            def two_halo_conv(mocker):
+                mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
+                cosmo = maszcal.cosmology.CosmoParams()
+                model = maszcal.twohalo.TwoHaloConvergenceModel(cosmo_params=cosmo, matter_power_class=FakePower)
+                model.NUM_INTERP_ZS = 5
+                model.NUM_INTERP_RADII = 7
+                return model.radius_space_convergence
+
+            @pytest.fixture
+            def conv_emulator(two_halo_conv):
+                return maszcal.twohalo.TwoHaloEmulator.from_function(
+                    two_halo_func=two_halo_conv,
+                    r_grid=np.geomspace(0.1, 10, 13),
+                    z_lims=np.array([0, 2]),
+                    mu_lims=np.log(np.array([1e13, 1e15])),
+                    num_emulator_samples=10,
+                    separate_mu_and_z_axes=True,
+                )
+
+            def it_can_calculate_convergence(conv_emulator):
+                rs = np.geomspace(1, 3, 30)
+                rng = np.random.default_rng(seed=13)
+                mus = np.log(2e13*rng.normal(size=9) + 2e14)
+                zs = rng.random(size=10) + 0.01
+
+                convs = conv_emulator(rs, zs, mus)
+                assert not np.any(np.isnan(convs))
+                assert convs.shape == mus.shape + zs.shape + rs.shape
+
+            def it_can_calculate_convergence_redshift_dep_radii(conv_emulator):
+                rng = np.random.default_rng(seed=13)
+                mus = np.log(2e13*rng.normal(size=9) + 2e14)
+                zs = rng.random(size=10) + 0.01
+                rs = np.geomspace(zs+1, 3, 30)
+
+                convs = conv_emulator.with_redshift_dependent_radii(rs, zs, mus)
+                assert not np.any(np.isnan(convs))
+                assert convs.shape == mus.shape + zs.shape + rs.shape[0:1]

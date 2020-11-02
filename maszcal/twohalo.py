@@ -262,5 +262,29 @@ class TwoHaloEmulator:
             axis=-1,
         )(rs)
 
+    def _get_redshift_dependent_radial_interpolation(self, rs, zs, mus):
+        return np.diagonal(
+            self._get_radial_interpolation(rs, zs, mus),
+            axis1=0,
+            axis2=2,
+        ).T.copy()
+
+    def _get_redshift_dependent_radial_interpolation_sep_mu_z(self, rs, zs, mus):
+        return np.swapaxes(
+            np.diagonal(
+                self._get_radial_interpolation(rs, zs, mus),
+                axis1=1,
+                axis2=3,
+            ).copy(),
+            1,
+            2,
+        )
+
     def __call__(self, rs, zs, mus):
-        return self._get_radial_interpolation(rs, zs, mus)
+        return self._get_radial_interpolation(rs.flatten(), zs, mus)
+
+    def with_redshift_dependent_radii(self, rs, zs, mus):
+        if not self.separate_mu_and_z_axes:
+            return self._get_redshift_dependent_radial_interpolation(rs, zs, mus)
+        else:
+            return self._get_redshift_dependent_radial_interpolation_sep_mu_z(rs, zs, mus)
