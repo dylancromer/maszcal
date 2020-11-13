@@ -263,24 +263,25 @@ class TwoHaloEmulator:
         )(rs)
 
     def _get_redshift_dependent_radial_interpolation(self, rs, zs, mus):
-        return np.diagonal(
-            self._get_radial_interpolation(rs, zs, mus),
-            axis1=0,
-            axis2=2,
-        ).T.copy()
+        return np.array(
+            [self._get_radial_interpolation(rs[:, i], zs[i:i+1], mus[i:i+1]) for i, _ in enumerate(zs)],
+        ).squeeze(axis=1)
 
     def _get_redshift_dependent_radial_interpolation_sep_mu_z(self, rs, zs, mus):
         return np.swapaxes(
-            np.diagonal(
-                self._get_radial_interpolation(rs, zs, mus),
-                axis1=1,
-                axis2=3,
-            ).copy(),
+            np.array(
+                [self._get_radial_interpolation(rs[:, i], zs[i:i+1], mus) for i, z in enumerate(zs)],
+            ).squeeze(axis=2),
+            0,
             1,
-            2,
         )
 
+    def _check_radii_are_flat(self, radii):
+        if (radii.ndim > 1) and (radii.size != radii.shape[0]):
+            raise ValueError('radii with ndim > 1 must use the with_redshift_dependent_radii method')
+
     def __call__(self, rs, zs, mus):
+        self._check_radii_are_flat(rs)
         return self._get_radial_interpolation(rs.flatten(), zs, mus)
 
     def with_redshift_dependent_radii(self, rs, zs, mus):
