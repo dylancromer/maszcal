@@ -26,13 +26,13 @@ Z_MAX = 1
 
 FROM_ARCMIN = 2 * np.pi / 360 / 60
 TO_ARCMIN = 1/FROM_ARCMIN
-THETAS = np.linspace(0.01*FROM_ARCMIN, 20*FROM_ARCMIN, 100)
+THETAS = np.linspace(0.01*FROM_ARCMIN, 20*FROM_ARCMIN, 88)
 
 SEED = 13
 
-NUM_CLUSTERS = 400
+NUM_CLUSTERS = 101
 NUM_ERRORCHECK_SAMPLES = 1000
-NUM_PROCESSES = 12
+NUM_PROCESSES = 4
 
 MIN_SAMPLES = 200
 MAX_SAMPLES = 2000
@@ -94,7 +94,7 @@ def get_2h_emulator(two_halo_conv):
         mu_lims=np.log(np.array([1e13, 3e15])),
         num_emulator_samples=800,
         separate_mu_and_z_axes=True,
-    )
+    ).with_redshift_dependent_radii
 
 
 def get_corrected_lensing_func(density_model, two_halo_emulator):

@@ -23,7 +23,7 @@ USE_PRIOR = False
 MEAN_PRIOR_ALPHA = 0.88
 PRIOR_ALPHA_STD = 0.3
 LOWER_RADIUS_CUT = 0.1
-UPPER_RADIUS_CUT = 5
+UPPER_RADIUS_CUT = 12
 COV_MAGNITUDE = 1.3
 SIM_DATA = maszcal.data.sims.NBatta2010('data/NBatta2010/').cut_radii(LOWER_RADIUS_CUT, UPPER_RADIUS_CUT)
 NUM_EMULATOR_SAMPLES = 2400
@@ -34,6 +34,7 @@ NWALKERS = 600
 NSTEPS = 6000
 WALKER_DISPERSION = 4e-3
 DIR = 'data/NBatta2010/matching-model-fits/'
+COV_DIR = 'data/NBatta2010/covariance/'
 SETUP_SLUG = 'matching-baryons'
 
 
@@ -48,9 +49,26 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
+def cut_covariance_to_radial_range(covariance):
+    sim_data_full_radii = maszcal.data.sims.NBatta2010('data/NBatta2010/').radii
+    indices = np.arange(sim_data_full_radii.size)
+    cut_indices = indices[
+        (LOWER_RADIUS_CUT <= sim_data_full_radii) & (sim_data_full_radii <= UPPER_RADIUS_CUT),
+    ]
+    return covariance[
+        cut_indices[0]:cut_indices[-1]+1,
+        cut_indices[0]:cut_indices[-1]+1,
+    ]
+
+
 def get_covariance_and_fisher():
-    cov = np.identity(SIM_DATA.radii.size) * COV_MAGNITUDE
-    fisher = np.identity(SIM_DATA.radii.size) / COV_MAGNITUDE
+    cov_sn_all_radii = np.loadtxt(COV_DIR + 'cov_sn_stacked_nbatta2010.txt')
+    cov_lss_all_radii = np.loadtxt(COV_DIR + 'cov_lss_stacked_nbatta2010.txt')
+    cov_sn = cut_covariance_to_radial_range(cov_sn_all_radii)
+    cov_lss = cut_covariance_to_radial_range(cov_lss_all_radii)
+    cov = cov_lss + cov_sn
+    cov = np.diagflat(SIM_DATA.radii).T @ cov @ np.diagflat(SIM_DATA.radii)
+    fisher = np.linalg.inv(cov)
     return cov, fisher
 
 
