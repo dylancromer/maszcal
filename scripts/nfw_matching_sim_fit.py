@@ -80,11 +80,7 @@ def get_density_model():
 def get_wrapped_lensing_func(density_model):
     def wrapper(rs, zs, mus, cons):
         masses = np.exp(mus)
-        return np.moveaxis(
-            density_model.excess_surface_density(rs, zs, masses, cons),
-            0,
-            1,
-        )
+        return density_model.excess_surface_density(rs, zs, masses, cons)
     return wrapper
 
 
@@ -211,8 +207,11 @@ if __name__ == '__main__':
         PARAM_MAXES,
         method='global-differential-evolution',
     )
-
     print(f'Maximum likelihood parameters are: {best_fit}')
+
+    if not ((PARAM_MINS < best_fit).all() and (best_fit < PARAM_MAXES).all()):
+        best_fit = (PARAM_MAXES + PARAM_MINS)/2
+        print('Best fit is at edge of boundary: using middle of parameter space instead')
 
     ndim = PARAM_MINS.size
     initial_position = best_fit + WALKER_DISPERSION*np.random.randn(NWALKERS, ndim)
