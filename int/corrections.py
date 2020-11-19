@@ -171,7 +171,7 @@ def describe_2HaloCorrected_ScatteredMatchingConvergenceModel():
         def the_plots_look_right(convergence_model):
             from_arcmin = 2 * np.pi / 360 / 60
             to_arcmin = 1/from_arcmin
-            thetas = np.geomspace(0.05*from_arcmin, 60*from_arcmin, 60)
+            thetas = np.geomspace(0.01*from_arcmin, 60*from_arcmin, 60)
             cons = 3*np.ones(1)
             alphas = 0.5*np.ones(1)
             betas = 3.6*np.ones(1)
