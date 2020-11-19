@@ -14,7 +14,7 @@ import maszcal.likelihoods
 import maszcal.twohalo
 
 
-PARAM_MINS = np.array([-2, 0, 1, 0.1, 0.1])  # a_sz, con, alpha, beta
+PARAM_MINS = np.array([-2, 0, 1, 0.1, 2.2])  # a_sz, con, alpha, beta
 PARAM_MAXES = np.array([2, 5, 6, 2.1, 8.1])
 GAMMA = 0.2
 
@@ -31,8 +31,8 @@ THETAS = np.linspace(0.01*FROM_ARCMIN, 20*FROM_ARCMIN, 88)
 SEED = 13
 
 NUM_CLUSTERS = 101
-NUM_ERRORCHECK_SAMPLES = 1000
-NUM_PROCESSES = 4
+NUM_ERRORCHECK_SAMPLES = 10
+NUM_PROCESSES = 1
 
 MIN_SAMPLES = 200
 MAX_SAMPLES = 2000
@@ -199,7 +199,8 @@ def do_estimation(sample_size, num_pcs):
         alpha = params[3:4]
         beta = params[4:5]
         gamma = np.array([GAMMA])
-        return conv_model.stacked_convergence(THETAS, a_sz, a_2h, con, alpha, beta, gamma).squeeze()
+        conv = conv_model.stacked_convergence(THETAS, a_sz, a_2h, con, alpha, beta, gamma).squeeze()
+        return THETAS * conv
 
     convs = _pool_map(wrapped_conv_func, lh)
 
