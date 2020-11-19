@@ -63,11 +63,18 @@ class Convergence:
         )
 
     def convergence(self, rs, zs, mus, *rho_params, **kwargs):
-        return self.sd_func(
+        sds =  self.sd_func(
             rs,
             lambda r: self.rho_func(r, zs, mus, *rho_params),
             **self.sd_kwargs,
-        ) * (u.Msun/u.Mpc**2).to(self.units) / self.sigma_crit(z_lens=zs)[None, :, None]
+        ) * (u.Msun/u.Mpc**2).to(self.units)
+        sd_crits =  maszcal.mathutils.atleast_kd(
+            self.sigma_crit(z_lens=zs)[:, None],
+            sds.ndim,
+            append_dims=False,
+        )
+        return sds/sd_crits
+
 
 
 @dataclass
