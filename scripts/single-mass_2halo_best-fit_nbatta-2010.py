@@ -15,35 +15,35 @@ import maszcal.fitutils
 import maszcal.concentration
 import maszcal.emulate
 import maszcal.interpolate
+import maszcal.twohalo
+import maszcal.corrections
 
 
 np.seterr(all='ignore')
 
 
-NUM_PROCESSES = 12
+NUM_PROCESSES = 1
 DIR = 'data/NBatta2010/single-mass-bin-fits/'
 COV_DIR = 'data/NBatta2010/covariance/'
 TIMESTAMP = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
 
-NFW_PARAM_MINS = np.array([np.log(1e12), 1])
-NFW_PARAM_MAXES = np.array([np.log(8e15), 6])
-BARYON_PARAM_MINS = np.array([np.log(1e12), 1, 0.1, 2])
-BARYON_PARAM_MAXES = np.array([np.log(8e15), 6, 2, 7])
+NFW_PARAM_MINS = np.array([0, np.log(1e12), 1])
+NFW_PARAM_MAXES = np.array([5, np.log(8e15), 6])
+BARYON_PARAM_MINS = np.array([0, np.log(1e12), 1, 0.1, 2.1])
+BARYON_PARAM_MAXES = np.array([5, np.log(8e15), 6, 2, 7])
 
-LOWER_RADIUS_CUT = 0.125
-UPPER_RADIUS_CUT = 5
-
-COVARIANCE_REDUCTION_FACTOR = 1/400
+LOWER_RADIUS_CUT = 0.1
+UPPER_RADIUS_CUT = 12
 
 FIXED_GAMMA = np.array([0.2])
 
 SAMPLE_SEED = 13
-NUM_EMULATION_SAMPLES = 10
-NUM_ERRORCHECK_SAMPLES = 10
+NUM_EMULATION_SAMPLES = 1600
+NUM_ERRORCHECK_SAMPLES = 1000
 
-NSTEPS = 3
-NWALKERS = 10
-WALKER_DISPERSION = 1e-3
+NSTEPS = 8000
+NWALKERS = 600
+WALKER_DISPERSION = 2e-3
 
 SIM_DATA = maszcal.data.sims.NBatta2010().cut_radii(LOWER_RADIUS_CUT, UPPER_RADIUS_CUT)
 
@@ -127,6 +127,26 @@ def get_errorcheck_coords():
     )
 
 
+def get_two_halo_esd():
+    model = maszcal.twohalo.TwoHaloShearModel(
+        cosmo_params=SIM_DATA.cosmology,
+        mass_definition='crit',
+        delta=500,
+    )
+    return model.excess_surface_density
+
+
+def get_2halo_emulator(two_halo_esd):
+    return maszcal.twohalo.TwoHaloEmulator.from_function(
+        two_halo_func=two_halo_esd,
+        r_grid=np.geomspace(0.01, 100, 120),
+        z_lims=np.array([0, 1.2]),
+        mu_lims=np.log(np.array([1e13, 1e15])),
+        num_emulator_samples=800,
+        separate_mu_and_z_axes=True,
+    )
+
+
 def get_nfw_model(z):
     return maszcal.lensing.SingleMassNfwShearModel(
         redshifts=np.array([z]),
@@ -136,12 +156,15 @@ def get_nfw_model(z):
     )
 
 
-def get_wrapped_nfw_func(z):
+def get_wrapped_nfw_func(z, twohalo_emulator):
     single_mass_model = get_nfw_model(z)
-
+    def wrapped_smm(rs, mus, *one_halo_params):
+        return single_mass_model.excess_surface_density(rs[:, None], mus, *one_halo_params)
     def _wrapper(params):
-        mus, cons = params.T
-        return SIM_DATA.radii[:, None] * single_mass_model.excess_surface_density(SIM_DATA.radii, mus, cons).squeeze()
+        a_2hs, mus, cons = params.T
+        one_halo = wrapped_smm(SIM_DATA.radii, mus, cons).squeeze()
+        two_halo = a_2hs[None, :] * twohalo_emulator(SIM_DATA.radii, np.array([z]), mus).squeeze().T
+        return np.where(one_halo > two_halo, one_halo, two_halo)
     return _wrapper
 
 
@@ -160,19 +183,16 @@ def get_bary_model(z):
     )
 
 
-def get_wrapped_bary_func(z):
+def get_wrapped_bary_func(z, twohalo_emulator):
     single_mass_model = get_bary_model(z)
+    def wrapped_smm(rs, mus, *one_halo_params):
+        return single_mass_model.excess_surface_density(rs[:, None], mus, *one_halo_params)
     def _wrapper(params):
-        mus, cons, alphas, betas = params.T
+        a_2hs, mus, cons, alphas, betas = params.T
         gammas = np.ones_like(alphas) * FIXED_GAMMA
-        return SIM_DATA.radii[:, None] * single_mass_model.excess_surface_density(
-            SIM_DATA.radii,
-            mus,
-            cons,
-            alphas,
-            betas,
-            gammas,
-        ).squeeze()
+        one_halo = wrapped_smm(SIM_DATA.radii, mus, cons, alphas, betas, gammas).squeeze()
+        two_halo = a_2hs[None, :] * twohalo_emulator(SIM_DATA.radii, np.array([z]), mus).squeeze().T
+        return np.where(one_halo > two_halo, one_halo, two_halo)
     return _wrapper
 
 
@@ -220,10 +240,6 @@ def save(array, name):
     np.save(DIR + filename + '.npy', array)
 
 
-def get_sim_data():
-    return maszcal.data.sims.NBatta2010().cut_radii(LOWER_RADIUS_CUT, UPPER_RADIUS_CUT)
-
-
 def log_prob(params, radii, esd_model_func, esd_data, fisher_matrix):
     if np.all(PARAM_MINS < params) and np.all(params < PARAM_MAXES):
         return _log_like(params, radii, esd_model_func, esd_data, fisher_matrix)
@@ -261,6 +277,9 @@ if __name__ == '__main__':
     num_clusters = SIM_DATA.wl_signals.shape[-1]
     covs, fishers = get_covs_and_fishers()
 
+    twohalo_esd = get_two_halo_esd()
+    twohalo_emulator = get_2halo_emulator(twohalo_esd)
+
     print('Optimizing...')
 
     start_time = time.time()
@@ -269,12 +288,16 @@ if __name__ == '__main__':
     best_fits = np.zeros(params_shape)
     ndim = PARAM_MINS.size
     for i, z in enumerate(SIM_DATA.redshifts):
-        wrapped_lensing_func = get_wrapped_lensing_func(z)
+        wrapped_lensing_func = get_wrapped_lensing_func(z, twohalo_emulator)
+
+        print('Building emulator...')
 
         emulator = get_emulator(z, wrapped_lensing_func)
         emulator_errors = estimate_emulator_errors(emulator, wrapped_lensing_func)
 
-        save(emulator_errors, f'{args.model_slug}-emulator-errors_redshift-{z}_bin-{i}')
+        save(emulator_errors, f'2halo-{args.model_slug}-emulator-errors_redshift-{z}_bin-{i}')
+
+        print(f'Finding maximum prob for the i={i} redshift bin...')
 
         best_fits[:, :, i] = calculate_best_fits(i, z, SIM_DATA, fishers[i], emulator)
 
