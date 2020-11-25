@@ -67,13 +67,42 @@ def describe_PcaEmulator():
         new_coords = np.linspace(0.1, 0.9, 20)
         assert emulator(new_coords).shape == (10, 20)
 
-    def create_from_data(coords, data):
+    def it_can_be_created_from_data_directly(coords, data):
         emulator = maszcal.emulate.PcaEmulator.create_from_data(
             coords=coords,
             data=data,
             interpolator_class=maszcal.interpolate.RbfInterpolator,
-            interpolator_kwargs={}
+            interpolator_kwargs={},
         )
 
         new_coords = np.linspace(0.1, 0.9, 20)
         assert emulator(new_coords).shape == (10, 20)
+
+    def describe_radial_interpolation():
+
+        @pytest.fixture
+        def radial_grid():
+            return np.geomspace(1e-1, 1e1, 30)
+
+        @pytest.fixture
+        def coords():
+            return np.random.rand(10, 2)
+
+        @pytest.fixture
+        def data(radial_grid, coords):
+            a = coords[:, 0][None, :]
+            b = coords[:, 1][None, :]
+            return a*radial_grid[:, None] + b
+
+        def it_can_interpolate_over_radii(data, coords, radial_grid):
+            emulator = maszcal.emulate.PcaEmulator.create_from_data(
+                coords=coords,
+                data=data,
+                interpolator_class=maszcal.interpolate.RbfInterpolator,
+                interpolator_kwargs={},
+            )
+            new_coords = 0.8*np.random.rand(5, 2) - 0.1
+            new_radii = np.linspace(0.5, 8, 20)
+            assert not np.any(np.isnan(emulator.with_new_radii(radial_grid, new_radii, new_coords)))
+            assert emulator.with_new_radii(radial_grid, new_radii, new_coords).shape == (20, 5)
+

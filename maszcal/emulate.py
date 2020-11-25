@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from types import MappingProxyType
 import numpy as np
+import scipy.interpolate
 import pality
 
 
@@ -59,6 +60,14 @@ class PcaEmulator:
 
     def __call__(self, coords):
         return self.reconstruct_data(coords)
+
+    def with_new_radii(self, old_radii, new_radii, coords):
+        return scipy.interpolate.interp1d(
+            old_radii,
+            self.reconstruct_data(coords),
+            kind='cubic',
+            axis=0,
+        )(new_radii)
 
     @classmethod
     def create_from_data(cls, coords, data, interpolator_class, interpolator_kwargs=MappingProxyType({}), num_components=10):
