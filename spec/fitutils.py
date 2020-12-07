@@ -18,3 +18,13 @@ def describe_global_minimize():
         )
 
         assert np.allclose(result, np.array([1, 2, 3]))
+
+    def it_can_minimize_a_3d_polynomial_with_dual_annealing(polyfunc):
+        result = maszcal.fitutils.global_minimize(
+            polyfunc,
+            param_mins=np.array([0, 0, 0]),
+            param_maxes=np.array([4, 4, 4]),
+            method='global-dual-annealing',
+        )
+
+        assert np.allclose(result, np.array([1, 2, 3]), rtol=1e-3)

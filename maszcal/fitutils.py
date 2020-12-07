@@ -2,9 +2,18 @@ import numpy as np
 import scipy.optimize
 
 
+def _dual_annealing(func, bounds):
+    return scipy.optimize.dual_annealing(func, bounds)
+
+
+def _diffy_evo(func, bounds):
+    return scipy.optimize.differential_evolution(func, bounds)
+
+
 def _select_global_backend(method_name):
     available_methods = {
-        'global-differential-evolution': scipy.optimize.differential_evolution,
+        'global-differential-evolution': _diffy_evo,
+        'global-dual-annealing': _dual_annealing,
     }
 
     try:
