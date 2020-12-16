@@ -19,13 +19,14 @@ import maszcal.twohalo
 PARAM_MINS = np.array([-2, 1])  # a_sz, con
 PARAM_MAXES = np.array([2, 6])
 LOWER_RADIUS_CUT = 0.1
-UPPER_RADIUS_CUT = 12
+UPPER_RADIUS_CUT = 5
 COV_MAGNITUDE = 1.3
 SIM_DATA = maszcal.data.sims.NBatta2010('data/NBatta2010/').cut_radii(LOWER_RADIUS_CUT, UPPER_RADIUS_CUT)
-NUM_EMULATOR_SAMPLES = 1000
-NUM_ERRORCHECK_SAMPLES = 800
+NUM_EMULATOR_SAMPLES = 1002
+NUM_ERRORCHECK_SAMPLES = 1000
 NUM_PROCESSES = 12
 NUM_PRINCIPAL_COMPONENTS = 8
+SAMPLE_SEED = 314
 NWALKERS = 600
 NSTEPS = 6000
 WALKER_DISPERSION = 4e-3
@@ -157,7 +158,7 @@ def generate_chain_filename():
 if __name__ == '__main__':
     print('Creating emulator...')
 
-    lh = supercubos.LatinSampler().get_sym_sample(PARAM_MINS, PARAM_MAXES, NUM_EMULATOR_SAMPLES)
+    lh = supercubos.LatinSampler(rng=np.random.default_rng(seed=SAMPLE_SEED)).get_lh_sample(PARAM_MINS, PARAM_MAXES, NUM_EMULATOR_SAMPLES)
 
     density_model = get_density_model()
     wrapped_nfw_func = get_wrapped_lensing_func(density_model)

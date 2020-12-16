@@ -23,12 +23,13 @@ USE_PRIOR = False
 MEAN_PRIOR_ALPHA = 0.88
 PRIOR_ALPHA_STD = 0.3
 LOWER_RADIUS_CUT = 0.1
-UPPER_RADIUS_CUT = 12
+UPPER_RADIUS_CUT = 5
 COV_MAGNITUDE = 1.3
 SIM_DATA = maszcal.data.sims.NBatta2010('data/NBatta2010/').cut_radii(LOWER_RADIUS_CUT, UPPER_RADIUS_CUT)
 NUM_EMULATOR_SAMPLES = 2400
-NUM_ERRORCHECK_SAMPLES = 800
+NUM_ERRORCHECK_SAMPLES = 1000
 NUM_PRINCIPAL_COMPONENTS = 10
+SAMPLE_SEED = 314
 NUM_PROCESSES = 12
 NWALKERS = 600
 NSTEPS = 10000
@@ -185,7 +186,7 @@ def generate_chain_filename():
 if __name__ == '__main__':
     print('Creating emulator...')
 
-    lh = supercubos.LatinSampler().get_sym_sample(PARAM_MINS, PARAM_MAXES, NUM_EMULATOR_SAMPLES)
+    lh = supercubos.LatinSampler(rng=np.random.default_rng(seed=SAMPLE_SEED)).get_lh_sample(PARAM_MINS, PARAM_MAXES, NUM_EMULATOR_SAMPLES)
 
     density_model = get_density_model()
     two_halo_esd = get_two_halo_esd()

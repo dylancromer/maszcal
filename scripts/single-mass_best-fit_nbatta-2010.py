@@ -27,25 +27,25 @@ TIMESTAMP = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
 
 NFW_PARAM_MINS = np.array([np.log(1e12), 1])
 NFW_PARAM_MAXES = np.array([np.log(8e15), 6])
-BARYON_PARAM_MINS = np.array([np.log(1e12), 1, 0.1, 2])
+BARYON_PARAM_MINS = np.array([np.log(1e12), 1, 0.1, 2.1])
 BARYON_PARAM_MAXES = np.array([np.log(8e15), 6, 2, 7])
 
-LOWER_RADIUS_CUT = 0.125
+LOWER_RADIUS_CUT = 0.1
 UPPER_RADIUS_CUT = 5
-
-COVARIANCE_REDUCTION_FACTOR = 1/400
 
 FIXED_GAMMA = np.array([0.2])
 
 SAMPLE_SEED = 13
-NUM_EMULATION_SAMPLES = 10
-NUM_ERRORCHECK_SAMPLES = 10
+NUM_EMULATION_SAMPLES = 2000
+NUM_ERRORCHECK_SAMPLES = 1000
 
-NSTEPS = 3
-NWALKERS = 10
+NSTEPS = 6000
+NWALKERS = 600
 WALKER_DISPERSION = 1e-3
 
 SIM_DATA = maszcal.data.sims.NBatta2010().cut_radii(LOWER_RADIUS_CUT, UPPER_RADIUS_CUT)
+
+DO_MCMC = False
 
 
 class bcolors:
@@ -95,7 +95,7 @@ def _log_like(params, radii, esd_model_func, esd_data, fisher_matrix):
 
 def _get_best_fit(esd_data, radii, esd_model_func, fisher_matrix, param_mins, param_maxes):
     def func_to_minimize(params): return -_log_like(params, radii, esd_model_func, esd_data, fisher_matrix)
-    return maszcal.fitutils.global_minimize(func_to_minimize, param_mins, param_maxes, 'global-differential-evolution')
+    return maszcal.fitutils.global_minimize(func_to_minimize, param_mins, param_maxes, 'global-dual-annealing')
 
 
 def _pool_map(func, array, *args):
@@ -141,7 +141,7 @@ def get_wrapped_nfw_func(z):
 
     def _wrapper(params):
         mus, cons = params.T
-        return SIM_DATA.radii[:, None] * single_mass_model.excess_surface_density(SIM_DATA.radii, mus, cons).squeeze()
+        return SIM_DATA.radii[:, None] * single_mass_model.excess_surface_density(SIM_DATA.radii[:, None], mus, cons).squeeze()
     return _wrapper
 
 
@@ -166,7 +166,7 @@ def get_wrapped_bary_func(z):
         mus, cons, alphas, betas = params.T
         gammas = np.ones_like(alphas) * FIXED_GAMMA
         return SIM_DATA.radii[:, None] * single_mass_model.excess_surface_density(
-            SIM_DATA.radii,
+            SIM_DATA.radii[:, None],
             mus,
             cons,
             alphas,
@@ -278,20 +278,21 @@ if __name__ == '__main__':
 
         best_fits[:, :, i] = calculate_best_fits(i, z, SIM_DATA, fishers[i], emulator)
 
-        print(f'Beginning MCMC for the i={i} redshift bin...')
+        if DO_MCMC:
+            print(f'Beginning MCMC for the i={i} redshift bin...')
 
-        def esd_model_func(radii, params): return emulator(params[None, :])
+            def esd_model_func(radii, params): return emulator(params[None, :])
 
-        def do_mcmc_fit(fit, i, j):
-            initial_position = fit + WALKER_DISPERSION*np.random.randn(NWALKERS, ndim)
-            log_prob_args = (SIM_DATA.radii, esd_model_func, SIM_DATA.wl_signals[:, i, j], fishers[i])
-            chain_filename = generate_chain_filename(i, j, args.model_slug)
-            backend = emcee.backends.HDFBackend(chain_filename)
-            backend.reset(NWALKERS, ndim)
-            sampler = emcee.EnsembleSampler(NWALKERS, ndim, log_prob, args=log_prob_args, backend=backend)
-            sampler.run_mcmc(initial_position, NSTEPS)
+            def do_mcmc_fit(fit, i, j):
+                initial_position = fit + WALKER_DISPERSION*np.random.randn(NWALKERS, ndim)
+                log_prob_args = (SIM_DATA.radii, esd_model_func, SIM_DATA.wl_signals[:, i, j], fishers[i])
+                chain_filename = generate_chain_filename(i, j, args.model_slug)
+                backend = emcee.backends.HDFBackend(chain_filename)
+                backend.reset(NWALKERS, ndim)
+                sampler = emcee.EnsembleSampler(NWALKERS, ndim, log_prob, args=log_prob_args, backend=backend)
+                sampler.run_mcmc(initial_position, NSTEPS)
 
-        _pool_map(do_mcmc_fit, best_fits[:, :, i].T, [i for k in range(SIM_DATA.redshifts.size)], np.arange(SIM_DATA.masses.shape[1]))
+            _pool_map(do_mcmc_fit, best_fits[:, :, i].T, [i for k in range(SIM_DATA.redshifts.size)], np.arange(SIM_DATA.masses.shape[1]))
 
     save(best_fits, args.model_slug+'_best-fit')
 
