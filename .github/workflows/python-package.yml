@@ -37,11 +37,11 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        pip install flake8 pytest pytest-describe pytest-mock pretend wheel setuptools
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Setup
       run: |
         sudo apt-get install gfortran
-        pip install flake8 pytest pytest-describe pytest-mock pretend wheel setuptools
         pip install -e .
     - name: Lint with flake8
       run: |
