@@ -15,5 +15,6 @@ pytest-describe==1.0.0
 pytest-mock==3.2.0
 scikit-learn==0.23.1
 scipy==1.5.2
+six==1.15.0
 -e git+https://github.com/dylancromer/smolyak.git#egg=smolyak
 -e git+https://github.com/dylancromer/supercubos.git#egg=supercubos
