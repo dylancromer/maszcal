@@ -1,3 +1,4 @@
+import os
 import pytest
 import numpy as np
 import maszcal.emulate
@@ -106,3 +107,28 @@ def describe_PcaEmulator():
             assert not np.any(np.isnan(emulator.with_new_radii(radial_grid, new_radii, new_coords)))
             assert emulator.with_new_radii(radial_grid, new_radii, new_coords).shape == (20, 5)
 
+    def describe_saving():
+
+        @pytest.fixture
+        def coords():
+            return np.linspace(0, 1, 10)
+
+        @pytest.fixture
+        def data():
+            return np.ones((30, 10)) + 1e-4*np.random.randn(30, 10)
+
+        def it_can_save_and_load_the_interpolation_parameters(coords, data):
+            emulator = maszcal.emulate.PcaEmulator.create_from_data(
+                coords=coords,
+                data=data,
+                interpolator_class=maszcal.interpolate.RbfInterpolator,
+                interpolator_kwargs={},
+            )
+            new_coords = np.linspace(0.2, 0.8, 12)
+            assert np.allclose(emulator(new_coords), 1, atol=1e-2)
+
+            maszcal.emulate.save_pca_emulator('test.emulator', emulator)
+
+            new_emulator = maszcal.emulate.load_pca_emulator('test.emulator')
+            os.remove('test.emulator')
+            assert np.allclose(new_emulator(new_coords), 1, atol=1e-2)

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from types import MappingProxyType
+import dill
 import numpy as np
 import scipy.interpolate
 import pality
@@ -85,3 +86,14 @@ class PcaEmulator:
             interpolator_class=interpolator_class,
             interpolator_kwargs=interpolator_kwargs,
         )
+
+
+def save_pca_emulator(filename, emulator):
+    with open(filename, 'wb') as file:
+        dill.dump(emulator, file)
+
+
+def load_pca_emulator(filename):
+    with open(filename, 'rb') as file:
+        emulator = dill.load(file)
+    return emulator
