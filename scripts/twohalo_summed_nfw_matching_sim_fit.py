@@ -16,12 +16,15 @@ import maszcal.likelihoods
 import maszcal.twohalo
 
 
-PARAM_MINS = np.array([-2, 0, 1])  # a_sz, a_2h, con
-PARAM_MAXES = np.array([2, 5, 6])
+PARAM_MINS = np.array([-2, 1])  # a_sz, con
+PARAM_MAXES = np.array([2, 6])
+A_2H_MIN = 0
+A_2H_MAX = 5
 LOWER_RADIUS_CUT = 0.1
 UPPER_RADIUS_CUT = 5
 COV_MAGNITUDE = 1.3
 SIM_DATA = maszcal.data.sims.NBatta2010('data/NBatta2010/').cut_radii(LOWER_RADIUS_CUT, UPPER_RADIUS_CUT)
+NUM_A_SZ_SAMPLES = 40
 NUM_EMULATOR_SAMPLES = 1200
 NUM_ERRORCHECK_SAMPLES = 1000
 NUM_PROCESSES = 6
@@ -32,7 +35,7 @@ NSTEPS = 6000
 WALKER_DISPERSION = 4e-3
 DIR = 'data/NBatta2010/matching-model-fits/'
 COV_DIR = 'data/NBatta2010/covariance/'
-SETUP_SLUG = 'matching-twohalo-nfw-only'
+SETUP_SLUG = 'matching-twohalosum-nfw-only'
 
 
 class bcolors:
@@ -94,7 +97,7 @@ def get_two_halo_esd():
     return model.excess_surface_density
 
 
-def get_esd_emulator(two_halo_esd):
+def get_2halo_emulator(two_halo_esd):
     return maszcal.twohalo.TwoHaloEmulator.from_function(
         two_halo_func=two_halo_esd,
         r_grid=np.geomspace(0.01, 100, 120),
@@ -104,14 +107,7 @@ def get_esd_emulator(two_halo_esd):
     )
 
 
-def get_corrected_lensing_func(wrapped_lensing_func, esd_emulator):
-    return maszcal.corrections.Matching2HaloCorrection(
-        one_halo_func=wrapped_lensing_func,
-        two_halo_func=esd_emulator,
-    ).corrected_profile
-
-
-def get_shear_model(corrected_lensing_func):
+def get_shear_model(lensing_func):
     masses = SIM_DATA.masses
     zs = np.repeat(SIM_DATA.redshifts, masses.shape[1])
     masses = masses.flatten()
@@ -120,7 +116,7 @@ def get_shear_model(corrected_lensing_func):
         sz_masses=masses,
         redshifts=zs,
         lensing_weights=weights,
-        lensing_func=corrected_lensing_func,
+        lensing_func=lensing_func,
     )
 
 def _pool_map(func, array):
@@ -182,39 +178,45 @@ def generate_chain_filename():
 
 
 if __name__ == '__main__':
-    print('Creating emulator...')
+    print('Creating 2 halo term...')
+    two_halo_esd = get_two_halo_esd()
+    _two_halo_emulator = get_2halo_emulator(two_halo_esd)
+    def two_halo_emulator(*args):
+        return np.moveaxis(_two_halo_emulator(*args), 1, 0)
+    two_halo_shear_model = get_shear_model(two_halo_emulator)
+    def wrapped_2h_esd(a_sz): return two_halo_shear_model.stacked_excess_surface_density(SIM_DATA.radii, a_sz)
+    two_halo_esds = wrapped_2h_esd(np.zeros(1))
+    two_halo_data = (SIM_DATA.radii * two_halo_esds.squeeze())[:, None]
 
-    lh = supercubos.LatinSampler(rng=np.random.default_rng(seed=SAMPLE_SEED)).get_lh_sample(PARAM_MINS, PARAM_MAXES, NUM_EMULATOR_SAMPLES)
-
+    print('Creating 1 halo emulator...')
+    one_halo_lh = supercubos.LatinSampler(rng=np.random.default_rng(seed=SAMPLE_SEED)).get_lh_sample(PARAM_MINS, PARAM_MAXES, NUM_EMULATOR_SAMPLES)
     density_model = get_density_model()
     wrapped_nfw_func = get_wrapped_lensing_func(density_model)
-    two_halo_esd = get_two_halo_esd()
-    esd_emulator = get_esd_emulator(two_halo_esd)
-    corrected_lensing_func = get_corrected_lensing_func(wrapped_nfw_func, esd_emulator)
-    shear_model = get_shear_model(corrected_lensing_func)
+    one_halo_shear_model = get_shear_model(wrapped_nfw_func)
 
-    def wrapped_esd_func(params):
+    def wrapped_1h_esd_func(params):
         a_sz = params[0:1]
-        a_2h = params[1:2]
-        con = params[2:3]
-        return shear_model.stacked_excess_surface_density(SIM_DATA.radii, a_sz, a_2h, con).squeeze()
+        con = params[1:2]
+        return one_halo_shear_model.stacked_excess_surface_density(SIM_DATA.radii, a_sz, con).squeeze()
 
-    esds = _pool_map(wrapped_esd_func, lh)
-
-    data = SIM_DATA.radii[:, None] * esds
-    emulator = maszcal.emulate.PcaEmulator.create_from_data(
-        coords=lh,
-        data=data,
+    one_halo_esds = _pool_map(wrapped_1h_esd_func, one_halo_lh)
+    one_halo_data = SIM_DATA.radii[:, None] * one_halo_esds
+    one_halo_emulator = maszcal.emulate.PcaEmulator.create_from_data(
+        coords=one_halo_lh,
+        data=one_halo_data,
         interpolator_class=maszcal.interpolate.GaussianProcessInterpolator,
         interpolator_kwargs={'kernel': Matern()},
         num_components=NUM_PRINCIPAL_COMPONENTS,
     )
 
-    print('Saving emulator error samples...')
+    print('Saving 1 halo emulator error samples...')
+    one_halo_emulator_errs = get_emulator_errors(PARAM_MINS, PARAM_MAXES, one_halo_emulator, wrapped_1h_esd_func)
+    save_arr(one_halo_emulator_errs, SETUP_SLUG+'-1h-emulation-errors')
 
-    emulator_errs = get_emulator_errors(PARAM_MINS, PARAM_MAXES, emulator, wrapped_esd_func)
-
-    save_arr(emulator_errs, SETUP_SLUG+'-emulation-errors')
+    def full_emulator(params):
+        a_2h = params[0]
+        one_halo_params = params[1:]
+        return one_halo_emulator(one_halo_params[None, :]) + a_2h*two_halo_data
 
     cov, fisher = get_covariance_and_fisher()
     prefactor = 1/np.log((2*np.pi)**(cov.shape[0]/2) * np.sqrt(np.linalg.det(cov)))
@@ -222,11 +224,14 @@ if __name__ == '__main__':
     sim_stack = SIM_DATA.radii * (SIM_DATA.wl_signals.mean(axis=(1, 2)))
 
     def log_like(params, data):
-        model = emulator(params[None, :]).flatten()
+        model = full_emulator(params).flatten()
         return prefactor + maszcal.likelihoods.log_gaussian_shape(model, data, fisher)
 
+    full_param_mins = np.concatenate((np.array([A_2H_MIN]), PARAM_MINS))
+    full_param_maxes = np.concatenate((np.array([A_2H_MAX]), PARAM_MAXES))
+
     def log_prob(params, data):
-        if np.all(PARAM_MINS < params) and np.all(params < PARAM_MAXES):
+        if np.all(full_param_mins < params) and np.all(params < full_param_maxes):
             return log_like(params, data)
         else:
             return - np.inf
@@ -235,14 +240,14 @@ if __name__ == '__main__':
 
     best_fit = maszcal.fitutils.global_minimize(
         lambda p: -log_like(p, sim_stack),
-        PARAM_MINS,
-        PARAM_MAXES,
+        full_param_mins,
+        full_param_maxes,
         method='global-differential-evolution',
     )
 
     print(f'Maximum likelihood parameters are: {best_fit}')
 
-    ndim = PARAM_MINS.size
+    ndim = full_param_mins.size
     initial_position = best_fit + WALKER_DISPERSION*np.random.randn(NWALKERS, ndim)
 
     chain_filename = generate_chain_filename()

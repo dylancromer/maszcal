@@ -25,7 +25,7 @@ USE_PRIOR = False
 MEAN_PRIOR_ALPHA = 0.88
 PRIOR_ALPHA_STD = 0.3
 LOWER_RADIUS_CUT = 0.1
-UPPER_RADIUS_CUT = 12
+UPPER_RADIUS_CUT = 5
 COV_MAGNITUDE = 1.3
 SIM_DATA = maszcal.data.sims.NBatta2010('data/NBatta2010/').cut_radii(LOWER_RADIUS_CUT, UPPER_RADIUS_CUT)
 NUM_A_SZ_SAMPLES = 40
@@ -182,27 +182,15 @@ def generate_chain_filename():
 
 
 if __name__ == '__main__':
-    print('Creating 2 halo emulator...')
-    two_halo_a_sz_sample = np.linspace(PARAM_MINS[0], PARAM_MAXES[0], NUM_A_SZ_SAMPLES)
+    print('Creating 2 halo term...')
     two_halo_esd = get_two_halo_esd()
     _two_halo_emulator = get_2halo_emulator(two_halo_esd)
     def two_halo_emulator(*args):
         return np.moveaxis(_two_halo_emulator(*args), 1, 0)
     two_halo_shear_model = get_shear_model(two_halo_emulator)
     def wrapped_2h_esd(a_sz): return two_halo_shear_model.stacked_excess_surface_density(SIM_DATA.radii, a_sz)
-    two_halo_esds = wrapped_2h_esd(two_halo_a_sz_sample)
-    two_halo_data = SIM_DATA.radii[:, None] * two_halo_esds.squeeze(axis=2)
-    two_halo_emulator = maszcal.emulate.PcaEmulator.create_from_data(
-        coords=two_halo_a_sz_sample,
-        data=two_halo_data,
-        interpolator_class=maszcal.interpolate.GaussianProcessInterpolator,
-        interpolator_kwargs={'kernel': Matern()},
-        num_components=NUM_PRINCIPAL_COMPONENTS,
-    )
-
-    print('Saving 2 halo emulator error samples...')
-    two_halo_emulator_errs = get_emulator_errors(PARAM_MINS[0:1], PARAM_MAXES[0:1], two_halo_emulator, wrapped_2h_esd)
-    save_arr(two_halo_emulator_errs, SETUP_SLUG+'-2h-emulation-errors')
+    two_halo_esds = wrapped_2h_esd(np.zeros(1))
+    two_halo_data = (SIM_DATA.radii * two_halo_esds.squeeze())[:, None]
 
     print('Creating 1 halo emulator...')
     one_halo_lh = supercubos.LatinSampler(rng=np.random.default_rng(seed=SAMPLE_SEED)).get_lh_sample(PARAM_MINS, PARAM_MAXES, NUM_EMULATOR_SAMPLES)
@@ -234,8 +222,7 @@ if __name__ == '__main__':
     def full_emulator(params):
         a_2h = params[0]
         one_halo_params = params[1:]
-        a_sz = params[1:2]
-        return one_halo_emulator(one_halo_params[None, :]) + a_2h*two_halo_emulator(a_sz)
+        return one_halo_emulator(one_halo_params[None, :]) + a_2h*two_halo_data
 
     cov, fisher = get_covariance_and_fisher()
     prefactor = 1/np.log((2*np.pi)**(cov.shape[0]/2) * np.sqrt(np.linalg.det(cov)))
