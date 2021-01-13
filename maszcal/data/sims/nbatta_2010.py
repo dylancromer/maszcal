@@ -10,11 +10,12 @@ class NBatta2010(WeakLensingData):
         rs, wl_signals, zs, masses = self._load_data(data_dir)
 
         super().__init__(
-            radii=rs,
+            radial_coordinates=rs,
             redshifts=zs,
             wl_signals=wl_signals,
             masses=masses,
         )
+        self.radii = rs
 
     def _init_cosmology(self):
         omega_bary = 0.044
@@ -37,14 +38,13 @@ class NBatta2010(WeakLensingData):
     @staticmethod
     def from_data(radii, redshifts, wl_signals, masses, cosmology):
         wl_data_instance = WeakLensingData(
-            radii=radii,
+            radial_coordinates=radii,
             redshifts=redshifts,
             wl_signals=wl_signals,
             masses=masses,
         )
-
+        wl_data_instance.radii = radii
         wl_data_instance.cosmology = cosmology
-
         return wl_data_instance
 
     def __load_cluster_masses(self, data_dir, snapshot_number, num_clusters):
