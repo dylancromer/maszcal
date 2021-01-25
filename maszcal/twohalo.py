@@ -106,8 +106,8 @@ class TwoHaloModel:
 
     def matter_density(self, zs):
         if self.COMOVING:
-            return np.ones_like(zs)*(self.astropy_cosmology.Om0
-                    * self.astropy_cosmology.critical_density0).to(u.Msun/u.Mpc**3).value
+            return (np.ones_like(zs)*(self.astropy_cosmology.Om0
+                    * self.astropy_cosmology.critical_density0).to(u.Msun/u.Mpc**3).value)
         else:
             return (self.astropy_cosmology.Om(zs)
                     * self.astropy_cosmology.critical_density(zs)).to(u.Msun/u.Mpc**3).value
@@ -243,7 +243,7 @@ class TwoHaloEmulator:
         return wrapped_emulator
 
     def _get_emulator(self, z_mu_samples, sampled_two_halo_term):
-        emulator_ =  maszcal.emulate.PcaEmulator.create_from_data(
+        emulator_ = maszcal.emulate.PcaEmulator.create_from_data(
             z_mu_samples,
             sampled_two_halo_term.T,
             interpolator_class=self.INTERPOLATOR_CLASS,

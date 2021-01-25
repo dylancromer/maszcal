@@ -1,12 +1,9 @@
 from dataclasses import dataclass
 import numpy as np
-import astropy.units as u
-import projector
 import maszcal.density
 import maszcal.cosmology
 import maszcal.lensing
 import maszcal.mathutils
-import maszcal.interp_utils
 
 
 @dataclass
