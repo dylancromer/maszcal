@@ -13,6 +13,9 @@ tests/xarray_concentration_integ.py
 tests/test.py
 stats.sh
 *.h5
+data/test-act/*.txt
+data/test-act/*.fits
+data/test-act/matching-model-fits/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

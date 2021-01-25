@@ -30,7 +30,8 @@ class ActTestData(StackedWeakLensingData):
         bin_1 = np.loadtxt(data_dir + '1ycbin050075.txt')
         bin_2 = np.loadtxt(data_dir + '2ycbin075100.txt')
         bin_3 = np.loadtxt(data_dir + '3ycbin100.txt')
-        zs, ms = np.concatenate((bin_0, bin_1, bin_2, bin_3), axis=0).T
+        #zs, ms = np.concatenate((bin_0, bin_1, bin_2, bin_3), axis=0).T
+        zs, ms = bin_2.T
         return zs, 1e14*ms
 
     def _get_thetas(self, data_dir):
