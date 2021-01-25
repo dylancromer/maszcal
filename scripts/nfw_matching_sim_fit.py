@@ -125,14 +125,14 @@ def get_emulator_errors(PARAM_MINS, PARAM_MAXES, emulator, esd_func):
 def generate_header():
     terminator = '\n'
     configs = [
-        f'PARAM_MINS = {PARAM_MINS}'
-        f'PARAM_MAXES = {PARAM_MAXES}'
-        f'LOWER_RADIUS_CUT = {LOWER_RADIUS_CUT}'
-        f'UPPER_RADIUS_CUT = {UPPER_RADIUS_CUT}'
-        f'COV_MAGNITUDE = {COV_MAGNITUDE}'
-        f'WALKER_DISPERSION = {WALKER_DISPERSION}'
-        f'NUM_EMULATOR_SAMPLES = {NUM_EMULATOR_SAMPLES}'
-        f'NUM_PRINCIPAL_COMPONENTS = {NUM_PRINCIPAL_COMPONENTS}'
+        f'PARAM_MINS = {PARAM_MINS}',
+        f'PARAM_MAXES = {PARAM_MAXES}',
+        f'LOWER_RADIUS_CUT = {LOWER_RADIUS_CUT}',
+        f'UPPER_RADIUS_CUT = {UPPER_RADIUS_CUT}',
+        f'COV_MAGNITUDE = {COV_MAGNITUDE}',
+        f'WALKER_DISPERSION = {WALKER_DISPERSION}',
+        f'NUM_EMULATOR_SAMPLES = {NUM_EMULATOR_SAMPLES}',
+        f'NUM_PRINCIPAL_COMPONENTS = {NUM_PRINCIPAL_COMPONENTS}',
     ]
     header = [conf + terminator for conf in configs]
     return ''.join(header)

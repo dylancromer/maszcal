@@ -7,7 +7,7 @@ import multiprocessing
 import supercubos
 import maszcal.cosmology
 import maszcal.corrections
-import maszcal.data.sims
+import maszcal.data.test
 import maszcal.data.obs
 import maszcal.density
 import maszcal.fitutils
@@ -20,21 +20,17 @@ PARAM_MINS = np.array([-2, 1])  # a_sz, con
 PARAM_MAXES = np.array([2, 6])
 A_2H_MIN = 0
 A_2H_MAX = 5
-LOWER_RADIUS_CUT = 0.1
-UPPER_RADIUS_CUT = 5
-COV_MAGNITUDE = 1.3
-SIM_DATA = maszcal.data.sims.NBatta2010('data/NBatta2010/').cut_radii(LOWER_RADIUS_CUT, UPPER_RADIUS_CUT)
+DATA = maszcal.data.test.ActTestData('data/test-act/')
 NUM_A_SZ_SAMPLES = 40
-NUM_EMULATOR_SAMPLES = 1200
-NUM_ERRORCHECK_SAMPLES = 1000
+NUM_EMULATOR_SAMPLES = 12
+NUM_ERRORCHECK_SAMPLES = 10
 NUM_PROCESSES = 6
 NUM_PRINCIPAL_COMPONENTS = 8
 SAMPLE_SEED = 314
 NWALKERS = 600
 NSTEPS = 6000
 WALKER_DISPERSION = 4e-3
-DIR = 'data/NBatta2010/matching-model-fits/'
-COV_DIR = 'data/NBatta2010/covariance/'
+DIR = 'data/test-act/matching-model-fits/'
 SETUP_SLUG = 'matching-twohalosum-nfw-only'
 
 
@@ -147,14 +143,14 @@ def get_emulator_errors(PARAM_MINS, PARAM_MAXES, emulator, esd_func):
 def generate_header():
     terminator = '\n'
     configs = [
-        f'PARAM_MINS = {PARAM_MINS}',
-        f'PARAM_MAXES = {PARAM_MAXES}',
-        f'LOWER_RADIUS_CUT = {LOWER_RADIUS_CUT}',
-        f'UPPER_RADIUS_CUT = {UPPER_RADIUS_CUT}',
-        f'COV_MAGNITUDE = {COV_MAGNITUDE}',
-        f'WALKER_DISPERSION = {WALKER_DISPERSION}',
-        f'NUM_EMULATOR_SAMPLES = {NUM_EMULATOR_SAMPLES}',
-        f'NUM_PRINCIPAL_COMPONENTS = {NUM_PRINCIPAL_COMPONENTS}',
+        f'PARAM_MINS = {PARAM_MINS}'
+        f'PARAM_MAXES = {PARAM_MAXES}'
+        f'LOWER_RADIUS_CUT = {LOWER_RADIUS_CUT}'
+        f'UPPER_RADIUS_CUT = {UPPER_RADIUS_CUT}'
+        f'COV_MAGNITUDE = {COV_MAGNITUDE}'
+        f'WALKER_DISPERSION = {WALKER_DISPERSION}'
+        f'NUM_EMULATOR_SAMPLES = {NUM_EMULATOR_SAMPLES}'
+        f'NUM_PRINCIPAL_COMPONENTS = {NUM_PRINCIPAL_COMPONENTS}'
     ]
     header = [conf + terminator for conf in configs]
     return ''.join(header)

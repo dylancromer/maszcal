@@ -14,8 +14,8 @@ import maszcal.likelihoods
 import maszcal.twohalo
 
 
-PARAM_MINS = np.array([-2, 0, 1, 0.1, 0.1])  # a_sz, con, alpha, beta
-PARAM_MAXES = np.array([2, 5, 6, 2.1, 8.1])
+PARAM_MINS = np.array([-2, 1, 0.1, 0.1])  # a_sz, con, alpha, beta
+PARAM_MAXES = np.array([2, 6, 2.1, 8.1])
 GAMMA = 0.2
 
 MIN_MU = np.log(3e13)
@@ -41,7 +41,7 @@ FID_PRINCIPAL_COMPONENTS = 8
 
 TIMESTAMP = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
 DIR = 'data/emulator/'
-SETUP_SLUG = 'emulator-errors_bary-2h'
+SETUP_SLUG = 'emulator-errors_bary'
 
 
 class bcolors:
@@ -58,37 +58,11 @@ class bcolors:
 def get_density_model():
     return maszcal.density.MatchingGnfw(
         cosmo_params=maszcal.cosmology.CosmoParams(),
-        mass_definition='mean',
-        delta=200,
+        mass_definition='crit',
+        delta=500,
         comoving_radii=True,
         nfw_class=maszcal.density.MatchingNfwModel,
     )
-
-
-def get_two_halo_esd():
-    model = maszcal.twohalo.TwoHaloShearModel(
-        cosmo_params=maszcal.cosmology.CosmoParams(),
-        mass_definition='mean',
-        delta=200,
-    )
-    return model.excess_surface_density
-
-
-def get_2h_emulator(two_halo_esd):
-    return maszcal.twohalo.TwoHaloEmulator.from_function(
-        two_halo_func=two_halo_esd,
-        r_grid=np.geomspace(0.01, 100, 120),
-        z_lims=np.array([0, Z_MAX+0.01]),
-        mu_lims=np.log(np.array([1e13, 3e15])),
-        num_emulator_samples=800,
-    )
-
-
-def get_corrected_lensing_func(density_model, two_halo_emulator):
-    return maszcal.corrections.Matching2HaloCorrection(
-        one_halo_func=density_model.excess_surface_density,
-        two_halo_func=two_halo_emulator,
-    ).corrected_profile
 
 
 def get_shear_model(lensing_func):
@@ -170,19 +144,15 @@ def do_estimation(sample_size, num_pcs):
     lh = supercubos.LatinSampler(rng=rng).get_lh_sample(PARAM_MINS, PARAM_MAXES, sample_size)
 
     density_model = get_density_model()
-    two_halo_esd = get_two_halo_esd()
-    two_halo_emulator = get_2h_emulator(two_halo_esd)
-    corrected_lensing_func = get_corrected_lensing_func(density_model, two_halo_emulator)
-    shear_model = get_shear_model(corrected_lensing_func)
+    shear_model = get_shear_model(density_model.excess_surface_density)
 
     def wrapped_esd_func(params):
         a_sz = params[0:1]
-        a_2h = params[1:2]
-        con = params[2:3]
-        alpha = params[3:4]
-        beta = params[4:5]
+        con = params[1:2]
+        alpha = params[2:3]
+        beta = params[3:4]
         gamma = np.array([GAMMA])
-        return shear_model.stacked_excess_surface_density(RADII, a_sz, a_2h, con, alpha, beta, gamma).squeeze()
+        return shear_model.stacked_excess_surface_density(RADII, a_sz, con, alpha, beta, gamma).squeeze()
 
     esds = _pool_map(wrapped_esd_func, lh)
 
