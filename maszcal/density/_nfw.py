@@ -1,5 +1,7 @@
+from functools import partial
 import numpy as np
 import astropy.units as u
+import maszcal.cosmology
 from maszcal.defaults import DefaultCosmology
 from maszcal.cosmology import CosmoParams
 from maszcal.cosmo_utils import get_astropy_cosmology
@@ -7,6 +9,8 @@ import maszcal.mathutils as mathutils
 
 
 class NfwModel:
+    CMB_REDSHIFT = 1100
+
     def __init__(
         self,
         cosmo_params=DefaultCosmology(),
@@ -28,6 +32,10 @@ class NfwModel:
         self._astropy_cosmology = get_astropy_cosmology(self.cosmo_params)
 
         self.units = units
+        self.sigma_crit = partial(
+            maszcal.cosmology.SigmaCrit(self.cosmo_params, comoving=self.comoving, units=self.units).sdc,
+            z_source=np.array([self.CMB_REDSHIFT]),
+        )
 
     def _check_mass_def(self, mass_def):
         if mass_def not in ['mean', 'crit']:
@@ -89,7 +97,24 @@ class NfwModel:
         '''
         return (self._delta * cons**3)/(3 * (np.log(1+cons) - cons/(1+cons)))
 
-    def _less_than_func(self, x):
+    def _sd_less_than_func(self, x):
+        return (
+            1 - 2*np.arctanh(
+                np.sqrt((1-x)/(1+x))
+            )/np.sqrt(1 - x**2)
+        )/(x**2 - 1)
+
+    def _sd_equal_func(self, x):
+        return 1/3
+
+    def _sd_greater_than_func(self, x):
+        return (
+            1 - 2*np.arctan(
+                np.sqrt((x-1)/(1+x))
+            )/np.sqrt(x**2 - 1)
+        )/(x**2 - 1)
+
+    def _esd_less_than_func(self, x):
         return (
             8 * np.arctanh(np.sqrt((1-x) / (1+x))) / (x**2 * np.sqrt(1 - x**2))
             + 4 * np.log(x/2) / x**2
@@ -97,10 +122,10 @@ class NfwModel:
             + 4 * np.arctanh(np.sqrt((1-x) / (1+x))) / ((x**2 - 1) * np.sqrt(1 - x**2))
         )
 
-    def _equal_func(self, x):
+    def _esd_equal_func(self, x):
         return 10/3 + 4*np.log(1/2)
 
-    def _greater_than_func(self, x):
+    def _esd_greater_than_func(self, x):
         return (
             8 * np.arctan(np.sqrt((x-1) / (x+1))) / (x**2 * np.sqrt(x**2 - 1))
             + 4 * np.log(x/2) / x**2
@@ -108,12 +133,21 @@ class NfwModel:
             + 4 * np.arctan(np.sqrt((x-1) / (x+1))) / ((x**2 - 1)**(3/2))
         )
 
-    def _inequality_func(self, xs):
+    def _sd_inequality_func(self, xs):
         full_func_vals = np.zeros(xs.shape)
 
-        full_func_vals[xs < 1] = self._less_than_func(xs[xs < 1])
-        full_func_vals[xs == 1] = self._equal_func(xs[xs == 1])
-        full_func_vals[xs > 1] = self._greater_than_func(xs[xs > 1])
+        full_func_vals[xs < 1] = self._sd_less_than_func(xs[xs < 1])
+        full_func_vals[xs == 1] = self._sd_equal_func(xs[xs == 1])
+        full_func_vals[xs > 1] = self._sd_greater_than_func(xs[xs > 1])
+
+        return full_func_vals
+
+    def _esd_inequality_func(self, xs):
+        full_func_vals = np.zeros(xs.shape)
+
+        full_func_vals[xs < 1] = self._esd_less_than_func(xs[xs < 1])
+        full_func_vals[xs == 1] = self._esd_equal_func(xs[xs == 1])
+        full_func_vals[xs > 1] = self._esd_greater_than_func(xs[xs > 1])
 
         return full_func_vals
 
@@ -132,6 +166,20 @@ class NfwModel:
         denominator = xs * (1+xs)**2
         return numerator/denominator
 
+    def surface_density(self, rs, zs, masses, cons):
+        '''
+        SHAPE r, mass, z, cons
+        '''
+        scale_radii = self.scale_radius(zs, masses, cons)
+        prefactor = 2 * scale_radii * self.delta_c(cons)[None, None, :] * self.reference_density(zs)[None, :, None]
+        prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
+
+        xs = rs[..., None, :, None]/mathutils.atleast_kd(scale_radii, rs.ndim+scale_radii.ndim-1, append_dims=False)
+
+        postfactor = self._sd_inequality_func(xs)
+
+        return prefactor[None, :] * postfactor
+
     def excess_surface_density(self, rs, zs, masses, cons):
         '''
         SHAPE r, mass, z, cons
@@ -142,9 +190,19 @@ class NfwModel:
 
         xs = rs[..., None, :, None]/mathutils.atleast_kd(scale_radii, rs.ndim+scale_radii.ndim-1, append_dims=False)
 
-        postfactor = self._inequality_func(xs)
+        postfactor = self._esd_inequality_func(xs)
 
         return prefactor[None, :] * postfactor
+
+    def convergence(self, rs, zs, mus, cons):
+        masses = np.exp(mus)
+        sds = self.surface_density(rs, zs, masses, cons)
+        sd_crits =  maszcal.mathutils.atleast_kd(
+            self.sigma_crit(z_lens=zs)[:, None],
+            sds.ndim,
+            append_dims=False,
+        )
+        return sds/sd_crits
 
 
 class ProjectorSafeNfwModel(NfwModel):
@@ -187,6 +245,20 @@ class SingleMassNfwModel(NfwModel):
         denominator = xs * (1+xs)**2
         return numerator/denominator
 
+    def surface_density(self, rs, zs, masses, cons):
+        '''
+        SHAPE r, z, params
+        '''
+        scale_radii = self.scale_radius(zs, masses, cons)
+        prefactor = 2 * scale_radii * self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
+        prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
+
+        xs = rs[..., None]/scale_radii[None, ...]
+
+        postfactor = self._sd_inequality_func(xs)
+
+        return prefactor[None, ...] * postfactor
+
     def excess_surface_density(self, rs, zs, masses, cons):
         '''
         SHAPE r, z, params
@@ -197,7 +269,7 @@ class SingleMassNfwModel(NfwModel):
 
         xs = rs[..., None]/scale_radii[None, ...]
 
-        postfactor = self._inequality_func(xs)
+        postfactor = self._esd_inequality_func(xs)
 
         return prefactor[None, ...] * postfactor
 
@@ -224,6 +296,20 @@ class CmNfwModel(NfwModel):
         denominator = xs * (1+xs)**2
         return numerator/denominator
 
+    def surface_density(self, rs, zs, masses, cons):
+        '''
+        SHAPE mass, r, z, c
+        '''
+        scale_radii = self.scale_radius(zs, masses, cons)
+        prefactor = 2 * scale_radii * self.delta_c(cons) * self.reference_density(zs)[None, :]
+        prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
+
+        xs = rs[:, None]/scale_radii[None, ...]
+
+        postfactor = self._sd_inequality_func(xs)
+
+        return prefactor[None, :, :] * postfactor
+
     def excess_surface_density(self, rs, zs, masses, cons):
         '''
         SHAPE mass, r, z, c
@@ -234,9 +320,19 @@ class CmNfwModel(NfwModel):
 
         xs = rs[:, None]/scale_radii[None, ...]
 
-        postfactor = self._inequality_func(xs)
+        postfactor = self._esd_inequality_func(xs)
 
         return prefactor[None, :, :] * postfactor
+
+    def convergence(self, rs, zs, mus, cons):
+        masses = np.exp(mus)
+        sds = self.surface_density(rs, zs, masses, cons)
+        sd_crits =  maszcal.mathutils.atleast_kd(
+            self.sigma_crit(z_lens=zs),
+            sds.ndim,
+            append_dims=False,
+        )
+        return sds/sd_crits
 
 
 class MatchingNfwModel(NfwModel):
@@ -270,6 +366,17 @@ class MatchingNfwModel(NfwModel):
         denominator = xs * (1+xs)**2
         return numerator/denominator
 
+    def surface_density(self, rs, zs, masses, cons):
+        '''
+        SHAPE r, cluster
+        '''
+        scale_radii = self.scale_radius(zs, masses, cons)
+        prefactor = 2 * scale_radii * self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
+        prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
+        xs = rs[..., None]/scale_radii[None, ...]
+        postfactor = self._sd_inequality_func(xs)
+        return prefactor[None, ...] * postfactor
+
     def excess_surface_density(self, rs, zs, masses, cons):
         '''
         SHAPE r, cluster
@@ -278,7 +385,7 @@ class MatchingNfwModel(NfwModel):
         prefactor = scale_radii * self.delta_c(cons)[None, :] * self.reference_density(zs)[:, None]
         prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
         xs = rs[..., None]/scale_radii[None, ...]
-        postfactor = self._inequality_func(xs)
+        postfactor = self._esd_inequality_func(xs)
         return prefactor[None, ...] * postfactor
 
 
@@ -313,6 +420,20 @@ class MatchingCmNfwModel(NfwModel):
         denominator = xs * (1+xs)**2
         return numerator/denominator
 
+    def surface_density(self, rs, zs, masses, cons):
+        '''
+        SHAPE r, cluster
+        '''
+        scale_radii = self.scale_radius(zs, masses, cons)
+        prefactor = 2 * scale_radii * self.delta_c(cons) * self.reference_density(zs)
+        prefactor = prefactor * (u.Msun/u.Mpc**2).to(self.units)
+
+        xs = rs/scale_radii[None, :]
+
+        postfactor = self._sd_inequality_func(xs)
+
+        return prefactor[None, :] * postfactor
+
     def excess_surface_density(self, rs, zs, masses, cons):
         '''
         SHAPE r, cluster
@@ -323,6 +444,16 @@ class MatchingCmNfwModel(NfwModel):
 
         xs = rs/scale_radii[None, :]
 
-        postfactor = self._inequality_func(xs)
+        postfactor = self._esd_inequality_func(xs)
 
         return prefactor[None, :] * postfactor
+
+    def convergence(self, rs, zs, mus, cons):
+        masses = np.exp(mus)
+        sds = self.surface_density(rs, zs, masses, cons)
+        sd_crits =  maszcal.mathutils.atleast_kd(
+            self.sigma_crit(z_lens=zs),
+            sds.ndim,
+            append_dims=False,
+        )
+        return sds/sd_crits

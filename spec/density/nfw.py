@@ -25,6 +25,18 @@ def describe_MatchingNfwModel():
         assert np.all(ds > 0)
         assert ds.shape == (10, 8, 4)
 
+    def it_can_calculate_surface_density(nfw_model):
+        rs = np.logspace(-1, 1, 10)[:, None]
+        zs = np.linspace(0, 1, 8)
+        rs = rs * np.ones_like(zs)[None, :]
+        masses = np.logspace(14, 14.8, 8)
+        cons = np.linspace(2, 3.4, 4)
+
+        sd = nfw_model.surface_density(rs, zs, masses, cons)
+
+        assert np.all(sd > 0)
+        assert sd.shape == (10, 8, 4)
+
     def it_can_calculate_a_rho(nfw_model):
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 8)
@@ -36,6 +48,18 @@ def describe_MatchingNfwModel():
 
         assert np.all(rhos > 0)
         assert rhos.shape == (10, 8, 4)
+
+    def it_can_calculate_convergence(nfw_model):
+        rs = np.logspace(-1, 1, 10)[:, None]
+        zs = np.linspace(0.001, 1, 8)
+        rs = rs * np.ones_like(zs)[None, :]
+        masses = np.logspace(14, 14.8, 8)
+        cons = np.linspace(2, 3.4, 4)
+
+        conv = nfw_model.convergence(rs, zs, np.log(masses), cons)
+
+        assert np.all(conv >= 0)
+        assert conv.shape == (10, 8, 4)
 
 
 def describe_MatchingCmNfwModel():
@@ -57,6 +81,18 @@ def describe_MatchingCmNfwModel():
         assert np.all(ds > 0)
         assert ds.shape == (10, 8)
 
+    def it_calculates_surface_density(nfw_model):
+        rs = np.logspace(-1, 1, 10)[:, None]
+        zs = np.linspace(0, 1, 8)
+        rs = rs * np.ones_like(zs)[None, :]
+        masses = np.logspace(14, 14.8, 8)
+        cons = np.linspace(2, 3.4, 8)
+
+        sd = nfw_model.surface_density(rs, zs, masses, cons)
+
+        assert np.all(sd > 0)
+        assert sd.shape == (10, 8)
+
     def it_can_calculate_a_rho(nfw_model):
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 8)
@@ -68,6 +104,18 @@ def describe_MatchingCmNfwModel():
 
         assert np.all(rhos > 0)
         assert rhos.shape == (10, 8)
+
+    def it_can_calculate_convergence(nfw_model):
+        rs = np.logspace(-1, 1, 10)[:, None]
+        zs = np.linspace(0.001, 1, 8)
+        rs = rs * np.ones_like(zs)[None, :]
+        masses = np.logspace(14, 14.8, 8)
+        cons = np.linspace(2, 3.4, 8)
+
+        conv = nfw_model.convergence(rs, zs, np.log(masses), cons)
+
+        assert np.all(conv >= 0)
+        assert conv.shape == (10, 8)
 
 
 def describe_CmNfwModel():
@@ -89,6 +137,32 @@ def describe_CmNfwModel():
 
         assert ds.shape == (10, 5, 3)
         assert np.all(ds > 0)
+
+    def it_calculates_surface_density(nfw_model):
+        rs = np.logspace(-1, 1, 10)[:, None]
+        zs = np.linspace(0, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
+        masses = np.logspace(14, 15, 5)
+        cons = np.linspace(2, 4, 5)
+        cons = np.stack((cons, cons, cons)).T
+
+        sd = nfw_model.surface_density(rs, zs, masses, cons)
+
+        assert sd.shape == (10, 5, 3)
+        assert np.all(sd > 0)
+
+    def it_can_calculate_convergence(nfw_model):
+        rs = np.logspace(-1, 1, 10)[:, None]
+        zs = np.linspace(0.001, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
+        masses = np.logspace(14, 14.8, 5)
+        cons = np.linspace(2, 3.4, 5)
+        cons = np.stack((cons, cons, cons)).T
+
+        conv = nfw_model.convergence(rs, zs, np.log(masses), cons)
+
+        assert np.all(conv >= 0)
+        assert conv.shape == (10, 5, 3)
 
     @pytest.fixture
     def nfw_model_alt_cosmo():
@@ -209,6 +283,30 @@ def describe_NfwModel():
         assert np.all(ds > 0)
         assert ds.shape == (10, 5, 3, 6)
 
+    def it_calculates_surface_density(nfw_model):
+        rs = np.logspace(-1, 1, 10)[:, None]
+        zs = np.linspace(0, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
+        masses = np.logspace(14, 15, 5)
+        cons = np.linspace(2, 4, 6)
+
+        sd = nfw_model.surface_density(rs, zs, masses, cons)
+
+        assert np.all(sd > 0)
+        assert sd.shape == (10, 5, 3, 6)
+
+    def it_can_calculate_convergence(nfw_model):
+        rs = np.logspace(-1, 1, 10)[:, None]
+        zs = np.linspace(0.001, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
+        masses = np.logspace(14, 14.8, 5)
+        cons = np.linspace(2, 3.4, 6)
+
+        conv = nfw_model.convergence(rs, zs, np.log(masses), cons)
+
+        assert np.all(conv >= 0)
+        assert conv.shape == (10, 5, 3, 6)
+
     @pytest.fixture
     def nfw_model_alt_cosmo():
         cosmo = CosmoParams(
@@ -323,6 +421,18 @@ def describe_SingleMassNfwModel():
         assert np.all(ds > 0)
         assert ds.shape == (10, 3, 6)
 
+    def it_calculates_surface_density(nfw_model):
+        rs = np.logspace(-1, 1, 10)[:, None]
+        zs = np.linspace(0, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
+        masses = np.logspace(14, 15, 6)
+        cons = np.linspace(2, 4, 6)
+
+        sd = nfw_model.surface_density(rs, zs, masses, cons)
+
+        assert np.all(sd > 0)
+        assert sd.shape == (10, 3, 6)
+
     def it_can_calculate_a_rho(nfw_model):
         rs = np.logspace(-1, 1, 10)[:, None]
         zs = np.linspace(0, 1, 3)
@@ -334,3 +444,15 @@ def describe_SingleMassNfwModel():
 
         assert np.all(rhos > 0)
         assert rhos.shape == (10, 3, 6)
+
+    def it_can_calculate_convergence(nfw_model):
+        rs = np.logspace(-1, 1, 10)[:, None]
+        zs = np.linspace(0.001, 1, 3)
+        rs = rs * np.ones_like(zs)[None, :]
+        masses = np.logspace(14, 14.8, 6)
+        cons = np.linspace(2, 3.4, 6)
+
+        conv = nfw_model.convergence(rs, zs, np.log(masses), cons)
+
+        assert np.all(conv >= 0)
+        assert conv.shape == (10, 3, 6)
