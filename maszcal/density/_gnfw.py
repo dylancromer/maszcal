@@ -50,6 +50,7 @@ class _Gnfw(BaryonDensity):
     def _init_nfw(self):
         self.nfw_model = self.nfw_class(
             cosmo_params=self.cosmo_params,
+            units=self.units,
             delta=self.delta,
             mass_definition=self.mass_definition,
             comoving=self.comoving_radii,
