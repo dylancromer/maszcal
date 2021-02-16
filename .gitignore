@@ -16,6 +16,9 @@ stats.sh
 data/test-act/*.txt
 data/test-act/*.fits
 data/test-act/matching-model-fits/
+cmblens-filtering/
+data/act-eunseong/
+docs/act-kappa-test/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
