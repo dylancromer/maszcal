@@ -9,7 +9,7 @@ import pixell.enmap
 import supercubos
 import maszcal.cosmology
 import maszcal.corrections
-import maszcal.data.test
+import maszcal.data.obs
 import maszcal.density
 import maszcal.fitutils
 import maszcal.lensing
@@ -22,13 +22,14 @@ PARAM_MINS = np.array([-2, 1, 2.1])  # a_sz, con, alpha, beta
 PARAM_MAXES = np.array([2, 6, 8.1])
 A_2H_MIN = 0
 A_2H_MAX = 5
-ALPHA = 0.8
+ALPHA = 0.6
 GAMMA = 0.2
 USE_PRIOR = False
-MEAN_PRIOR_ALPHA = 0.88
-PRIOR_ALPHA_STD = 0.3
+MEAN_PRIOR_BETA = 3.72
+PRIOR_BETA_STD = 0.3
+ROOT_DIR = 'data/act-eunseong/high-snr/'
 COSMOLOGY = maszcal.cosmology.CosmoParams()
-DATA = maszcal.data.test.ActTestData('data/test-act/')
+DATA = maszcal.data.obs.ActLee2021HighSnr(ROOT_DIR)
 THETA_GRID = np.geomspace(DATA.radial_coordinates[0]/10, 10*DATA.radial_coordinates[-1], 80)
 NUM_A_SZ_SAMPLES = 40
 NUM_EMULATOR_SAMPLES = 2000
@@ -36,11 +37,10 @@ NUM_ERRORCHECK_SAMPLES = 1000
 NUM_PRINCIPAL_COMPONENTS = 10
 SAMPLE_SEED = 314
 NUM_PROCESSES = 12
-NUM_PROCESSES_LH = 12
+NUM_PROCESSES_LH = 6
 NWALKERS = 600
 NSTEPS = 10000
 WALKER_DISPERSION = 4e-3
-ROOT_DIR = 'data/test-act/'
 DIR = ROOT_DIR + 'matching-model-fits/'
 SETUP_SLUG = 'matching-twohalosum-baryons'
 TIMESTAMP = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
@@ -59,7 +59,7 @@ class bcolors:
 
 
 def get_covariance_and_fisher():
-    cov = np.loadtxt(ROOT_DIR + 'bin_2_covmat.txt')
+    cov = np.loadtxt(ROOT_DIR + 'highSNR_covmat.txt')
     fisher = np.linalg.inv(cov)
     return cov, fisher
 
@@ -143,7 +143,7 @@ def get_2nd_order_emulator_errors(PARAM_MINS, PARAM_MAXES, emulator, esd_func):
 
 
 def get_kmask():
-    return pixell.enmap.read_map(ROOT_DIR + 'night_bcg_kmask.fits')
+    return pixell.enmap.read_map(ROOT_DIR + 'highSNR_kmask.fits')
 
 
 def generate_header():
@@ -156,8 +156,8 @@ def generate_header():
         f'GAMMA = {GAMMA}',
         f'ALPHA = {ALPHA}',
         f'USE_PRIOR = {USE_PRIOR}',
-        f'MEAN_PRIOR_ALPHA = {MEAN_PRIOR_ALPHA}',
-        f'PRIOR_ALPHA_STD  = {PRIOR_ALPHA_STD}',
+        f'MEAN_PRIOR_BETA = {MEAN_PRIOR_BETA}',
+        f'PRIOR_BETA_STD  = {PRIOR_BETA_STD}',
         f'WALKER_DISPERSION = {WALKER_DISPERSION}',
         f'NUM_EMULATOR_SAMPLES = {NUM_EMULATOR_SAMPLES}',
         f'NUM_PRINCIPAL_COMPONENTS = {NUM_PRINCIPAL_COMPONENTS}',
@@ -259,8 +259,8 @@ if __name__ == '__main__':
         return prefactor + maszcal.likelihoods.log_gaussian_shape(model, data, fisher)
 
     def log_prior(params):
-        alpha = params[3]
-        return np.log(1.0/(np.sqrt(2*np.pi)*PRIOR_ALPHA_STD)) - 0.5*(alpha-MEAN_PRIOR_ALPHA)**2/PRIOR_ALPHA_STD**2
+        beta = params[-1]
+        return np.log(1.0/(np.sqrt(2*np.pi)*PRIOR_BETA_STD)) - 0.5*(beta-MEAN_PRIOR_BETA)**2/PRIOR_BETA_STD**2
 
     full_param_mins = np.concatenate((np.array([A_2H_MIN]), PARAM_MINS))
     full_param_maxes = np.concatenate((np.array([A_2H_MAX]), PARAM_MAXES))
