@@ -1,9 +1,102 @@
 import os
 import pytest
 import numpy as np
+import pality
+from sklearn.gaussian_process.kernels import Matern
 import maszcal.emulate
 import maszcal.interpolate
-import pality
+
+
+def data_function(rs, mus, zs, params):
+    rs = rs[:, None, None, None]
+    mus = mus[None, :, None, None]
+    zs = zs[None, None, :, None]
+    params = params[None, None, None, :]
+    return (mus + zs**(1/3)) * rs**(-0.5 + params)
+
+
+def describe_LensingFunctionEmulator():
+
+    def describe_recreation_of_original_data():
+
+        @pytest.fixture
+        def grid():
+            rs = np.geomspace(0.1, 10, 12)
+            mus = np.linspace(1, 4, 10)
+            zs = np.linspace(0, 0.2, 8)
+            return rs, mus, zs
+
+        @pytest.fixture
+        def params():
+            return np.linspace(-0.02, 0.02, 20)
+
+        @pytest.fixture
+        def data(grid, params):
+            rs, mus, zs = grid
+            return data_function(rs, mus, zs, params)
+
+        def it_interpolates_over_mass_redshift_and_radius(grid, params, data):
+            rs, mus, zs = grid
+            assert data.shape == (12, 10, 8, 20)
+            emulator = maszcal.emulate.LensingFunctionEmulator(
+                radii=rs,
+                log_masses=mus,
+                redshifts=zs,
+                params=params[:, None],
+                data=data,
+            )
+            emulated_data = emulator(rs, mus, zs, params)
+            assert emulated_data.shape == (12, 10, 8, 20)
+            assert np.allclose(emulated_data, data)
+
+    def describe_interpolation_of_data():
+
+        @pytest.fixture
+        def grid():
+            rs = np.geomspace(0.1, 10, 12)
+            mus = np.linspace(1, 4, 10)
+            zs = np.linspace(0, 0.2, 8)
+            return rs, mus, zs
+
+        @pytest.fixture
+        def params():
+            return np.linspace(-0.02, 0.02, 20)
+
+        @pytest.fixture
+        def data(grid, params):
+            rs, mus, zs = grid
+            return data_function(rs, mus, zs, params)
+
+        @pytest.fixture
+        def new_grid():
+            rs = np.geomspace(2, 8, 13)
+            mus = np.linspace(2, 3, 11)
+            zs = np.linspace(0.05, 0.15, 9)
+            return rs, mus, zs
+
+        @pytest.fixture
+        def new_params():
+            return np.linspace(-0.01, 0.01, 21)
+
+        @pytest.fixture
+        def new_data(new_grid, new_params):
+            rs, mus, zs = new_grid
+            return data_function(rs, mus, zs, new_params)
+
+        def it_interpolates_over_mass_redshift_and_radius(grid, params, data, new_grid, new_params, new_data):
+            rs, mus, zs = grid
+            assert data.shape == (12, 10, 8, 20)
+            emulator = maszcal.emulate.LensingFunctionEmulator(
+                radii=rs,
+                log_masses=mus,
+                redshifts=zs,
+                params=params[:, None],
+                data=data,
+            )
+            new_rs, new_mus, new_zs = new_grid
+            emulated_data = emulator(new_rs, new_mus, new_zs, new_params)
+            assert emulated_data.shape == (13, 11, 9, 21)
+            assert np.abs((emulated_data-new_data)/new_data).mean() < 1e-1
 
 
 def describe_LensingPca():
