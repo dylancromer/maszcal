@@ -40,7 +40,7 @@ class LensingFunctionEmulator:
     def __post_init__(self):
         self._base_emulator = self._wrap_base_emulator(PcaEmulator.create_from_data(
             coords=self.params,
-            data=self.data.reshape(-1, self.params.size),
+            data=self.data.reshape(-1, self.params.shape[0]),
             interpolator_class=self.interpolator_class,
             interpolator_kwargs=self.interpolator_kwargs,
             num_components=self.num_principal_components_base,
