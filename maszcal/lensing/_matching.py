@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from types import MappingProxyType
 import numpy as np
 import astropy.units as u
 import projector
@@ -6,6 +7,52 @@ import maszcal.concentration
 import maszcal.matter
 import maszcal.cosmo_utils
 from . import _core
+
+
+@dataclass
+class BlockStacker:
+    sz_masses: np.ndarray
+    redshifts: np.ndarray
+    lensing_weights: np.ndarray
+    block_size: int
+    model: _core.MatchingModel
+    model_kwargs: MappingProxyType = MappingProxyType({})
+
+    def __post_init__(self):
+        self.num_clusters = self.sz_masses.size
+        self.num_blocks = -(-self.num_clusters//self.block_size)  # ceiling int division
+
+    @staticmethod
+    def _get_array_block(index, block_size, array):
+        slice_front = block_size*index
+        slice_back = block_size*(index+1)
+        return array[slice_front:slice_back]
+
+    def _get_model(self, index):
+        return self.model(
+            sz_masses=self._get_array_block(index, self.block_size, self.sz_masses),
+            redshifts=self._get_array_block(index, self.block_size, self.redshifts),
+            lensing_weights=self._get_array_block(index, self.block_size, self.lensing_weights),
+            **self.model_kwargs,
+        )
+
+    def _get_stacked_block(self, index, radial_coordinates, a_szs, *rho_params):
+        return self._get_model(index).stacked_signal(radial_coordinates, a_szs, *rho_params)
+
+    def get_stacked_blocks(self, radial_coordinates, a_szs, *rho_params):
+        return np.array(
+            [self._get_stacked_block(i, radial_coordinates, a_szs, *rho_params) for i in range(self.num_blocks)]
+        )
+
+    def get_weights(self):
+        return np.array(
+            [self._get_array_block(i, self.block_size, self.sz_masses).size for i in range(self.num_blocks)]
+        ) / self.num_clusters
+
+    def stacked_signal(self, radial_coordinates, a_szs, *rho_params):
+        block_signals = self.get_stacked_blocks(radial_coordinates, a_szs, *rho_params)
+        weights = maszcal.mathutils.atleast_kd(self.get_weights(), block_signals.ndim)
+        return np.sum(weights*block_signals, axis=0)
 
 
 @dataclass
@@ -52,6 +99,9 @@ class MatchingConvergenceModel(_core.MatchingModel):
         ).reshape(thetas.size, num_clusters, a_szs.size, -1)
         weights = self.normed_lensing_weights(a_szs).reshape(num_clusters, a_szs.size)
         return (weights[None, :, :, None] * profiles).sum(axis=1)
+
+    def stacked_signal(self, radial_coordinates, a_szs, *rho_params):
+        return self.stacked_convergence(radial_coordinates, a_szs, *rho_params)
 
 
 @dataclass
@@ -132,6 +182,9 @@ class ScatteredMatchingConvergenceModel(_core.ScatteredMatchingModel):
         weights = self.normed_lensing_weights(a_szs)
         return (weights[None, :, None, None] * profiles).sum(axis=1)
 
+    def stacked_signal(self, radial_coordinates, a_szs, *rho_params):
+        return self.stacked_convergence(radial_coordinates, a_szs, *rho_params)
+
 
 class MatchingShearModel(_core.MatchingModel):
 
@@ -146,6 +199,9 @@ class MatchingShearModel(_core.MatchingModel):
         profiles = self.excess_surface_density_total(rs, a_szs, *rho_params).reshape(rs.size, num_clusters, a_szs.size, -1)
         weights = self.normed_lensing_weights(a_szs).reshape(num_clusters, a_szs.size)
         return (weights[None, :, :, None] * profiles).sum(axis=1)
+
+    def stacked_signal(self, radial_coordinates, a_szs, *rho_params):
+        return self.stacked_excess_surface_density(radial_coordinates, a_szs, *rho_params)
 
 
 @dataclass
@@ -202,3 +258,6 @@ class ScatteredMatchingShearModel(_core.ScatteredMatchingModel):
         profiles = self.excess_surface_density_total(rs, a_szs, *rho_params)
         weights = self.normed_lensing_weights(a_szs)
         return (weights[None, :, None, None] * profiles).sum(axis=1)
+
+    def stacked_signal(self, radial_coordinates, a_szs, *rho_params):
+        return self.stacked_excess_surface_density(radial_coordinates, a_szs, *rho_params)
