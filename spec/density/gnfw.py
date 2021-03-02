@@ -188,6 +188,17 @@ def describe_Gnfw():
         assert rho_tot.shape == (6, 5, 4, 3)
         assert np.all(rho_tot > 0)
 
+    def it_can_handle_meso_shapes(gnfw_model):
+        zs = 0.1*np.ones(2)
+        rs = 0.3*np.ones((7, 5, 3, 2))
+        mus = 32*np.ones(64)
+        cons = 2*np.ones(3)
+        alphas = 0.5*np.ones(1)
+        betas = 3.8*np.ones(1)
+        gammas = 0.2*np.ones(1)
+        rho_tot = gnfw_model.rho_tot(rs, zs, mus, cons, alphas, betas, gammas)
+        assert np.all(rho_tot > 0)
+
     def it_has_the_correct_baryon_fraction(gnfw_model):
         rs = np.linspace(
             gnfw_model.MIN_INTEGRATION_RADIUS,

@@ -25,9 +25,10 @@ class Miscentering:
         )
 
     def rho(self, radii, misc_params, rho_params):
-        prob_centered = misc_params[-1]
-        return (prob_centered*self.rho_func(radii, *rho_params)
-                + (1-prob_centered)*self._misc_rho(radii, misc_params[:-1], rho_params))
+        rhos_centered = self.rho_func(radii, *rho_params)
+        rhos_misc = self._misc_rho(radii, misc_params[:-1], rho_params)
+        prob_centered = maszcal.mathutils.atleast_kd(misc_params[-1], rhos_misc.ndim, append_dims=False)
+        return prob_centered*rhos_centered + (1-prob_centered)*rhos_misc
 
 
 @dataclass

@@ -749,7 +749,10 @@ def describe_miscentered_ScatteredMatchingConvergenceModel():
             return maszcal.lensing.Miscentering(
                 rho_func=density_model.rho_tot,
                 misc_distrib=maszcal.stats.MiscenteringDistributions.rayleigh_dist,
-                miscentering_func=meso.Rho().miscenter,
+                miscentering_func=meso.Rho(
+                    num_offset_radii=50,
+                    num_phis=4,
+                ).miscenter,
             )
 
         @pytest.fixture
@@ -768,7 +771,7 @@ def describe_miscentered_ScatteredMatchingConvergenceModel():
                 units=u.Msun/u.pc**2,
                 comoving=True,
                 sd_func=projector.SurfaceDensity.calculate,
-                sd_kwargs={'radial_axis_to_broadcast': 1, 'density_axis': -1},
+                sd_kwargs={'radial_axis_to_broadcast': 1, 'density_axis': -2},
             ).convergence
 
         @pytest.fixture
@@ -783,7 +786,7 @@ def describe_miscentered_ScatteredMatchingConvergenceModel():
 
         @pytest.fixture
         def convergence_model(miscentered_conv, hmf_interp):
-            NUM_CLUSTERS = 1
+            NUM_CLUSTERS = 10
             rng = np.random.default_rng(seed=13)
             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
             zs = rng.random(size=NUM_CLUSTERS) + 0.01
@@ -803,12 +806,12 @@ def describe_miscentered_ScatteredMatchingConvergenceModel():
         def the_plots_look_right(convergence_model):
             from_arcmin = 2 * np.pi / 360 / 60
             to_arcmin = 1/from_arcmin
-            thetas = np.geomspace(0.05*from_arcmin, 60*from_arcmin, 30)
+            thetas = np.geomspace(0.01*from_arcmin, 50*from_arcmin, 40)
             cons = 3*np.ones(1)
             alphas = 0.8*np.ones(1)
             betas = 3.8*np.ones(1)
             gammas = 0.2*np.ones(1)
-            miscenter_scales = 1e-1*np.ones(1)
+            miscenter_scales = 0.5*np.ones(1)
             centering_probs = np.linspace(0, 1, 3)
             a_szs = 0*np.ones(1)
 
@@ -826,4 +829,10 @@ def describe_miscentered_ScatteredMatchingConvergenceModel():
             plt.xlabel(r'$\theta$')
             plt.ylabel(r'$\kappa(\theta)$')
             plt.savefig('figs/test/scattered_miscentered_matching_stacked_gnfw_convergence.svg')
+            plt.gcf().clear()
+
+            plt.plot(thetas*to_arcmin, sds[:, 0, :])
+            plt.xlabel(r'$\theta$')
+            plt.ylabel(r'$\kappa(\theta)$')
+            plt.savefig('figs/test/scattered_miscentered_matching_stacked_gnfw_convergence_linear.svg')
             plt.gcf().clear()
