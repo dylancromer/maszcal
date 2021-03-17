@@ -28,8 +28,10 @@ class LensingFunctionEmulator:
     redshifts: np.ndarray
     params: np.ndarray
     data: np.ndarray
-    interpolator_class: object = maszcal.interpolate.GaussianProcessInterpolator
-    interpolator_kwargs: MappingProxyType = MappingProxyType({'kernel': Matern()})
+    interpolator_class_base: object = maszcal.interpolate.GaussianProcessInterpolator
+    interpolator_kwargs_base: MappingProxyType = MappingProxyType({'kernel': Matern()})
+    interpolator_class_2d: object = maszcal.interpolate.RbfInterpolator
+    interpolator_kwargs_2d: MappingProxyType = MappingProxyType({})
     num_principal_components_base: int = 8
     num_principal_components_2d: int = 8
 
@@ -41,8 +43,8 @@ class LensingFunctionEmulator:
         self._base_emulator = self._wrap_base_emulator(PcaEmulator.create_from_data(
             coords=self.params,
             data=self.data.reshape(-1, self.params.shape[0]),
-            interpolator_class=self.interpolator_class,
-            interpolator_kwargs=self.interpolator_kwargs,
+            interpolator_class=self.interpolator_class_base,
+            interpolator_kwargs=self.interpolator_kwargs_base,
             num_components=self.num_principal_components_base,
         ))
 
@@ -62,8 +64,8 @@ class LensingFunctionEmulator:
         return self._wrap_2d_emulator(PcaEmulator.create_from_data(
             coords=mus_and_zs,
             data=data_,
-            interpolator_class=self.interpolator_class,
-            interpolator_kwargs=self.interpolator_kwargs,
+            interpolator_class=self.interpolator_class_2d,
+            interpolator_kwargs=self.interpolator_kwargs_2d,
             num_components=self.num_principal_components_2d,
         ))
 
