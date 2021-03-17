@@ -1,15 +1,25 @@
 #
+._github
+*.npy
 docs/*.ipynb
 data/act-hsc
 *venv*
 .DS_Store
 data/NBatta2010
+data/emulator
 figs/
 misc/
 tests/xarray_concentration_integ.py
 tests/test.py
 stats.sh
 *.c
+*.h5
+data/test-act/*.txt
+data/test-act/*.fits
+data/test-act/matching-model-fits/
+cmblens-filtering/
+data/act-eunseong/
+docs/act-kappa-test/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,10 +1,54 @@
+from dataclasses import dataclass
 import numpy as np
+import scipy.interpolate
 import colossus.cosmology.cosmology as colossus_cosmo
 from colossus.halo.mass_adv import changeMassDefinitionCModel as _change_mass_def_cmodel
 from colossus.halo.mass_defs import changeMassDefinition as _change_mass_def
 from maszcal.cosmology import CosmoParams
 from maszcal.cosmo_utils import get_colossus_params
 import maszcal.defaults as defaults
+
+
+@dataclass
+class ConInterpolator:
+    '''
+    Interpolates the concentration-mass relation.
+
+    Used for quick calculations of concentration in c-m models.
+
+    Parameters
+    ----------
+    mass_samples : ndarray
+        Array of masses over which to interpolate.
+    redshift_samples : ndarray
+        Array of redshifts over which to interpolate.
+    mass_definition : str
+        String identifying which mass definition to use. Must be in the form `"<int>m"` or `"<int>c"`,
+        e.g. `"500c"` for a 500-critical mass definition.
+    cosmo_params : CosmoParams
+        Cosmology parameters to be used for the c-m relation.
+    '''
+    mass_samples: np.ndarray
+    redshift_samples: np.ndarray
+    mass_definition: str
+    cosmo_params: object
+
+    def __post_init__(self):
+        c_samples = ConModel(mass_def=self.mass_definition, cosmology=self.cosmo_params).c(
+            self.mass_samples,
+            self.redshift_samples,
+            self.mass_definition,
+        )
+
+        self._interpolator = scipy.interpolate.interp2d(
+            self.redshift_samples,
+            self.mass_samples,
+            c_samples,
+            kind='cubic',
+        )
+
+    def __call__(self, masses, redshifts):
+        return self._interpolator(masses, redshifts).T
 
 
 class ConModel:
@@ -76,4 +120,3 @@ class MatchingConModel(ConModel):
             converted_ms[i], _, converted_cons[i] = _change_mass_def(masses[i], concentrations, z, old_def, new_def)
 
         return converted_ms, converted_cons
-

@@ -14,8 +14,8 @@ ext_modules.append(
 
 setup(
     name='maszcal',
-    version='0.1',
+    version='0.2',
     py_modules=['maszcal'],
-    ext_modules = cythonize(ext_modules, include_path=[np.get_include()], language_level=3.7),
+    ext_modules = cythonize(ext_modules, include_path=[np.get_include()], language_level=3.9),
     include_dirs=[np.get_include()],
 )

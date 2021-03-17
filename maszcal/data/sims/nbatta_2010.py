@@ -10,17 +10,18 @@ class NBatta2010(WeakLensingData):
         rs, wl_signals, zs, masses = self._load_data(data_dir)
 
         super().__init__(
-            radii=rs,
+            radial_coordinates=rs,
             redshifts=zs,
             wl_signals=wl_signals,
             masses=masses,
         )
+        self.radii = rs
 
     def _init_cosmology(self):
         omega_bary = 0.044
         omega_matter = 0.25
         omega_cdm = omega_matter - omega_bary
-        h=0.72
+        h = 0.72
         return maszcal.cosmology.CosmoParams(
             hubble_constant=100*h,
             omega_bary_hsqr=omega_bary * h**2,
@@ -37,14 +38,13 @@ class NBatta2010(WeakLensingData):
     @staticmethod
     def from_data(radii, redshifts, wl_signals, masses, cosmology):
         wl_data_instance = WeakLensingData(
-            radii=radii,
+            radial_coordinates=radii,
             redshifts=redshifts,
             wl_signals=wl_signals,
             masses=masses,
         )
-
+        wl_data_instance.radii = radii
         wl_data_instance.cosmology = cosmology
-
         return wl_data_instance
 
     def __load_cluster_masses(self, data_dir, snapshot_number, num_clusters):
@@ -52,7 +52,7 @@ class NBatta2010(WeakLensingData):
         with open(file_1, 'rb') as file_:
             temp = np.fromfile(file=file_, dtype=np.float32)
         clust_data = np.reshape(temp, (num_clusters, 4))
-        #Simulation number, cluster id in simulation, Mass M500 in 1e10 Msol / h, R500 in kpc/h
+        # Simulation number, cluster id in simulation, Mass M500 in 1e10 Msol / h, R500 in kpc/h
         true_masses = clust_data[:, 2] * 1e10 / self.cosmology.h
         return true_masses
 
@@ -70,9 +70,9 @@ class NBatta2010(WeakLensingData):
         wl_array = np.reshape(temp, (num_radii, 2, num_clusters))
 
         rs = wl_array[:, 0, :] / self.cosmology.h
-        ### Mpc / h
+        # Mpc / h
         wl_esds = wl_array[:, 1, :] * 1e4 * self.cosmology.h
-        ### h M_sun / pc
+        # h M_sun / pc
         return rs, wl_esds
 
     def _reduce_radii(self, radii):

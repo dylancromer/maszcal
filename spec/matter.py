@@ -11,9 +11,9 @@ class FakePowerInterpolator:
 
     def P(self, zs, ks):
         if not self.nonlinear:
-            return 'linear spectrum'
+            return np.ones(zs.shape+ks.shape)
         else:
-            return 'nonlinear spectrum'
+            return 2 * np.ones(zs.shape+ks.shape)
 
 
 @dataclass
@@ -34,7 +34,7 @@ def fake_camb_get_results(params):
         return FakeCambResults(nonlinear=True)
 
 
-def describe_power():
+def describe_Power():
 
     def it_calculates_the_matter_power_spectrum_with_camb(mocker):
         mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
@@ -46,8 +46,8 @@ def describe_power():
         zs = np.linspace(0, 1, 5)
         ks = np.linspace(0.1, 1, 10)
 
-        assert np.all(power.spectrum(ks, zs, is_nonlinear=False) == 'linear spectrum')
-        assert np.all(power.spectrum(ks, zs, is_nonlinear=True) == 'nonlinear spectrum')
+        assert np.all(power.spectrum(ks, zs, is_nonlinear=False) == 1)
+        assert np.all(power.spectrum(ks, zs, is_nonlinear=True) == 2)
 
     def it_provides_a_power_spectrum_interpolator(mocker):
         mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
@@ -62,5 +62,44 @@ def describe_power():
         lin_spectrum = power.get_spectrum_interpolator(ks, zs, is_nonlinear=False)
         nonlin_spectrum = power.get_spectrum_interpolator(ks, zs, is_nonlinear=True)
 
-        assert np.all(lin_spectrum(ks, zs) == 'linear spectrum')
-        assert np.all(nonlin_spectrum(ks, zs) == 'nonlinear spectrum')
+        assert np.all(lin_spectrum(ks, zs) == 1)
+        assert np.all(nonlin_spectrum(ks, zs) == 2)
+
+
+def describe_Correlations():
+
+    @pytest.fixture
+    def ks_zs_and_power_spectrum():
+        return np.logspace(-2, 40, 100), np.linspace(0, 1, 10), np.ones((10, 100))
+
+    def it_converts_the_power_spectrum_to_a_correlator(ks_zs_and_power_spectrum):
+        ks, zs, ps = ks_zs_and_power_spectrum
+        xi_interpolator = maszcal.matter.Correlations.from_power_spectrum(ks, zs, ps)
+
+        rs = np.logspace(-1, 1, 30)
+        xis = xi_interpolator(rs)
+        assert xis.shape == (10, 30)
+
+    def it_can_calculate_a_correlator_from_just_a_cosmology(mocker):
+        mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
+
+        cosmo = maszcal.cosmology.CosmoParams()
+        zs = np.linspace(0, 1, 10)
+        xi_interpolator = maszcal.matter.Correlations.from_cosmology(cosmo, zs, is_nonlinear=True)
+
+        rs = np.logspace(-1, 1, 30)
+        xis = xi_interpolator(rs)
+        assert xis.shape == (10, 30)
+
+    def it_can_use_radii_that_are_functions_of_z(mocker):
+        mocker.patch('maszcal.matter.camb.get_results', new=fake_camb_get_results)
+
+        cosmo = maszcal.cosmology.CosmoParams()
+        zs = np.linspace(0, 1, 10)
+        xi_interpolator = maszcal.matter.Correlations.from_cosmology(cosmo, zs, is_nonlinear=True)
+
+        rs = np.array([
+            np.geomspace(1e-1, 1e1+z, 30) for z in zs
+        ]).T
+        xis = xi_interpolator.with_redshift_dependent_radii(rs)
+        assert xis.shape == (10, 30)

@@ -1,5 +1,5 @@
 # maszcal
-Galaxy cluster *ma*ss (*SZ*) *cal*ibrations
+Galaxy cluster **ma**ss (**SZ**) **cal**ibrations
 
 ## Structure
 - Main module code is in `maszcal`.

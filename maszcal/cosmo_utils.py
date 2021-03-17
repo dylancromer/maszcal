@@ -1,7 +1,7 @@
 import numpy as np
-import camb
 from astropy.cosmology import Flatw0waCDM
 import astropy.units as u
+import camb
 
 
 def get_camb_params(cosmology_params, max_k, zs, nonlinear_matter_power):
@@ -47,7 +47,6 @@ def get_camb_params(cosmology_params, max_k, zs, nonlinear_matter_power):
 
 def get_astropy_cosmology(cosmology_params):
     omega_bary = cosmology_params.omega_bary_hsqr/cosmology_params.h**2
-    mass_per_neutrino = cosmology_params.neutrino_mass_sum/3 * u.eV
 
     astropy_cosmology = Flatw0waCDM(
         H0=cosmology_params.hubble_constant,
@@ -55,7 +54,7 @@ def get_astropy_cosmology(cosmology_params):
         w0=cosmology_params.w0,
         wa=cosmology_params.wa,
         Tcmb0=cosmology_params.cmb_temp,
-        m_nu=mass_per_neutrino,
+        m_nu=[0, 0, cosmology_params.neutrino_mass_sum] * u.eV,
         Ob0=omega_bary
     )
 

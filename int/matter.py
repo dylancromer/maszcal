@@ -2,7 +2,6 @@ import pytest
 import numpy as np
 import matplotlib
 matplotlib.rcParams['text.usetex'] = True
-matplotlib.rcParams['text.latex.unicode'] = True
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
@@ -14,11 +13,23 @@ import maszcal.matter
 
 def describe_power():
 
-    def it_calculates_the_matter_power_spectrum_with_camb():
+    @pytest.fixture
+    def power():
         cosmo_params = maszcal.cosmology.CosmoParams()
+        return maszcal.matter.Power(cosmo_params=cosmo_params)
 
-        power = maszcal.matter.Power(cosmo_params=cosmo_params)
+    def it_is_consistent_with_removing_hs(power):
+        zs = np.linspace(0, 2, 20)
+        ks = np.logspace(-4, 1, 400)
+        h = maszcal.cosmology.CosmoParams().h
 
+        k_ret, lin_spect = power.spectrum_nointerp(ks, zs, is_nonlinear=False)
+
+        lin_spect_interp = power.spectrum(k_ret*h, zs, is_nonlinear=False)
+
+        assert np.allclose(lin_spect_interp, lin_spect/(h**3), rtol=1e-4)
+
+    def it_calculates_the_matter_power_spectrum_with_camb(power):
         zs = np.linspace(0, 2, 20)
         ks = np.logspace(-4, 1, 400)
 

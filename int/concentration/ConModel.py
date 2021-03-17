@@ -2,7 +2,6 @@ import pytest
 import numpy as np
 import matplotlib
 matplotlib.rcParams['text.usetex'] = True
-matplotlib.rcParams['text.latex.unicode'] = True
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
@@ -61,4 +60,22 @@ def describe_con_model():
         fig.set_size_inches(7, 6)
 
         plt.savefig('figs/test/concentration_diemer.svg')
+        plt.gcf().clear()
+
+        for i, c in enumerate(cons.T):
+            plt.plot(masses, c, label=rf'$z={redshifts[i]}$', linestyle='--', color=colors[i])
+
+        plt.ylim((2.9, 11))
+
+        plt.legend(loc='lower center', bbox_to_anchor=(0.5, 1), ncol=3)
+
+        plt.xlabel(r'$M_{200c} \; (M_\odot/h)$')
+        plt.ylabel(r'$c_{200c}$')
+
+        plt.xscale('log')
+
+        fig = plt.gcf()
+        fig.set_size_inches(7, 6)
+
+        plt.savefig('figs/test/concentration_diemer_nolog.svg')
         plt.gcf().clear()

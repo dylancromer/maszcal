@@ -2,9 +2,13 @@ import numpy as np
 import scipy.optimize
 
 
+def _diffy_evo(func, bounds):
+    return scipy.optimize.differential_evolution(func, bounds)
+
+
 def _select_global_backend(method_name):
     available_methods = {
-        'global-differential-evolution': scipy.optimize.differential_evolution,
+        'global-differential-evolution': _diffy_evo,
     }
 
     try:

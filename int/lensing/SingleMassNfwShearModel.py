@@ -3,7 +3,6 @@ import numpy as np
 import astropy.units as u
 import matplotlib
 matplotlib.rcParams['text.usetex'] = True
-matplotlib.rcParams['text.latex.unicode'] = True
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
@@ -21,14 +20,14 @@ def describe_single_mass_bin():
 
     def the_plot_looks_correct():
         z = np.array([0.43])
-        single_mass_model = SingleMassNfwShearModel(redshift=z, delta=500, mass_definition='crit')
+        single_mass_model = SingleMassNfwShearModel(redshifts=z, delta=500, mass_definition='crit')
 
         rs = np.logspace(-1, 1, 50)
         mu = np.array([np.log(4.26e14)])
         concentration = np.array([2.08])
         params = np.array([[mu, concentration]])
 
-        ds = single_mass_model.delta_sigma(rs, mu, concentration)
+        ds = single_mass_model.excess_surface_density(rs, mu, concentration)
 
         plt.plot(rs, ds.flatten())
         plt.xlabel(r'$R \; (\mathrm{Mpc}/h)$')

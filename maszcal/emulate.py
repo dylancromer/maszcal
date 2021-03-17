@@ -1,77 +1,85 @@
 from dataclasses import dataclass
 from types import MappingProxyType
+import dill
 import numpy as np
-import sklearn.gaussian_process.kernels
+import scipy.interpolate
 import pality
-import maszcal.mathutils
+import ostrich.emulate
+from sklearn.gaussian_process.kernels import Matern
+import maszcal.interpolate
+import maszcal.interp_utils
 
 
-class LensingPca:
-    @classmethod
-    def create(cls, lensing_data):
-        return cls.get_pca(cls.standardize(lensing_data))
+LensingPca = ostrich.emulate.DataPca
 
-    @classmethod
-    def subtract_mean(cls, array):
-        return array - array.mean(axis=-1)[:, None]
+PcaEmulator = ostrich.emulate.PcaEmulator
 
-    @classmethod
-    def normalize_by_std(cls, array):
-        return array / array.std(axis=-1)[:, None]
+save_pca_emulator = ostrich.emulate.save_pca_emulator
 
-    @classmethod
-    def standardize(cls, lensing_data):
-        shifted_data = cls.subtract_mean(lensing_data)
-        scaled_shifted_data = cls.normalize_by_std(shifted_data)
-        return scaled_shifted_data
-
-    @classmethod
-    def get_pca(cls, data):
-        return pality.Pca.calculate(data)
+load_pca_emulator = ostrich.emulate.load_pca_emulator
 
 
 @dataclass
-class PcaEmulator:
-    mean: np.ndarray
-    std_dev: np.ndarray
-    coords: np.ndarray
-    basis_vectors: np.ndarray
-    weights: np.ndarray
-    interpolator_class: object
-    interpolator_kwargs: object = MappingProxyType({})
+class LensingFunctionEmulator:
+    RADIAL_INTERPOLATION_METHOD = 'cubic'
+
+    radii: np.ndarray
+    log_masses: np.ndarray
+    redshifts: np.ndarray
+    params: np.ndarray
+    data: np.ndarray
+    interpolator_class_base: object = maszcal.interpolate.GaussianProcessInterpolator
+    interpolator_kwargs_base: MappingProxyType = MappingProxyType({'kernel': Matern()})
+    interpolator_class_2d: object = maszcal.interpolate.RbfInterpolator
+    interpolator_kwargs_2d: MappingProxyType = MappingProxyType({})
+    num_principal_components_base: int = 8
+    num_principal_components_2d: int = 8
+
+    def _wrap_base_emulator(self, emulator):
+        def wrapper(arg): return emulator(arg).reshape(self.radii.size, self.log_masses.size, self.redshifts.size, -1)
+        return wrapper
 
     def __post_init__(self):
-        self.n_components = self.basis_vectors.shape[-1]
-        self.weight_interpolators = self.create_weight_interpolators()
+        self._base_emulator = self._wrap_base_emulator(PcaEmulator.create_from_data(
+            coords=self.params,
+            data=self.data.reshape(-1, self.params.shape[0]),
+            interpolator_class=self.interpolator_class_base,
+            interpolator_kwargs=self.interpolator_kwargs_base,
+            num_components=self.num_principal_components_base,
+        ))
 
-    def create_weight_interpolators(self):
-            return tuple(
-                self.interpolator_class(self.coords, self.weights[i, :], **self.interpolator_kwargs) for i in range(self.n_components)
+    def _wrap_2d_emulator(self, emulator):
+        def wrapper(mus, zs):
+            mus_and_zs = maszcal.interp_utils.cartesian_prod(mus, zs)
+            return np.moveaxis(
+                emulator(mus_and_zs).reshape(-1, self.radii.size, mus.size, zs.size),
+                0,
+                -1,
             )
+        return wrapper
 
-    def reconstruct_standard_data(self, coords):
-        return np.stack(tuple(
-            self.weight_interpolators[i](coords)[None, :] * self.basis_vectors[:, i, None] for i in range(self.n_components)
-        )).sum(axis=0)
+    def _get_2d_emulator(self, data):
+        mus_and_zs = maszcal.interp_utils.cartesian_prod(self.log_masses, self.redshifts)
+        data_ = np.moveaxis(data, -1, 0).reshape(-1, mus_and_zs.shape[0])
+        return self._wrap_2d_emulator(PcaEmulator.create_from_data(
+            coords=mus_and_zs,
+            data=data_,
+            interpolator_class=self.interpolator_class_2d,
+            interpolator_kwargs=self.interpolator_kwargs_2d,
+            num_components=self.num_principal_components_2d,
+        ))
 
-    def reconstruct_data(self, coords):
-        standard_data = self.reconstruct_standard_data(coords)
-        return self.mean[:, None] + (standard_data*self.std_dev[:, None])
-
-    def __call__(self, coords):
-        return self.reconstruct_data(coords)
-
-    @classmethod
-    def create_from_data(cls, coords, data, interpolator_class, interpolator_kwargs=MappingProxyType({}), num_components=8):
-        pca = LensingPca.create(data)
-        basis_vectors = pca.basis_vectors[:, :num_components]
-        weights = pca.weights[:num_components, :]
-        return cls(
-            mean=data.mean(axis=-1),
-            std_dev=data.std(axis=-1),
-            coords=coords,
-            basis_vectors=basis_vectors,
-            weights=weights,
-            interpolator_class=interpolator_class,
-            interpolator_kwargs=interpolator_kwargs,
+    def _get_radial_interpolator(self, data):
+        return scipy.interpolate.interp1d(
+            self.radii,
+            data,
+            kind=self.RADIAL_INTERPOLATION_METHOD,
+            axis=0,
         )
+
+    def __call__(self, radii, log_masses, redshifts, params):
+        return self._get_radial_interpolator(
+            self._get_2d_emulator(
+                self._base_emulator(params),
+            )(log_masses, redshifts),
+        )(radii)

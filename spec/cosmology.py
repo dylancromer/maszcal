@@ -35,3 +35,48 @@ def describe_cosmo_params():
     def it_checks_for_consistence_between_hubble_and_h100():
         with pytest.raises(cosmology.HubbleConstantError):
             CosmoParams(hubble_constant=100)
+
+
+def describe_SigmaCrit():
+
+    def describe_comoving_case():
+
+        @pytest.fixture
+        def sigma_crit():
+            return cosmology.SigmaCrit(cosmology.CosmoParams(), comoving=True)
+
+        def it_calculates_sigma_crit(sigma_crit):
+            z_sources = np.random.rand(10) + 1100
+            z_lenses = np.random.rand(10)
+
+            sd_crit = sigma_crit.sdc(z_sources, z_lenses)
+            assert not np.any(np.isnan(sd_crit))
+            assert np.all(sd_crit >= 0)
+
+        def it_fails_for_sources_closer_than_lenses(sigma_crit):
+            z_sources = np.random.rand(10)
+            z_lenses = np.random.rand(10) + 1
+            with pytest.raises(ValueError):
+                sigma_crit.sdc(z_sources, z_lenses)
+
+    def describe_physical_case():
+
+        @pytest.fixture
+        def sigma_crit():
+            return cosmology.SigmaCrit(cosmology.CosmoParams(), comoving=False)
+
+        @pytest.fixture
+        def sigma_crit_comov():
+            return cosmology.SigmaCrit(cosmology.CosmoParams(), comoving=True)
+
+        def it_calculates_sigma_crit(sigma_crit, sigma_crit_comov):
+            z_sources = np.random.rand(10) + 1100
+            z_lenses = np.random.rand(10)
+
+            sd_crit = sigma_crit.sdc(z_sources, z_lenses)
+            assert not np.any(np.isnan(sd_crit))
+            assert np.all(sd_crit >= 0)
+
+            sd_crit_comov = sigma_crit_comov.sdc(z_sources, z_lenses)
+
+            assert np.all(sd_crit_comov != sd_crit)
