@@ -593,12 +593,12 @@ def describe_miscentered_MatchingConvergenceModel():
                 units=u.Msun/u.pc**2,
                 comoving=True,
                 sd_func=projector.SurfaceDensity.calculate,
-                sd_kwargs={'radial_axis_to_broadcast': 1, 'density_axis': -1},
+                sd_kwargs={'radial_axis_to_broadcast': 1, 'density_axis': -2},
             ).convergence
 
         @pytest.fixture
         def convergence_model(miscentered_conv):
-            NUM_CLUSTERS = 1
+            NUM_CLUSTERS = 20
             rng = np.random.default_rng(seed=13)
             sz_masses = 2e13*rng.normal(size=NUM_CLUSTERS) + 2e14
             zs = rng.random(size=NUM_CLUSTERS) + 0.01
@@ -751,7 +751,7 @@ def describe_miscentered_ScatteredMatchingConvergenceModel():
                 misc_distrib=maszcal.stats.MiscenteringDistributions.rayleigh_dist,
                 miscentering_func=meso.Rho(
                     num_offset_radii=50,
-                    num_phis=4,
+                    num_phis=10,
                 ).miscenter,
             )
 
