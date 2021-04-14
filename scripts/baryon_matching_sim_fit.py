@@ -19,11 +19,12 @@ import maszcal.twohalo
 PARAM_MINS = np.array([-2, 1, 0.1, 0.1])  # a_sz, con, alpha, beta
 PARAM_MAXES = np.array([2, 6, 2.1, 8.1])
 GAMMA = 0.2
+BARYON_NORM_RADIUS = 5
 USE_PRIOR = False
 MEAN_PRIOR_ALPHA = 0.88
 PRIOR_ALPHA_STD = 0.3
 LOWER_RADIUS_CUT = 0.1
-UPPER_RADIUS_CUT = 5
+UPPER_RADIUS_CUT = 12
 COV_MAGNITUDE = 1.3
 SIM_DATA = maszcal.data.sims.NBatta2010('data/NBatta2010/').cut_radii(LOWER_RADIUS_CUT, UPPER_RADIUS_CUT)
 NUM_EMULATOR_SAMPLES = 2400
@@ -79,6 +80,7 @@ def get_density_model():
         delta=500,
         comoving_radii=True,
         nfw_class=maszcal.density.MatchingNfwModel,
+        baryon_norm_radius=BARYON_NORM_RADIUS,
     )
 
 
@@ -125,6 +127,7 @@ def generate_header():
         f'PARAM_MINS = {PARAM_MINS}',
         f'PARAM_MAXES = {PARAM_MAXES}',
         f'GAMMA = {GAMMA}',
+        f'BARYON_NORM_RADIUS = {BARYON_NORM_RADIUS}'
         f'USE_PRIOR = {USE_PRIOR}',
         f'MEAN_PRIOR_ALPHA = {MEAN_PRIOR_ALPHA}',
         f'PRIOR_ALPHA_STD  = {PRIOR_ALPHA_STD}',
