@@ -63,4 +63,6 @@ This is because both of these corrections require numerically integrating the mo
 maszcal will continue to be easy to install even after this extension is added, but if you intend to develop with maszcal, you should be aware of this planned change.
 
 ## Notes
-maszcal doesn't use so-called "little-h" (the Hubble constant divided by 100) units at all. Masses are masses, radii and radii, etc. In order to get consistent results, you must remove all h-factors from anything you input, and if you want them on the output values you will have to re-add them yourself too. [But then again, little-h probably shouldn't be used anyway.](https://arxiv.org/pdf/1308.4150.pdf)
+
+### Little Hubble Conventions
+maszcal doesn't use so-called "little-h" (the Hubble constant divided by 100) factors at all. Masses are masses, radii and radii, etc. In order to get consistent results, you must remove all h-factors from anything you input, and if you want them on the output values you will have to re-add them yourself too. [But then again, little-h probably shouldn't be used anyway.](https://arxiv.org/pdf/1308.4150.pdf)
