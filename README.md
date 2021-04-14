@@ -51,7 +51,7 @@ maszcal contains all of the classes and functions needed to run a full mass cali
 ## Future development
 maszcal is currently in a beta release state (version 0.9). Over the next 2-3 months, a large number of changes are going to be made. The planned changed are as follows.
 
-### A Public API
+### Public API
 Right now if you want to use maszcal, you need to glue a bunch of classes together yourself, and do the MCMC fitting with a third-party library. The public API will funnel the whole analysis process through a single public class that will be considerably easier to use if you aren't familiar with the maszcal internals.
 
 ### Documentation
