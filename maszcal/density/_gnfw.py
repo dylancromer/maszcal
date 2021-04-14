@@ -39,7 +39,6 @@ class BaryonDensity:
 class _Gnfw(BaryonDensity):
     CORE_RADIUS = 0.5
     MIN_INTEGRATION_RADIUS = 1e-4
-    MAX_INTEGRATION_RADIUS = 3.3
     NUM_INTEGRATION_RADII = 200
 
     cosmo_params: maszcal.cosmology.CosmoParams
@@ -92,7 +91,7 @@ class _Gnfw(BaryonDensity):
         '''
         rsflat = np.linspace(
             self.MIN_INTEGRATION_RADIUS,
-            self.MAX_INTEGRATION_RADIUS,
+            self.baryon_norm_radius,
             self.NUM_INTEGRATION_RADII,
         )
         rs = rsflat[:, None]
@@ -140,6 +139,7 @@ class Gnfw(_Gnfw):
     sd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
     esd_func: object = projector.ExcessSurfaceDensity.calculate
     esd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
+    baryon_norm_radius: float = 3.3
 
 
 class _SingleMassGnfw(_Gnfw):
@@ -168,7 +168,7 @@ class _SingleMassGnfw(_Gnfw):
         '''
         rsflat = np.linspace(
             self.MIN_INTEGRATION_RADIUS,
-            self.MAX_INTEGRATION_RADIUS,
+            self.baryon_norm_radius,
             self.NUM_INTEGRATION_RADII,
         )
         rs = rsflat[:, None]
@@ -198,13 +198,13 @@ class SingleMassGnfw(_SingleMassGnfw):
     sd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
     esd_func: object = projector.ExcessSurfaceDensity.calculate
     esd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
+    baryon_norm_radius: float = 3.3
 
 
 @dataclass
 class _CmGnfw(_Gnfw):
     CORE_RADIUS = 0.5
     MIN_INTEGRATION_RADIUS = 1e-4
-    MAX_INTEGRATION_RADIUS = 3.3
     NUM_INTEGRATION_RADII = 200
 
     cosmo_params: maszcal.cosmology.CosmoParams
@@ -230,7 +230,7 @@ class _CmGnfw(_Gnfw):
         '''
         rsflat = np.linspace(
             self.MIN_INTEGRATION_RADIUS,
-            self.MAX_INTEGRATION_RADIUS,
+            self.baryon_norm_radius,
             self.NUM_INTEGRATION_RADII,
         )
         rs = rsflat[:, None]
@@ -279,6 +279,7 @@ class CmGnfw(_CmGnfw):
     sd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
     esd_func: object = projector.ExcessSurfaceDensity.calculate
     esd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
+    baryon_norm_radius: float = 3.3
 
 
 @dataclass
@@ -302,7 +303,7 @@ class _MatchingGnfw(_Gnfw):
         '''
         rsflat = np.linspace(
             self.MIN_INTEGRATION_RADIUS,
-            self.MAX_INTEGRATION_RADIUS,
+            self.baryon_norm_radius,
             self.NUM_INTEGRATION_RADII,
         )
         rs = rsflat[:, None]
@@ -333,6 +334,7 @@ class MatchingGnfw(_MatchingGnfw):
     sd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
     esd_func: object = projector.ExcessSurfaceDensity.calculate
     esd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
+    baryon_norm_radius: float = 3.3
 
 
 class _MatchingCmGnfw(_CmGnfw):
@@ -365,7 +367,7 @@ class _MatchingCmGnfw(_CmGnfw):
         '''
         rsflat = np.linspace(
             self.MIN_INTEGRATION_RADIUS,
-            self.MAX_INTEGRATION_RADIUS,
+            self.baryon_norm_radius,
             self.NUM_INTEGRATION_RADII,
         )
         rs = rsflat[:, None]
@@ -397,3 +399,4 @@ class MatchingCmGnfw(_MatchingCmGnfw):
     sd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
     esd_func: object = projector.ExcessSurfaceDensity.calculate
     esd_kwargs: MappingProxyType = MappingProxyType({'radial_axis_to_broadcast': 1, 'density_axis': -2})
+    baryon_norm_radius: float = 3.3
