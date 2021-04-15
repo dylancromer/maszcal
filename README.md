@@ -48,6 +48,9 @@ If you want to use my analysis scripts, you will also need to install [pathos](h
 ## Usage
 maszcal contains all of the classes and functions needed to run a full mass calibration analysis that includes baryons. Right now, you can see examples of this in the `scripts` directory. In the next couple of weeks, a tutorial Jupyter notebook will be provided with some example data to fit.
 
+## Citing
+If you use maszcal in your research, please consider citing the [first companion paper](https://arxiv.org/abs/2104.06925).
+
 ## Future development
 maszcal is currently in a beta release state (version 0.9). Over the next 2-3 months, a large number of changes are going to be made. The planned changed are as follows.
 
