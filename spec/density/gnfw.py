@@ -32,7 +32,7 @@ def describe_MatchingGnfw():
     def it_has_the_correct_baryon_fraction(gnfw_model):
         rs = np.linspace(
             gnfw_model.MIN_INTEGRATION_RADIUS,
-            gnfw_model.MAX_INTEGRATION_RADIUS,
+            gnfw_model.baryon_norm_radius,
             gnfw_model.NUM_INTEGRATION_RADII
         )
         zs = np.linspace(0, 1, 8)
@@ -118,7 +118,7 @@ def describe_MatchingCmGnfw():
     def it_has_the_correct_baryon_fraction(gnfw_model):
         rs = np.linspace(
             gnfw_model.MIN_INTEGRATION_RADIUS,
-            gnfw_model.MAX_INTEGRATION_RADIUS,
+            gnfw_model.baryon_norm_radius,
             gnfw_model.NUM_INTEGRATION_RADII
         )
         zs = np.linspace(0, 1, 8)
@@ -202,7 +202,7 @@ def describe_Gnfw():
     def it_has_the_correct_baryon_fraction(gnfw_model):
         rs = np.linspace(
             gnfw_model.MIN_INTEGRATION_RADIUS,
-            gnfw_model.MAX_INTEGRATION_RADIUS,
+            gnfw_model.baryon_norm_radius,
             gnfw_model.NUM_INTEGRATION_RADII
         )
         zs = np.linspace(0, 1, 8)
@@ -289,7 +289,7 @@ def describe_CmGnfw():
     def it_has_the_correct_baryon_fraction(gnfw_model):
         rs = np.linspace(
             gnfw_model.MIN_INTEGRATION_RADIUS,
-            gnfw_model.MAX_INTEGRATION_RADIUS,
+            gnfw_model.baryon_norm_radius,
             gnfw_model.NUM_INTEGRATION_RADII
         )
         zs = np.linspace(0, 1, 8)
@@ -361,7 +361,7 @@ def describe_SingleMassGnfw():
     def it_has_the_correct_baryon_fraction(gnfw_model):
         rs = np.linspace(
             gnfw_model.MIN_INTEGRATION_RADIUS,
-            gnfw_model.MAX_INTEGRATION_RADIUS,
+            gnfw_model.baryon_norm_radius,
             gnfw_model.NUM_INTEGRATION_RADII
         )
         zs = np.linspace(0, 1, 8)
