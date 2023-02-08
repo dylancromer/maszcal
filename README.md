@@ -3,7 +3,7 @@ maszcal is a package dedicated to calibration of the observable-mass relation fo
 
 maszcal also uses a Principle Component Analysis (PCA) emulator (AKA a surrogate model) based on the Coyote Universe emulator. The emulator and PCA code is contained in dependencies, but it is crucial to running the MCMC analysis much faster than would be possible with the full model.
 
-Currently maszcal is available in a beta-release state. Sigificant updates will be coming over the next 2-3 months. See below for details.
+Note as of 2023: Currently maszcal is available in a beta-release state. The modeling features are fully tested and vetted, but some UX features were not completed due to my career shift away from cosmology. Additional documentation may be added by me at some point, but contributions from users are welcome. I will review any submitted pull requests, and if you need assistance using maszcal, please do not hesitate to contact me at dylan@dylancromer.com.
 
 ## Structure
 - Main module code is in `maszcal`
